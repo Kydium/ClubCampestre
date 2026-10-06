@@ -1327,6 +1327,10 @@ input[type=range]{flex:1;padding:0;height:34px;border:0;background:none;box-shad
 /* ---- v3.31: más de 3 jugadores: la 4.ª, 5.ª y 6.ª van en otra fila de abajo (sin deslizar de lado) ---- */
 .pks{flex-wrap:wrap;justify-content:center;overflow:visible;row-gap:14px;scroll-snap-type:none}
 .pk{scroll-snap-align:none}
+
+/* ---- v3.33: enlace para volver al menú centralizado ---- */
+a.chip.clubb{display:inline-flex;align-items:center;gap:4px;text-decoration:none;color:#fff;padding:5px 12px;font-size:13px;box-shadow:0 3px 0 #0a1b55;-webkit-tap-highlight-color:transparent}
+a.chip.clubb:active{transform:translateY(2px);box-shadow:0 1px 0 #0a1b55}
 </style>
 </head>
 <body>
@@ -1371,7 +1375,7 @@ input[type=range]{flex:1;padding:0;height:34px;border:0;background:none;box-shad
 <div id="toast"></div>
 <script>
 'use strict';
-const VERSION='3.32.0';
+const VERSION='3.34.0';
 /* Firebase (mismo proyecto que Wolvevilles). Los datos van en el nodo "monopoly/" */
 const FBCFG={apiKey:"AIzaSyBfrs6B-j22O67pnUb5DYq5CevrIg0dtEs",authDomain:"project-349e4491-0828-4f64-bb5.firebaseapp.com",databaseURL:"https://project-349e4491-0828-4f64-bb5-default-rtdb.firebaseio.com",projectId:"project-349e4491-0828-4f64-bb5",storageBucket:"project-349e4491-0828-4f64-bb5.firebasestorage.app",messagingSenderId:"180444249462",appId:"1:180444249462:web:bdf189d171d908a0274e57"};
 
@@ -2719,7 +2723,7 @@ async function resumeRoom(c,pid){
 /* ---------- pantalla inicial ---------- */
 function showHome(msg){
   const rec=recList();
-  $('app').innerHTML=`<div class="wrap"><div class="top"><span class="sp"></span><button class="chip sndb" onclick="toggleSnd()">${SND.on?'🔊':'🔇'}</button></div><div class="logo" style="margin-top:6px">🎩 MONOPOLY<span>AMIGOS</span></div>
+  $('app').innerHTML=`<div class="wrap"><div class="top"><a class="chip clubb" href="https://kydium.github.io/ClubCampestre/">🏛️ Club Campestre</a><span class="sp"></span><button class="chip sndb" onclick="toggleSnd()">${SND.on?'🔊':'🔇'}</button></div><div class="logo" style="margin-top:6px">🎩 MONOPOLY<span>AMIGOS</span></div>
   <input id="nm" placeholder="Tu nombre" maxlength="14" value="${esc(store.get('mono_name')||'')}" autocomplete="off">
   ${rec.length?`<div class="panel"><div class="hd">↩ Tus partidas</div>${rec.map(r=>`<div class="lp" style="--c:#ffe066"><span class="pn">Sala ${r.code}<small class="mut" style="display:block;font-family:sans-serif">como ${esc(r.name||'—')}</small></span><button class="pri" style="padding:8px 12px" onclick="resumeRoom('${r.code}','${r.pid}')">Volver</button><button class="x" onclick="recDel('${r.code}');showHome()">✕</button></div>`).join('')}</div>`:''}
   <button class="big pri" onclick="createRoom()">Crear sala</button>
