@@ -6,7 +6,7 @@ import {
   getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword,
   signOut, onAuthStateChanged, updateProfile
 } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
-import { getDatabase, ref, onValue } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-database.js";
+import { getDatabase, ref, onValue, get, set } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-database.js";
 import { firebaseConfig, isConfigured } from "./firebase-config.js";
 
 export { isConfigured };
@@ -51,6 +51,12 @@ export const logoutUser = () => signOut(auth);
 export function watchXp(uid, callback) {
   return onValue(ref(getDatabase(app), "usuarios/" + uid + "/xp"), s => callback(s.val()), () => {});
 }
+
+// Avatar: usuarios/<cuenta>/avatar (lo usa club-avatar.js; el menú le pasa estas dos funciones).
+export const avatarIO = {
+  get: uid => get(ref(getDatabase(app), "usuarios/" + uid + "/avatar")).then(s => s.val()),
+  put: (uid, v) => set(ref(getDatabase(app), "usuarios/" + uid + "/avatar"), v)
+};
 
 // Avisa cada vez que alguien entra o sale (y una vez al cargar la página).
 export const watchUser = callback => onAuthStateChanged(auth, callback);

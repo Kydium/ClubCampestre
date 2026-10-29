@@ -1,7 +1,7 @@
 // Service worker del menú Club Campestre.
 // Sube el número de versión cada vez que cambies index.html.
-const VERSION = 'cc-v4';
-const SHELL = ['./', 'index.html', 'manifest.json', 'auth.js', 'firebase-config.js', 'club-xp.js', 'icons/icon-192.png', 'icons/icon-512.png'];
+const VERSION = 'cc-v5';
+const SHELL = ['./', 'index.html', 'manifest.json', 'auth.js', 'firebase-config.js', 'club-xp.js', 'club-avatar.js', 'icons/icon-192.png', 'icons/icon-512.png'];
 
 self.addEventListener('install', e => {
   e.waitUntil(caches.open(VERSION).then(c => c.addAll(SHELL)));

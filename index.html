@@ -157,6 +157,12 @@
   .xpwrap { width: min(440px, 100%); margin: 26px auto 0; }
   .xpwrap .ccxp-txt { font-size: 1.1rem; font-weight: 700; color: #fff; }
   .xpsub { margin-top: 8px; text-align: center; font-size: 1.05rem; font-weight: 600; color: var(--soft); }
+  .avbtn { position: relative; background: none; border: 0; padding: 0; cursor: pointer; border-radius: 50%; line-height: 0; }
+  .avbtn .ccav { box-shadow: 0 0 0 2px var(--green), 0 0 12px rgba(57,255,136,.6); }
+  .avbtn .avplus { position: absolute; right: -4px; bottom: -4px; width: 18px; height: 18px; border-radius: 50%; background: var(--pink);
+    color: #fff; font: 800 14px/18px system-ui, sans-serif; text-align: center; font-style: normal; box-shadow: 0 0 8px rgba(255,46,151,.7); }
+  .avmsg { position: absolute; top: 100%; right: 0; margin-top: 6px; font-size: .85rem; font-weight: 600; color: var(--pink); white-space: nowrap; }
+  @media (max-width: 700px) { .userbar { position: relative; top: auto; right: auto; justify-content: center; padding: 14px 12px 0; } .avmsg { left: 0; right: 0; text-align: center; } }
   .userbar .who { color: var(--green); text-shadow: 0 0 8px rgba(57,255,136,.6); }
   .btn-small {
     font-family: var(--display); font-weight: 700; font-size: .8rem; letter-spacing: .1em;
@@ -213,6 +219,7 @@
 </head>
 <body>
   <div class="userbar" id="userbar" hidden>
+    <button class="avbtn" id="avBtn" type="button" title="Cambiar mi foto" aria-label="Cambiar mi foto"><span id="avImg"></span><i class="avplus">+</i></button>
     <span>Hola, <span class="who" id="who"></span></span>
     <button class="btn-small" id="logout" type="button">SALIR</button>
   </div>
@@ -321,6 +328,7 @@
   }
 </script>
 <script src="club-xp.js"></script>
+<script src="club-avatar.js"></script>
 <script type="module">
   const $ = id => document.getElementById(id);
   let A = null;
@@ -363,6 +371,16 @@
 
     $('logout').addEventListener('click', () => A.logoutUser());
 
+    // Foto de perfil: se toca el círculo para cambiarla (se guarda reducida, igual en todos los juegos)
+    if (window.ClubAvatar && A.avatarIO) ClubAvatar.init({ io: A.avatarIO });
+    const avBtn = $('avBtn');
+    const avMsg = document.createElement('div'); avMsg.className = 'avmsg'; avMsg.hidden = true; userbar.appendChild(avMsg);
+    function avSay(t) { avMsg.textContent = t; avMsg.hidden = !t; if (t) setTimeout(() => { avMsg.hidden = true; }, 3500); }
+    if (avBtn) avBtn.addEventListener('click', () => {
+      if (!window.ClubAvatar) return;
+      ClubAvatar.pick().then(r => { if (r) avSay('Foto actualizada'); }).catch(e => avSay(e && e.message ? e.message : 'No se pudo guardar'));
+    });
+
     let xpOff = null, xpMounted = false;
     A.watchUser(user => {
       // Barra de experiencia compartida
@@ -390,6 +408,7 @@
       if (user) {
         $('who').textContent = user.displayName || (user.email || '').split('@')[0];
         userbar.hidden = false;
+        if (window.ClubAvatar) { ClubAvatar.init({ io: A.avatarIO, uid: user.uid }); ClubAvatar.render(user.uid, $('avImg'), { name: $('who').textContent, size: 40 }); }
         gate.hidden = true;
       } else {
         userbar.hidden = true;
