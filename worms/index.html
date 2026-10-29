@@ -803,7 +803,7 @@ body:not(.desktop) #armWrap .r1x{position:absolute;right:0;bottom:calc(100% + 32
 <canvas class="bw" id="bw4" width="150" height="150"></canvas>
 </div>
 <div id="home" class="scr wm">
- <div class="vsm">v20.80.1</div>
+ <div class="vsm">v20.80.2</div>
  <div class="mcol">
   <div class="wlogo"><canvas id="lgw" width="300" height="180"></canvas><b>WORMS</b><i>AMIGOS</i></div>
   <div class="news"><div class="nh">NOTICIAS</div><canvas id="newsC" width="480" height="224"></canvas><div class="ny" id="newsT">¡Salta a una partida con tus amigos!</div></div>
@@ -1031,7 +1031,7 @@ body:not(.desktop) #armWrap .r1x{position:absolute;right:0;bottom:calc(100% + 32
 <script>
 'use strict';
 /* ================= CONFIG / FIREBASE (mismo proyecto que Monopoly y Wolvevilles) ================= */
-const VER='20.80.1';
+const VER='20.80.2';
 const FBCFG={apiKey:"AIzaSyBfrs6B-j22O67pnUb5DYq5CevrIg0dtEs",authDomain:"project-349e4491-0828-4f64-bb5.firebaseapp.com",databaseURL:"https://project-349e4491-0828-4f64-bb5-default-rtdb.firebaseio.com",projectId:"project-349e4491-0828-4f64-bb5",storageBucket:"project-349e4491-0828-4f64-bb5.firebasestorage.app",messagingSenderId:"180444249462",appId:"1:180444249462:web:bdf189d171d908a0274e57"};
 let db=null;
 try{if(typeof firebase==='undefined')throw new Error('No cargó el SDK de Firebase. Revisa tu internet y recarga.');firebase.initializeApp(FBCFG);db=firebase.database()}catch(e){window.__fbErr=e.message}
@@ -6656,7 +6656,7 @@ let clubAvOk=false;
 function clubAvIniciar(){if(clubAvOk||!window.ClubAvatar||!db)return;try{ClubAvatar.init({db:firebase.database()});clubAvOk=true}catch(e){console.warn('ClubAvatar',e)}}
 function clubAv(u,n,sz){return u?'<span class="cav2" data-u="'+esc(u)+'" data-n="'+esc(n||'')+'" data-s="'+(sz||32)+'"></span>':''}
 function avOIco(u,n,sz,ico){return(window.ClubAvatar&&u)?clubAv(u,n,sz):ico}
-function clubAvPinta(root){if(!root||!window.ClubAvatar)return;root.querySelectorAll('.cav2[data-u]').forEach(el=>{if(el._av)return;el._av=1;try{ClubAvatar.render(el.dataset.u,el,{name:el.dataset.n,size:+el.dataset.s||32})}catch(e){}})}
+function clubAvPinta(root){if(!root||!window.ClubAvatar)return;root.querySelectorAll('.cav2[data-u]').forEach(el=>{if(el._av)return;el._av=1;try{ClubAvatar.render(el.dataset.u,el,{name:el.dataset.n,size:+el.dataset.s||32,shape:'square'})}catch(e){}})}
 function clubAvEn(el,u,n,sz){if(!el)return;if(el._u===u&&el._n===n)return;el._u=u;el._n=n;el.innerHTML=(u&&window.ClubAvatar)?clubAv(u,n,sz):'';clubAvPinta(el)}
 function renderBrowse(){
  const el=$('brList');if(!el)return;
