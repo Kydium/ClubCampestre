@@ -8,7 +8,7 @@
 <script src="https://cdn.jsdelivr.net/npm/firebase@9.22.2/firebase-app-compat.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/firebase@9.22.2/firebase-database-compat.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/firebase@9.22.2/firebase-auth-compat.js"></script>
-<script src="../club-xp.js"></script>
+<script src="../club-avatar.js"></script>
 <style>
 *{box-sizing:border-box;-webkit-tap-highlight-color:transparent;-webkit-user-select:none;user-select:none}
 html,body{margin:0;height:100%;background:#0b1020;color:#e8eefc;font-family:system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;overflow:hidden;overscroll-behavior:none;-webkit-text-size-adjust:100%}
@@ -199,6 +199,14 @@ body{font-family:"Trebuchet MS",system-ui,-apple-system,"Segoe UI",Roboto,sans-s
 .nmrow input{flex:1;min-width:0}
 .srb{display:inline-flex;align-items:center;flex:none;background:rgba(8,34,52,.75);border:1.5px solid var(--c,#9aa4ad);color:var(--c,#9aa4ad);
  border-radius:5px;padding:1px 6px;font-size:10px;font-weight:900;letter-spacing:.02em;white-space:nowrap;margin-left:6px;text-shadow:none}
+/* foto de perfil de Club Campestre (la pone club-avatar.js) */
+/* la foto llena todo el cuadro del icono (no un círculo) */
+.plr .av .cav2,.tm em .cav2,#cartel .cav .cav2{margin:0;width:100%;height:100%;align-self:stretch}
+.cav2 *,.cav2c *{border-radius:0!important;object-fit:cover;box-sizing:border-box}
+.plr .av .cav2 *,.tm em .cav2 *,#cartel .cav .cav2 *{width:100%!important;height:100%!important;max-width:none!important}
+.plr .av:has(.cav2),#cartel .cav:has(.cav2){padding:0;align-items:stretch;justify-content:stretch}
+.tm em:has(.cav2){border-radius:5px;align-items:stretch;justify-content:stretch;padding:0}
+.cav2,.cav2c{display:inline-flex;vertical-align:middle;flex:none;line-height:0}.cav2{margin-right:5px}.cav2c:empty{display:none}#cartelU{align-self:center;margin:0 4px 0 6px}#ovU{display:inline-flex;margin:4px auto}#cuAv{margin-right:6px}
 .plr .pnm{flex:1;min-width:0;display:flex;flex-direction:column;align-items:flex-start;gap:2px}.plr .pnm b{flex:none}
 .plr .srb{margin:0}
 .nwb{flex:none;padding:3px 9px;border-radius:999px;border:2px solid rgba(255,255,255,.45);background:rgba(10,40,60,.45);color:#fff;font-weight:900;font-size:13px;cursor:pointer;margin-right:4px;width:auto;min-height:0}
@@ -795,7 +803,7 @@ body:not(.desktop) #armWrap .r1x{position:absolute;right:0;bottom:calc(100% + 32
 <canvas class="bw" id="bw4" width="150" height="150"></canvas>
 </div>
 <div id="home" class="scr wm">
- <div class="vsm">v20.82.0</div>
+ <div class="vsm">v20.80.1</div>
  <div class="mcol">
   <div class="wlogo"><canvas id="lgw" width="300" height="180"></canvas><b>WORMS</b><i>AMIGOS</i></div>
   <div class="news"><div class="nh">NOTICIAS</div><canvas id="newsC" width="480" height="224"></canvas><div class="ny" id="newsT">¡Salta a una partida con tus amigos!</div></div>
@@ -860,7 +868,7 @@ body:not(.desktop) #armWrap .r1x{position:absolute;right:0;bottom:calc(100% + 32
    <div id="cuPH" class="cupane hide"><div id="cuHats" class="cuhats cuit"></div></div>
    <div id="cuPT" class="cupane hide"><div id="cuTraj" class="cuhats cuit"></div></div>
    <div id="cuPC" class="cupane hide"><div id="cuCara" class="cuhats cuit"></div></div>
-   <div class="srow"><label>Nombre</label><input id="cuName" maxlength="12" placeholder="Tu nombre" autocomplete="off"></div>
+   <div class="srow"><label><span id="cuAv" class="cav2c"></span>Nombre</label><input id="cuName" maxlength="12" placeholder="Tu nombre" autocomplete="off"></div>
    <div class="srow"><label>Equipo</label><input id="cuTeam" maxlength="16" placeholder="Nombre de tu equipo" autocomplete="off"></div>
    <div class="dh" style="margin-top:8px">Nombres de tus personajes</div>
    <div class="cuwn"><input id="cuW0" maxlength="12" placeholder="Personaje 1" autocomplete="off"><input id="cuW1" maxlength="12" placeholder="Personaje 2" autocomplete="off"><input id="cuW2" maxlength="12" placeholder="Personaje 3" autocomplete="off"><input id="cuW3" maxlength="12" placeholder="Personaje 4" autocomplete="off"></div>
@@ -1012,7 +1020,7 @@ body:not(.desktop) #armWrap .r1x{position:absolute;right:0;bottom:calc(100% + 32
  <div id="over" class="hide"><div class="dlgw ovw"><div class="dlg ovdlg">
   <div class="dtabs"><b class="on">FIN DE LA PARTIDA</b></div>
   <div class="dpan">
-   <div class="ovhero"><div id="ovT">🏆</div><h2 id="ovH">Fin</h2></div>
+   <div class="ovhero"><div id="ovT">🏆</div><span id="ovU" class="cav2c"></span><h2 id="ovH">Fin</h2></div>
    <div id="ovFeats"></div>
    <div class="mut" id="ovS"></div>
   </div>
@@ -1023,7 +1031,7 @@ body:not(.desktop) #armWrap .r1x{position:absolute;right:0;bottom:calc(100% + 32
 <script>
 'use strict';
 /* ================= CONFIG / FIREBASE (mismo proyecto que Monopoly y Wolvevilles) ================= */
-const VER='20.82.0';
+const VER='20.80.1';
 const FBCFG={apiKey:"AIzaSyBfrs6B-j22O67pnUb5DYq5CevrIg0dtEs",authDomain:"project-349e4491-0828-4f64-bb5.firebaseapp.com",databaseURL:"https://project-349e4491-0828-4f64-bb5-default-rtdb.firebaseio.com",projectId:"project-349e4491-0828-4f64-bb5",storageBucket:"project-349e4491-0828-4f64-bb5.firebasestorage.app",messagingSenderId:"180444249462",appId:"1:180444249462:web:bdf189d171d908a0274e57"};
 let db=null;
 try{if(typeof firebase==='undefined')throw new Error('No cargó el SDK de Firebase. Revisa tu internet y recarga.');firebase.initializeApp(FBCFG);db=firebase.database()}catch(e){window.__fbErr=e.message}
@@ -6642,11 +6650,19 @@ function watchPublic(){
  };
  r.on('value',cb);PL.push([r,'value',cb]);
 }
+/* ---- foto de perfil compartida de Club Campestre (club-avatar.js) ----
+   El juego no guarda ni sube fotos: sólo las enseña junto al nombre. */
+let clubAvOk=false;
+function clubAvIniciar(){if(clubAvOk||!window.ClubAvatar||!db)return;try{ClubAvatar.init({db:firebase.database()});clubAvOk=true}catch(e){console.warn('ClubAvatar',e)}}
+function clubAv(u,n,sz){return u?'<span class="cav2" data-u="'+esc(u)+'" data-n="'+esc(n||'')+'" data-s="'+(sz||32)+'"></span>':''}
+function avOIco(u,n,sz,ico){return(window.ClubAvatar&&u)?clubAv(u,n,sz):ico}
+function clubAvPinta(root){if(!root||!window.ClubAvatar)return;root.querySelectorAll('.cav2[data-u]').forEach(el=>{if(el._av)return;el._av=1;try{ClubAvatar.render(el.dataset.u,el,{name:el.dataset.n,size:+el.dataset.s||32})}catch(e){}})}
+function clubAvEn(el,u,n,sz){if(!el)return;if(el._u===u&&el._n===n)return;el._u=u;el._n=n;el.innerHTML=(u&&window.ClubAvatar)?clubAv(u,n,sz):'';clubAvPinta(el)}
 function renderBrowse(){
  const el=$('brList');if(!el)return;
  const list=pubList.filter(o=>!o.rk);
  if(!list.length){el.innerHTML='<div class="empty" style="color:#fff;font-weight:700">No hay salas abiertas ahora mismo.<br>¡Crea una y tus amigos podrán entrar desde aquí!</div>';return}
- el.innerHTML=list.map(o=>`<div class="rm2"><div class="ri"><b>${esc(o.h)}</b><span>${o.n}/${o.max||6} jugadores · ${SZN[o.s]||''} · ${THN[o.t]||''}${o.v?' · ❤️'+o.v:''}</span></div><button class="wb2 hot" data-c="${esc(o.c)}">Unirse</button></div>`).join('');
+ el.innerHTML=list.map(o=>`<div class="rm2"><div class="ri"><b>${clubAv(o.hu,o.h,28)}${esc(o.h)}</b><span>${o.n}/${o.max||6} jugadores · ${SZN[o.s]||''} · ${THN[o.t]||''}${o.v?' · ❤️'+o.v:''}</span></div><button class="wb2 hot" data-c="${esc(o.c)}">Unirse</button></div>`).join('');clubAvPinta(el);
 }
 function hostName(){const p=meta&&players[meta.host];return p?p.n:'?'}
 function syncPublic(){
@@ -6654,7 +6670,7 @@ function syncPublic(){
  const ref=db.ref('worms/public/'+code),o=meta.opts||{},want=meta.status==='lobby'&&o.pub!==0;
  const pl=Object.values(players),rk=+(meta.rk||0),key=want?[pl.length,pl.map(p=>nwDe(p,rk)).join(''),o.sz,o.th,o.hp,rk,hostName()].join('|'):'off';
  if(key===pubSyncKey)return;pubSyncKey=key;
- if(want){ref.onDisconnect().remove();ref.set({h:hostName(),n:pl.length,max:rk?rk*2:6,w:Math.max(1,...pl.map(p=>nwDe(p,rk))),s:o.sz||'m',t:o.th||'pradera',v:+o.hp||150,rk:rk,ts:firebase.database.ServerValue.TIMESTAMP})}
+ if(want){ref.onDisconnect().remove();ref.set({h:hostName(),hu:meta.host||uid,n:pl.length,max:rk?rk*2:6,w:Math.max(1,...pl.map(p=>nwDe(p,rk))),s:o.sz||'m',t:o.th||'pradera',v:+o.hp||150,rk:rk,ts:firebase.database.ServerValue.TIMESTAMP})}
  else ref.remove();
 }
 async function quickMatch(){
@@ -6888,13 +6904,13 @@ function renderLobby(){
    h+='<div class="sdh">'+rankedSideName(sd)+'</div>';
    for(let s=sd*rk;s<sd*rk+rk;s++){
     const p=pl.find(x=>x.s===s);
-    h+=p?`<div class="plr" style="--c:${PCOL[s]}"><div class="av">${icoTag(p.ch,p.fc,p.ht,p.cr,p.tj)}</div><div class="pnm"><b>${esc(p.n)}${p.u===uid?' (tú)':''}</b>${srBadge(p.sr)}</div>${nwTag(p,rk)}<span class="dot ${p.on?'on':''}"></span></div>`
+    h+=p?`<div class="plr" style="--c:${PCOL[s]}"><div class="av">${avOIco(p.u,p.n,44,icoTag(p.ch,p.fc,p.ht,p.cr,p.tj))}</div><div class="pnm"><b>${esc(p.n)}${p.u===uid?' (tú)':''}</b>${srBadge(p.sr)}</div>${nwTag(p,rk)}<span class="dot ${p.on?'on':''}"></span></div>`
         :`<div class="plr vac"><div class="av">·</div><b>Buscando jugador…</b></div>`;
    }
   }
-  $('plist').innerHTML=h;
+  $('plist').innerHTML=h;clubAvPinta($('plist'));
  }else{
-  $('plist').innerHTML=pl.map(p=>`<div class="plr" style="--c:${PCOL[p.s]}"><div class="av">${icoTag(p.ch,p.fc,p.ht,p.cr,p.tj)}</div><div class="pnm"><b>${esc(p.n)}${p.u===meta.host?' 👑':''}${p.u===uid?' (tú)':''}</b>${srBadge(p.sr)}</div>${sdTag(p)}${nwTag(p,0)}<span class="dot ${p.on?'on':''}"></span></div>`).join('');
+  $('plist').innerHTML=pl.map(p=>`<div class="plr" style="--c:${PCOL[p.s]}"><div class="av">${avOIco(p.u,p.n,44,icoTag(p.ch,p.fc,p.ht,p.cr,p.tj))}</div><div class="pnm"><b>${esc(p.n)}${p.u===meta.host?' 👑':''}${p.u===uid?' (tú)':''}</b>${srBadge(p.sr)}</div>${sdTag(p)}${nwTag(p,0)}<span class="dot ${p.on?'on':''}"></span></div>`).join('');clubAvPinta($('plist'));
  }
  const o=meta.opts||{};
  pintaOpciones(o);
@@ -6979,6 +6995,7 @@ function showOver(){
  const lados=!!(st&&st.sides);
  const mineW=lados?sideOfMe()>=0&&sideOfMe()===(st.winSide!==undefined?st.winSide:-2):(t&&t.u===uid);
  $('ovT').textContent=(w>=0&&t)?(mineW?'🏆':'💀'):'🤝';
+ clubAvEn($('ovU'),(!lados&&w>=0&&t)?t.u:'',t?(t.pn||t.n):'',56);
  $('ovH').textContent=lados&&st.winSide!==undefined?(st.winSide>=0?('¡Ganó el equipo '+(st.winSide===0?'A':'B')+'!'):'Empate')
                                                 :((w>=0&&t)?'¡Ganó '+t.n+'!':'Empate');
  $('ovS').textContent=isHost?'':'Esperando al anfitrión…';
@@ -6994,7 +7011,7 @@ function showOver(){
   const sr=rk&&!solo?(mineW?SRWIN[rk]||25:-(SRLOSS[rk]||15)):0;
   clearPendingRanked();
   renderFeats(xp,sr,rk,mineW);
-  addXp(xp,(code||'')+'_'+(meta.gid||meta.seed||meta.created||''));
+  addXp(xp);
   if(sr)addSr(sr);
  }
 }
@@ -7305,7 +7322,7 @@ function cartelAct(){
  }
  el.classList.toggle('hide',!ver);cartelVis=ver;if(!ver){cartelK='';return}
  const t=st.teams[st.tm]||{},aw=world.worms[st.wi],k=st.turn+'|'+st.wi;
- if(k!==cartelK){cartelK=k;const pn=t.pn||t.n||'';$('cartelAv').innerHTML=icoTag(t.ch,t.fc,t.ht,t.cr,t.tj);$('cartelT').textContent=(t.n&&t.n!==pn)?t.n:('Equipo de '+pn);$('cartelN').textContent=pn;
+ if(k!==cartelK){cartelK=k;const pn=t.pn||t.n||'';if(window.ClubAvatar&&t.u){$('cartelAv').innerHTML=clubAv(t.u,pn,64);clubAvPinta($('cartelAv'))}else{$('cartelAv')._u=null;$('cartelAv').innerHTML=icoTag(t.ch,t.fc,t.ht,t.cr,t.tj)}$('cartelT').textContent=(t.n&&t.n!==pn)?t.n:('Equipo de '+pn);$('cartelN').textContent=pn;
   $('cartelP').textContent=mio&&ayudaOn?(matchMedia('(hover:hover) and (pointer:fine)').matches?'Haz clic, pulsa una tecla o muévete para empezar':'Toca la pantalla o muévete para empezar'):''}
  const s=$('cartelS'),txt=String(Math.max(0,n));if(s.textContent!==txt){s.textContent=txt;el.classList.remove('cuenta');void el.offsetWidth;el.classList.add('cuenta')}
 }
@@ -7462,9 +7479,9 @@ function updateHud(){
   const T=st.teams[s];if(!T)continue;
   let hp=0,n=0;for(const w of world.worms)if(w.t===s){n++;hp+=Math.max(0,w.dhp===undefined?w.hp:w.dhp)}
   const pc=Math.min(100,Math.round(100*hp/(n*HPMAX||1)));
-  h+=`<div class="tm ${s===st.tm&&!st.over?'cur':''} ${hp<=0||T.out?'out':''}" style="--c:${PCOL[s]}"><em>${icoTag(T.ch,T.fc,T.ht,T.cr,T.tj)}</em><div class="nb"><span>${st.sides?('<i style="font-style:normal;opacity:.75">'+(T.sd?'B':'A')+'</i> '):''}${esc(T.n)}</span><div class="bar"><i style="width:${pc}%"></i></div></div></div>`;
+  h+=`<div class="tm ${s===st.tm&&!st.over?'cur':''} ${hp<=0||T.out?'out':''}" style="--c:${PCOL[s]}"><em>${avOIco(T.u,T.pn||T.n,26,icoTag(T.ch,T.fc,T.ht,T.cr,T.tj))}</em><div class="nb"><span>${st.sides?('<i style="font-style:normal;opacity:.75">'+(T.sd?'B':'A')+'</i> '):''}${esc(T.n)}</span><div class="bar"><i style="width:${pc}%"></i></div></div></div>`;
  }
- $('teams').innerHTML=h;
+ {const el=$('teams');if(el._h!==h){el._h=h;el.innerHTML=h;clubAvPinta(el)}}
  {const pn=$('panel');if(pn)pn.style.setProperty('--tc',(st.tm>=0&&PCOL[st.tm])||'#7fc24e')}   /* la etiqueta del reloj lleva el color del equipo que juega */
  try{armSelUpd()}catch(e){}
  const hint=$('hint');
@@ -10788,22 +10805,13 @@ async function perfSincronizar(user){
   if(!nube||xpNube<xpLoc||!localStorage.getItem('wm_name')||(nube&&!nube.wm_name))await perfRef().set(perfLocal());
   perfRefrescar();
  }catch(e){console.warn('Perfil no sincronizado',e)}
- xpIniciar();
-}
-/* Une este juego a la barra de experiencia del Club Campestre (suma la XP vieja de Worms una sola vez). */
-function xpIniciar(){
- if(!window.ClubXP||!db||!ACCT_UID)return;
- try{ClubXP.config({levelUp:()=>{try{snd('win')}catch(e){}}})}catch(e){}
- ClubXP.init({db:db,uid:uid,game:'worms',legacy:()=>+(localStorage.getItem('wm_xp')||0)}).then(()=>{
-  ClubXP.onChange(()=>{try{updateHudBar()}catch(e){}});
-  try{updateHudBar()}catch(e){}
- });
 }
 function cuentaIniciar(){
  if(!db||!ACCT_UID||!firebase.auth)return;
  firebase.auth().onAuthStateChanged(u=>{
   if(!u){localStorage.removeItem('cc_uid');localStorage.removeItem('cc_name');location.replace('../');return}
   if(u.uid!==uid){_lsSet.call(localStorage,'cc_uid',u.uid);location.reload();return}
+  clubAvIniciar();clubAvEn($('cuAv'),uid,localStorage.getItem('wm_name')||'',28);
   perfSincronizar(u);
  });
 }
@@ -10951,9 +10959,8 @@ function addSr(d){
  if(after!==before)toast((d>0?'¡Ascendiste a ':'Bajaste a ')+after+'!');
  updateHudBar();
 }
-/* ===== EXPERIENCIA DEL CLUB CAMPESTRE (la misma barra en todos los juegos) ===== */
-function xpTotal(){return (window.ClubXP&&ClubXP.ready())?ClubXP.total():0}
-function xpLevel(xp){const L=window.ClubXP?ClubXP.levelOf(xp):{l:1,xp:0,need:560};return{lv:L.l,base:xp-L.xp,need:L.need}}
+function xpTotal(){return +(localStorage.getItem('wm_xp')||0)}
+function xpLevel(xp){let lv=1,need=100,acc=0;while(xp>=acc+need){acc+=need;lv++;need=Math.round(need*1.35)}return{lv,base:acc,need}}
 function updateHudBar(){
  const n=($('nm').value||'').trim();
  $('hWarn').classList.toggle('hide',!!n);
@@ -10963,9 +10970,12 @@ function updateHudBar(){
  const lb=$('hlvl');if(lb)lb.textContent=L.lv;
  const sb=$('hsr');if(sb){const i=srInfo(mySr());sb.textContent=i.name+' '+i.sr;sb.style.setProperty('--c',i.col)}
 }
-function addXp(n,key){
- /* La XP va solo a la cuenta del Club Campestre (barra compartida). wm_xp queda congelado: solo se usa para migrar la XP vieja. */
- if(window.ClubXP)ClubXP.add(n,'worms',{key:key||('w'+Date.now())});
+function addXp(n){
+ const before=xpLevel(xpTotal()).lv;
+ localStorage.setItem('wm_xp',xpTotal()+n);
+ const after=xpLevel(xpTotal()).lv;
+ updateHudBar();
+ if(after>before)toast('¡Subiste al nivel '+after+'! 🎉');
 }
 function drawMenuWorms(){
  if($('home').classList.contains('hide')){if(!$('custom').classList.contains('hide'))cuPreview();return}
