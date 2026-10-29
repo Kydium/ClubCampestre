@@ -439,6 +439,10 @@ input.pts{width:92px;padding:10px;text-align:center;font-weight:700}
 .pinfo h4{margin:14px 0 8px;font-size:12px;letter-spacing:.08em;text-transform:uppercase;color:var(--mut)}
 .pinfo .stats{margin-top:0}
 .pinfo .plv{margin:0 4px}
+.av .cav{position:absolute;inset:0;border-radius:50%;overflow:hidden;z-index:1;display:flex;align-items:center;justify-content:center}
+.av .cav:empty{display:none}
+.av .cav img,.av .cav canvas{width:100%;height:100%;object-fit:cover;display:block}
+.av .cav>*{max-width:100%;max-height:100%}
 </style>
 </head>
 <body>
@@ -481,7 +485,7 @@ input.pts{width:92px;padding:10px;text-align:center;font-weight:700}
   <div class="sp"></div>
   <button class="btn ghost" id="bRanks">🏆 Clasificación</button>
   <div class="center mut" id="homeMsg" style="margin-top:16px;min-height:22px"></div>
-  <div class="center mut" style="font-size:11px;opacity:.6;margin-top:6px">versión 28-oct · XP por puesto 2</div>
+  <div class="center mut" style="font-size:11px;opacity:.6;margin-top:6px">versión 29-oct · avatares</div>
  </div></div>
 </section>
 
@@ -1105,7 +1109,47 @@ const openOv = id => $(id).classList.add('on');
 const closeOv = id => $(id).classList.remove('on');
 function hue(s){ let h = 0; for (const ch of String(s || '?')) h = (h * 31 + ch.charCodeAt(0)) % 360; return h; }
 const initial = n => esc((String(n || '?').trim().charAt(0) || '?').toUpperCase());
-function avHTML(name, cls, extra){ return `<div class="av ${cls || ''}" style="--h:${hue(name)}">${initial(name)}${extra || ''}</div>`; }
+// Foto de perfil compartida del Club Campestre (club-avatar.js). Solo cuentas; los invitados usan la inicial.
+const isAccId = id => !!id && !/^g[a-z0-9]{6,12}$/.test(id);
+function avAttr(uid, name){ return isAccId(uid) ? ` data-uid="${esc(uid)}" data-avn="${esc(name || '')}"` : ''; }
+function avHTML(name, cls, extra, uid){ return `<div class="av ${cls || ''}" style="--h:${hue(name)}"${avAttr(uid, name)}>${initial(name)}${extra || ''}</div>`; }
+let avReady = false, avQueued = false;
+function hydrateAv(){
+  avQueued = false;
+  if (!avReady || !window.ClubAvatar) return;
+  document.querySelectorAll('.av[data-uid]').forEach(el => {
+    const uid = el.dataset.uid, name = el.dataset.avn || '', key = uid + '|' + name;
+    if (el.dataset.avok === key && el.querySelector(':scope > .cav')) return;
+    el.dataset.avok = key;
+    let sp = el.querySelector(':scope > .cav');
+    if (!sp){ sp = document.createElement('span'); sp.className = 'cav'; el.appendChild(sp); }
+    try { ClubAvatar.render(uid, sp, {name, size:Math.round(el.offsetWidth || 44)}); } catch(e){ console.warn('avatar', e); }
+  });
+}
+function queueAv(){ if (!avQueued){ avQueued = true; requestAnimationFrame(hydrateAv); } }
+// Los avatares fijos (perfil y tu círculo abajo) se vuelven a armar solo si cambia el nombre o la cuenta
+function setAv(el, name, uid){
+  el.style.setProperty('--h', hue(name || '?'));
+  const want = isAccId(uid) ? uid : '';
+  if (el.dataset.k === want + '|' + name) return;
+  el.dataset.k = want + '|' + name;
+  el.textContent = (name || '?').charAt(0).toUpperCase();
+  delete el.dataset.avok;
+  if (want){ el.dataset.uid = want; el.dataset.avn = name || ''; } else { delete el.dataset.uid; delete el.dataset.avn; }
+  queueAv();
+}
+let avInitDone = false;
+function initAvatars(){
+  if (avInitDone || !db) return;
+  const go = () => {
+    if (avInitDone || !window.ClubAvatar) return;
+    avInitDone = true;
+    try { ClubAvatar.init({db:firebase.database()}); avReady = true; } catch(e){ console.warn('club-avatar', e); return; }
+    new MutationObserver(queueAv).observe(document.body, {childList:true, subtree:true});
+    queueAv();
+  };
+  if (window.ClubAvatar) go(); else loadScript('../club-avatar.js').then(go).catch(() => console.warn('club-avatar.js no encontrado'));
+}
 function lvHTML(xp){ return `<span class="lvb" title="Nivel">${levelOf(xp).l}</span>`; }
 // Rachas de victorias seguidas (solo dentro de la sala)
 const stkLv = n => n >= 5 ? 5 : n >= 2 ? n : 0;
@@ -1117,7 +1161,7 @@ function stkFX(n){
     : l === 5 ? '<i class="sp"></i><i class="sp"></i><i class="sp"></i>' : '';
   return `<i class="stk l${l}">${inner}</i><span class="stb l${l}">×${n}</span>`;
 }
-function avWrap(name, n, extra){ const l = stkLv(n); return `<div class="avw ${l ? 's' + l : ''}">${stkFX(n)}${extra || ''}${avHTML(name)}</div>`; }
+function avWrap(name, n, extra, uid){ const l = stkLv(n); return `<div class="avw ${l ? 's' + l : ''}">${stkFX(n)}${extra || ''}${avHTML(name, '', '', uid)}</div>`; }
 const winRate = (w, p) => p ? Math.round(100 * w / p) : 0;
 function fbErr(e){
   console.error(e);
@@ -1199,7 +1243,7 @@ function ensureName(){
 }
 function renderHome(){
   const L = levelOf(clubXpTotal());
-  const av = $('pAv'); av.style.setProperty('--h', hue(me.name || '?')); av.textContent = (me.name || '?').charAt(0).toUpperCase();
+  setAv($('pAv'), me.name, me.acc ? me.id : null);
   $('pName').textContent = me.name || 'Invitado';
   $('pAcc').textContent = me.acc ? 'cuenta' : 'invitado';
   $('pAcc').className = 'acc' + (me.acc ? '' : ' gu');
@@ -1534,7 +1578,7 @@ async function openRanks(){
     const medal = i => i === 0 ? '🥇' : i === 1 ? '🥈' : i === 2 ? '🥉' : (i + 1);
     box.innerHTML = rows.map((v, i) => {
       return `<div class="li ${v.id === me.id ? 'me' : ''}" style="animation-delay:${Math.min(i, 15) * 35}ms">
-        <div class="pos">${medal(i)}</div>${avHTML(v.name)}
+        <div class="pos">${medal(i)}</div>${avHTML(v.name, '', '', v.id)}
         <div class="lt"><b>${esc(v.name || '?')}${v.id === me.id ? ' (tú)' : ''}</b><small>${plural(v.wins || 0, 'victoria')} · ${plural(v.played || 0, 'partida')} · ${winRate(v.wins || 0, v.played || 0)}%</small></div>
         <div class="rk"><span class="mut" style="font-size:12px">Nivel</span>${lvHTML(v.gxp)}</div></div>`;
     }).join('');
@@ -1596,7 +1640,7 @@ function renderLobby(){
   $('lCount').textContent = `Jugadores (${ids.length}/${MAX_PLAYERS})`;
   $('lPlayers').innerHTML = ids.map(id => {
     const p = ps[id], on = !!pres[id], sk = (r.streak || {})[id] || 0, isNew = !view.lobbyKnown.has(id);
-    return `<div class="li ${id === me.id ? 'me' : ''}" style="${isNew ? '' : 'animation:none'}" data-pinfo="${id}">${avWrap(p.name, sk)}
+    return `<div class="li ${id === me.id ? 'me' : ''}" style="${isNew ? '' : 'animation:none'}" data-pinfo="${id}">${avWrap(p.name, sk, '', id)}
       <div class="lt"><b>${esc(p.name)}${id === me.id ? ' (tú)' : ''}</b><small>${sk >= 2 ? stkText(sk) : (on ? 'conectado' : 'desconectado')}</small></div>
       ${id === r.host ? '<span class="chip play">👑</span>' : ''}<span class="dot ${on ? '' : 'off'}" title="${on ? 'conectado' : 'desconectado'}"></span>
       ${isHost && id !== me.id ? `<button class="x" data-kick="${id}" title="Sacar">✕</button>` : ''}</div>`;
@@ -1694,7 +1738,7 @@ function renderSeats(){
     const bump = view.counts[id] != null && view.counts[id] !== n;
     view.counts[id] = n;
     return `<div class="seat ${playing && id === cur ? 'turn' : ''} ${off ? 'off' : ''}" data-seat="${id}" data-pinfo="${id}">
-      ${avWrap(name, (r.streak || {})[id] || 0, '<i class="ring"></i>')}<div class="cc ${bump ? 'bump' : ''}">${n}</div>
+      ${avWrap(name, (r.streak || {})[id] || 0, '<i class="ring"></i>', id)}<div class="cc ${bump ? 'bump' : ''}">${n}</div>
       <div class="fan">${Array.from({length:Math.min(n, 9)}, (_, i) => `<i style="--i:${i};--n:${Math.min(n, 9)}"></i>`).join('')}</div>
       <div class="nm">${esc(name)}</div>
       ${playing && n === 1 ? (isVulnUI(r, id, t) ? '<span class="last nov">¡NO AVISÓ!</span>' : '<span class="last">¡ÚLTIMA!</span>') : ''}${off ? '<span class="zz">💤</span>' : ''}</div>`;
@@ -1771,7 +1815,7 @@ function renderActs(){
   renderLastBtn();
   const el = elimOf(r);
   $('mName').textContent = me.name + (inGame ? ' · ' + myHand.length + (myHand.length === 1 ? ' carta' : ' cartas') + (el ? ' · tabla ' + ((r.pen || {})[me.id] || 0) + '/' + el : '') : ' · mirando');
-  const av = $('mAv'); av.style.setProperty('--h', hue(me.name)); av.textContent = (me.name || '?').charAt(0).toUpperCase();
+  setAv($('mAv'), me.name, me.acc ? me.id : null);
   const sk = (r.streak || {})[me.id] || 0, sig = stkLv(sk) + ':' + sk;
   if (view.meStk !== sig){ view.meStk = sig; const w = $('mAvW'); w.className = 'avw ' + (stkLv(sk) ? 's' + stkLv(sk) : ''); $('mStk').innerHTML = stkFX(sk); }
 }
@@ -1914,7 +1958,7 @@ function renderOverlays(){
     const sk = ids.map(id => id + ':' + arr(r.hands[id]).length).join();
     if (view.swapKey !== sk){
       view.swapKey = sk;
-      $('swapList').innerHTML = ids.map(id => `<div class="li" data-swap="${id}" style="cursor:pointer">${avHTML(nm(r, id))}
+      $('swapList').innerHTML = ids.map(id => `<div class="li" data-swap="${id}" style="cursor:pointer">${avHTML(nm(r, id), '', '', id)}
         <div class="lt"><b>${esc(nm(r, id))}</b><small>${arr(r.hands[id]).length} cartas</small></div><span class="chip">Cambiar</span></div>`).join('');
     }
     openOv('ovSwap');
@@ -1963,7 +2007,7 @@ function renderEnd(){
       const hp = res.hp ? res.hp[id] : null;
       const info = id === res.win ? (res.by === 'default' ? 'último en pie' : '¡sin cartas!') : hp == null ? ({afk:'sacado por no jugar ' + AFK_LIMIT + ' turnos', elim:'eliminado por puntos', mercy:'eliminado (sin piedad)'}[(r.outWhy || {})[id]] || 'abandonó la partida') : hp + ' pts en la mano';
       return `<div class="li ${id === me.id ? 'me' : ''}" style="animation-delay:${i * 90}ms">
-        <div class="medal">${['🥇','🥈','🥉'][i] || (i + 1)}</div>${avHTML(nm(r, id))}
+        <div class="medal">${['🥇','🥈','🥉'][i] || (i + 1)}</div>${avHTML(nm(r, id), '', '', id)}
         <div class="lt"><b>${esc(nm(r, id))}${id === me.id ? ' (tú)' : ''}</b><small>${info} · total ${(r.scores && r.scores[id]) || 0} pts</small></div>
         <div class="rk"><span class="dl up" data-to="${xpGain(res, id)}">+0 XP</span></div></div>`;
     }).join('');
@@ -2057,7 +2101,7 @@ async function openPlayer(id){
     const room1 = [tile(sk, 'Racha ahora'), tile((r.scores && r.scores[id]) || 0, 'Puntos en sala')];
     if (inGame && r.status === 'playing') room1.push(tile(arr(r.hands && r.hands[id]).length, 'Cartas'));
     if (el && r.pen && r.pen[id] != null) room1.push(tile((r.elimOut || {})[id] ? '💀' : r.pen[id] + '/' + el, 'Tabla'));
-    $('piBody').innerHTML = `<div class="ph">${avWrap(name, sk)}<div class="pn2">${esc(name)}${id === me.id ? ' (tú)' : ''}
+    $('piBody').innerHTML = `<div class="ph">${avWrap(name, sk, '', id)}<div class="pn2">${esc(name)}${id === me.id ? ' (tú)' : ''}
         <small>${id === r.host ? '👑 Anfitrión · ' : ''}${acc ? 'Cuenta' : 'Invitado'} · ${pres[id] || id === me.id ? 'conectado' : 'desconectado'}${sk >= 2 ? ' · ' + stkText(sk) : ''}</small></div></div>
       <h4>Nivel</h4>
       ${acc ? (gxp == null ? '<div class="mut center">Cargando…</div>' : `<div class="plv"><span class="xlv">${L.l}</span><div class="xtrack"><div class="xfill" style="width:${Math.round(L.xp / L.need * 100)}%"></div><div class="xseg"></div></div><span class="xlv nx">${L.l + 1}</span></div>
@@ -2468,7 +2512,7 @@ function wire(){
     me.name = e.target.value.replace(/\s+/g, ' ').trim().slice(0, 14);
     LS.set('ult_name', me.name);
     $('pName').textContent = me.name || 'Invitado';
-    const av = $('pAv'); av.textContent = (me.name || '?').charAt(0).toUpperCase(); av.style.setProperty('--h', hue(me.name || '?'));
+    setAv($('pAv'), me.name, null);
   });
   $('bLogin').onclick = () => { $('lgErr').textContent = ''; openOv('ovLogin'); setTimeout(() => $('lgUser').focus(), 250); };
   $('bLgGo').onclick = doLogin;
@@ -2497,14 +2541,15 @@ function wire(){
 async function startAuth(){
   try {
     if (!firebase.auth) await loadScript((loadFirebase.base || 'https://cdn.jsdelivr.net/npm/firebase@9.23.0/') + 'firebase-auth-compat.js');
-    if (!firebase.auth) return;
+    if (!firebase.auth){ initAvatars(); return; }
     fauth = firebase.auth();
     renderHome();
     fauth.onAuthStateChanged(u => {
+      initAvatars();   // ya se sabe si hay cuenta: se cargan las fotos del Club Campestre
       if (code) return;
       if ((u ? u.uid : null) !== (me.acc ? me.id : null)) setIdentity(u);
     });
-  } catch(e){ console.warn('cuenta no disponible', e); fauth = null; renderHome(); }
+  } catch(e){ console.warn('cuenta no disponible', e); fauth = null; renderHome(); initAvatars(); }
 }
 
 // ============ MEDIDOR DE CONEXIÓN (ida y vuelta a Firebase) ============
