@@ -11,6 +11,7 @@
 <script src="https://cdn.jsdelivr.net/npm/firebase@9.23.0/firebase-database-compat.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/firebase@9.23.0/firebase-auth-compat.js"></script>
 <script src="../club-xp.js"></script>
+<script src="../club-avatar.js"></script>
 <style>
 :root{
   --felt:#0e2620; --felt2:#143429; --felt3:#1b4235; --line:#24503f;
@@ -84,6 +85,8 @@ input:focus{border-color:var(--gold)}
 .code .h{font-size:.8rem;color:var(--ink2)}
 .plist{display:flex;flex-direction:column;gap:6px}
 .pl{display:flex;align-items:center;gap:10px;background:var(--felt);border-radius:12px;padding:10px 12px}
+.av.sm{width:28px;height:28px;font-size:.8rem}
+.wn{display:inline-flex;align-items:center;gap:8px}
 .av{width:34px;height:34px;border-radius:50%;display:grid;place-items:center;font-weight:700;color:var(--ink);background:var(--cream2);flex-shrink:0}
 .pl .n{flex:1;font-weight:600}
 .dot{width:8px;height:8px;border-radius:50%;background:var(--cG)}
@@ -433,7 +436,7 @@ td.r,th.r{text-align:right}
 
 <div class="ov" id="ov"><div class="in">
   <div class="ball bO" style="width:80px;height:80px;margin:0 auto 12px;font-size:2rem" id="ovBall"><span>🏆</span></div>
-  <h2 id="ovT">¡Bingo!</h2><div class="vgrid" id="ovG"></div><div id="ovV"></div><p id="ovS"></p>
+  <div id="ovAv" style="display:flex;justify-content:center;margin-bottom:6px"></div><h2 id="ovT">¡Bingo!</h2><div class="vgrid" id="ovG"></div><div id="ovV"></div><p id="ovS"></p>
   <button class="btn btn-gold" onclick="$('ov').classList.remove('on')">Seguir</button>
 </div></div>
 <div id="toast"></div>
@@ -462,9 +465,13 @@ try{
     if(u.uid!==ACCT_UID){ localStorage.setItem('cc_uid',u.uid); location.reload() }
   });
   if(window.ClubXP && ACCT_UID) ClubXP.init({db, uid:ACCT_UID, game:'bingo', legacy:0});
+  if(window.ClubAvatar && ACCT_UID) ClubAvatar.init({db});
 }catch(e){}
 
 /* ===== helpers ===== */
+// Avatar del Club: pinta la foto de cada cuenta en los .av[data-uid]; sin cuenta queda la inicial
+function paintAvatars(root,size){if(!window.ClubAvatar||!root)return;root.querySelectorAll('[data-uid]').forEach(el=>{const u=el.dataset.uid;if(u)ClubAvatar.render(u,el,{name:el.dataset.name||'',size:size||34,shape:'circle'})})}
+const avHtml=(p,cls='av')=>`<div class="${cls}"${p&&p.uid?` data-uid="${esc(p.uid)}" data-name="${esc(p.name)}"`:''}>${esc((p&&p.name||'?')[0]).toUpperCase()}</div>`;
 const $ = id => document.getElementById(id);
 const L = n => n<=15?'B':n<=30?'I':n<=45?'N':n<=60?'G':'O';
 const esc = s => String(s??'').replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
@@ -515,7 +522,7 @@ async function createRoom(){
   let code;do{code=Math.random().toString(36).slice(2,8).toUpperCase().replace(/[01OI]/g,'X')}while((await db.ref('rooms/'+code+'/host').once('value')).exists());
   const last={max:4,...(JSON.parse(localStorage.getItem('ba_settings')||'null')||{cur:'S/',fee:10,p1:60,p2:30})};
   await db.ref('rooms/'+code).set({host:PID,status:'waiting',created:Date.now(),lastActive:Date.now(),settings:last,
-    players:{[PID]:{name,n:1,cards:[newCard()],online:true}}});
+    players:{[PID]:{name,uid:ACCT_UID,n:1,cards:[newCard()],online:true}}});
   enter(code);
 }
 async function joinRoom(){
@@ -525,7 +532,7 @@ async function joinRoom(){
   if(!s.exists())return toast('Esa sala no existe');
   const r=s.val();
   if(r.status==='playing'&&!(r.players&&r.players[PID]))return toast('La partida ya empezó, espera la siguiente');
-  await db.ref(`rooms/${code}/players/${PID}`).update({name,online:true,...(r.players&&r.players[PID]?{}:{n:1,ready:false,...(r.status==='waiting'?{cards:[newCard()]}:{})})});
+  await db.ref(`rooms/${code}/players/${PID}`).update({name,uid:ACCT_UID,online:true,...(r.players&&r.players[PID]?{}:{n:1,ready:false,...(r.status==='waiting'?{cards:[newCard()]}:{})})});
   enter(code);
 }
 function enter(code){
@@ -568,7 +575,7 @@ function renderLobby(){
   if(document.activeElement.closest?.('#lSettings')==null){$('sFee').value=st.fee;$('sMax').value=st.max||4;$('sP1').value=st.p1;$('sP2').value=st.p2}
   const ps=Object.entries(R.players||{});
   $('lCount').textContent=ps.length+(ps.length===1?' jugador':' jugadores');
-  $('lPlayers').innerHTML=ps.map(([id,p])=>`<div class="pl"><div class="av">${esc(p.name[0]).toUpperCase()}</div><div class="n">${esc(p.name)}${id===PID?' <span class="small">(tú)</span>':''}</div><span class="cnt">${nOf(p)} cart.</span>${id===R.host?'<span class="chip">Anfitrión</span>':''}<span class="dot ${p.online?'':'off'}"></span></div>`).join('');
+  $('lPlayers').innerHTML=ps.map(([id,p])=>`<div class="pl">${avHtml(p)}<div class="n">${esc(p.name)}${id===PID?' <span class="small">(tú)</span>':''}</div><span class="cnt">${nOf(p)} cart.</span>${id===R.host?'<span class="chip">Anfitrión</span>':''}<span class="dot ${p.online?'':'off'}"></span></div>`).join('');paintAvatars($('lPlayers'));
   renderSplit(st);
   $('lPot').innerHTML=potHtml(st,totalCards());
   renderMyN();
@@ -617,7 +624,7 @@ function renderPick(){
   const csig=chosen.map(sig).join('|')+'#'+need;
   if(csig!==lastCSig){lastCSig=csig;$('pkChosen').innerHTML=chosen.map((c,i)=>`<button class="${sig(c)===freshSig?'fresh':''}" onclick="unpick(${i})" aria-label="Devolver cartilla">${miniCard(c)}</button>`).join('')+Array.from({length:Math.max(0,need-chosen.length)},()=>'<div class="empty">Libre</div>').join('');}
   $('pkPlayers').innerHTML=Object.entries(R.players).map(([id,p])=>{const c=cardsOf(p).length,n=nOf(p);
-    return `<div class="pl"><div class="av">${esc(p.name[0]).toUpperCase()}</div><div class="n">${esc(p.name)}${id===PID?' <span class="small">(tú)</span>':''}</div><span class="cnt" style="${p.ready?'background:var(--cG);color:#fff':''}">${p.ready?'Listo ✓':`Eligiendo ${c}/${n}`}</span></div>`}).join('');
+    return `<div class="pl">${avHtml(p)}<div class="n">${esc(p.name)}${id===PID?' <span class="small">(tú)</span>':''}</div><span class="cnt" style="${p.ready?'background:var(--cG);color:#fff':''}">${p.ready?'Listo ✓':`Eligiendo ${c}/${n}`}</span></div>`}).join('');paintAvatars($('pkPlayers'));
   const host=isHost(),allReady=Object.values(R.players).every(p=>p.ready);
   $('pkStart').style.display=host?'':'none';
   $('pkStart').textContent=allReady?'Comenzar partida':'Comenzar (al azar para los que falten)';
@@ -716,7 +723,7 @@ function renderGame(){
   $('board').innerHTML=['B','I','N','G','O'].map((l,r)=>`<div class="L" style="color:var(--c${l==='N'?'N':l})">${l}</div>`+Array.from({length:15},(_,k)=>{const n=r*15+k+1;return `<div class="n${set.has(n)?' c':''}">${n}</div>`}).join('')).join('');
   // jugadores
   $('gPlayers').innerHTML=Object.entries(R.players).map(([id,p])=>{const b=W.first&&W.first.pid===id?'🥇':W.second&&W.second.pid===id?'🥈':'';
-    return `<div class="pl"><div class="av">${esc(p.name[0]).toUpperCase()}</div><div class="n">${esc(p.name)}${id===PID?' <span class="small">(tú)</span>':''}</div><span class="cnt">${nOf(p)} cart.</span><span>${b}</span><span class="dot ${p.online?'':'off'}"></span></div>`}).join('');
+    return `<div class="pl">${avHtml(p)}<div class="n">${esc(p.name)}${id===PID?' <span class="small">(tú)</span>':''}</div><span class="cnt">${nOf(p)} cart.</span><span>${b}</span><span class="dot ${p.online?'':'off'}"></span></div>`}).join('');paintAvatars($('gPlayers'));
   const n=totalCards();
   $('gp3').innerHTML=potHtml(R.settings,n)+(W.first?`<div class="kv"><span>🥇 ${esc(W.first.name)}</span><b class="gold">Ganó</b></div>`:'')+(W.second?`<div class="kv"><span>🥈 ${esc(W.second.name)}</span><b>Ganó</b></div>`:'');
   // aviso de ganador con verificación
@@ -728,6 +735,7 @@ const SHOWN=new Set();let SHOWN_KEY='';
 function verify(w,pl,n){
   const mine=w.pid===PID,card=arr(w.card),line=new Set(arr(w.line)),marks=new Set(arr(w.marks)),called=new Set(arr(R.called));
   horn();if(navigator.vibrate)navigator.vibrate([80,60,80]);
+  $('ovAv').innerHTML=w.uid?avHtml(w):'';paintAvatars($('ovAv'),56);
   $('ovT').textContent=mine?'¡BINGO!':`¡${w.name} cantó BINGO!`;$('ovV').textContent='Verificando…';$('ovV').style.color='var(--ink2)';
   $('ovS').textContent='';$('ov').classList.add('on');
   $('ovG').innerHTML=card.map((x,i)=>`<div id="v${i}" class="${marks.has(i)||x===0?'mk':''}${line.has(i)?' line':''}">${x||'★'}</div>`).join('');
@@ -770,7 +778,7 @@ async function claim(){
   const wline=analyze(wc,markedNums(wi,wc,true),R.settings.mode).win,wmarks=[...(MARKS[wi]||[])];
   const res=await db.ref(`rooms/${ROOM}/winners`).transaction(w=>{w=w||{};
     if((w.first&&w.first.pid===PID)||(w.second&&w.second.pid===PID))return;
-    if(!w.first){w.first={pid:PID,name,at:Date.now(),card:wc,line:wline,marks:wmarks};place=1}else if(!w.second){w.second={pid:PID,name,at:Date.now(),card:wc,line:wline,marks:wmarks};place=2}else return;return w});
+    if(!w.first){w.first={pid:PID,uid:ACCT_UID,name,at:Date.now(),card:wc,line:wline,marks:wmarks};place=1}else if(!w.second){w.second={pid:PID,uid:ACCT_UID,name,at:Date.now(),card:wc,line:wline,marks:wmarks};place=2}else return;return w});
   if(!res.committed)return toast('Ya hay dos ganadores');
   if(place===2){confetti();await finishRoom()}
   else if(Object.keys(R.players).length<3){await finishRoom()} // con 1-2 jugadores basta un ganador
@@ -785,7 +793,8 @@ function renderEnd(){
   const s=R.settings,W=R.winners||{},entries=Object.values(R.players).map(p=>({name:p.name,n:nOf(p)})),n=totalCards(),pot=n*s.fee;
   const a1=W.first?pot*s.p1/100:0,a2=W.second?pot*s.p2/100:0,house=pot-a1-a2;
   $('eSub').textContent=`${arr(R.called).length} bolas · ${entries.length} jugadores · ${n} cartillas`;
-  $('ePodium').innerHTML=`<div class="kv"><span>🥇 ${W.first?esc(W.first.name):'Sin ganador'}</span><b class="gold">${money(s.cur,a1)}</b></div><div class="kv"><span>🥈 ${W.second?esc(W.second.name):'Sin ganador'}</span><b>${money(s.cur,a2)}</b></div>`;
+  const wav=w=>w?avHtml(w,'av sm'):'';
+  $('ePodium').innerHTML=`<div class="kv"><span class="wn">🥇 ${wav(W.first)}${W.first?esc(W.first.name):'Sin ganador'}</span><b class="gold">${money(s.cur,a1)}</b></div><div class="kv"><span class="wn">🥈 ${wav(W.second)}${W.second?esc(W.second.name):'Sin ganador'}</span><b>${money(s.cur,a2)}</b></div>`;paintAvatars($('ePodium'),28);
   $('ePot').innerHTML=`<div class="kv"><span>Pozo total</span><b>${money(s.cur,pot)}</b></div><div class="kv"><span>Organizador${!W.second||!W.first?' (incluye premios sin ganador)':''}</span><b>${money(s.cur,house)}</b></div>`;
   $('btnAgain').style.display=isHost()?'':'none';
   // ⭐ Experiencia: 25 por jugar, +75 si ganas el 1.er lugar, +40 el 2.º
