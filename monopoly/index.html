@@ -18,6 +18,7 @@
 <script defer src="https://cdn.jsdelivr.net/npm/firebase@9.22.2/firebase-database-compat.js"></script>
 <script defer src="https://cdn.jsdelivr.net/npm/firebase@9.22.2/firebase-auth-compat.js"></script>
 <script defer src="../club-xp.js"></script>
+<script defer src="../club-avatar.js"></script>
 <style>
 *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
 :root{--fh:"Lilita One","Trebuchet MS","Segoe UI",system-ui,sans-serif}
@@ -1399,6 +1400,114 @@ a.chip.clubb:active{transform:translateY(2px);box-shadow:0 1px 0 #0a1b55}
 .bub small{display:block;font-size:10px;font-weight:800;color:var(--c,#2150c4);margin-bottom:1px}
 @keyframes bubIn{0%{transform:scale(.2);opacity:0}100%{transform:scale(1);opacity:1}}
 @keyframes bubOut{to{opacity:0;transform:translateY(-8px) scale(.95)}}
+
+/* v3.42 números de distancia: medio óvalo arriba de la casilla */
+.dnb{position:absolute;pointer-events:none;transform:translate(-50%,-100%);z-index:2}
+.dni{width:100%;height:100%;box-sizing:border-box;border-radius:50% 50% 0 0/100% 100% 0 0;background:linear-gradient(#4a66dd,#0f1f5c);border:calc(var(--u)*.4) solid var(--c);border-bottom:0;color:#fff;font-family:var(--fh);font-size:calc(var(--u)*3);line-height:1;display:flex;align-items:flex-end;justify-content:center;padding-bottom:calc(var(--u)*.15);text-shadow:0 1px 0 #000;box-shadow:0 calc(var(--u)*-.25) calc(var(--u)*1.1) var(--c);transform-origin:50% 100%}
+.dnb.fresh .dni{animation:dnbin .45s cubic-bezier(.3,1.7,.5,1) both;animation-delay:calc(var(--k)*45ms)}
+@keyframes dnbin{0%{transform:translateY(60%) scale(.3,.05);opacity:0}100%{transform:none;opacity:1}}
+.dnb.lk8 .dni{background:linear-gradient(#e8a23a,#6b3b00);border-color:#ffe066;color:#fff3b8;box-shadow:0 calc(var(--u)*-.25) calc(var(--u)*1.4) #ffd34d}
+.dnb.no1 .dni{opacity:.6}
+.dnb.hit{z-index:4}
+.dnb.hit .dni{background:linear-gradient(#ffe066,#ff9f1c);color:#4a2700;border-color:#fff;animation:none;box-shadow:0 0 calc(var(--u)*2.4) #ffd34d}
+@keyframes dnbhit{50%{transform:scale(1.3)}}
+.dnb.dim .dni{animation:dnbout .4s ease-in both}
+@keyframes dnbout{0%{transform:none;opacity:1}100%{transform:translateY(70%) scale(.3,.05);opacity:0}}
+.dnb.gone .dni{opacity:0}
+
+/* v3.44 orientación según el lado de la franja de color */
+.dnb.dqb{transform:translate(-50%,-100%)}
+.dnb.dqt{transform:translate(-50%,0)}
+.dnb.dqt .dni{border-radius:0 0 50% 50%/0 0 100% 100%;border:calc(var(--u)*.4) solid var(--c);border-top:0;align-items:flex-start;padding:calc(var(--u)*.15) 0 0;transform-origin:50% 0;box-shadow:0 calc(var(--u)*.25) calc(var(--u)*1.1) var(--c)}
+.dnb.dql{transform:translate(0,-50%)}
+.dnb.dql .dni{border-radius:0 100% 100% 0/0 50% 50% 0;border:calc(var(--u)*.4) solid var(--c);border-left:0;align-items:center;justify-content:flex-start;padding:0 0 0 calc(var(--u)*.5);transform-origin:0 50%;box-shadow:calc(var(--u)*.25) 0 calc(var(--u)*1.1) var(--c)}
+.dnb.dqr{transform:translate(-100%,-50%)}
+.dnb.dqr .dni{border-radius:100% 0 0 100%/50% 0 0 50%;border:calc(var(--u)*.4) solid var(--c);border-right:0;align-items:center;justify-content:flex-end;padding:0 calc(var(--u)*.5) 0 0;transform-origin:100% 50%;box-shadow:calc(var(--u)*-.25) 0 calc(var(--u)*1.1) var(--c)}
+.dnb.dql.fresh .dni,.dnb.dqr.fresh .dni{animation-name:dnbinH}
+.dnb.dqt.fresh .dni{animation-name:dnbinT}
+@keyframes dnbinT{0%{transform:translateY(-60%) scale(.3,.05);opacity:0}100%{transform:none;opacity:1}}
+@keyframes dnbinH{0%{transform:scale(.05,.3);opacity:0}100%{transform:none;opacity:1}}
+.dnb.dql.dim .dni,.dnb.dqr.dim .dni{animation-name:dnboutH}
+.dnb.dqt.dim .dni{animation-name:dnboutT}
+@keyframes dnboutT{0%{transform:none;opacity:1}100%{transform:translateY(-70%) scale(.3,.05);opacity:0}}
+@keyframes dnboutH{0%{transform:none;opacity:1}100%{transform:scale(.05,.3);opacity:0}}
+.dnb.hit .dni{animation:none!important}
+.dn.hit{animation:none!important}
+.dn.lk8{background:radial-gradient(circle at 35% 30%,#3b55c9,#0f1f5c 70%)}
+
+/* v3.49 cámara: vista en perspectiva, seguimiento suave, fichas y números parados */
+.cam #board{transition:none!important;transform-style:preserve-3d}
+.cam #tkl,.cam #owl,.cam .tok{transform-style:preserve-3d}
+.cam #stage{height:calc(var(--u)*90);overflow:hidden;border-radius:calc(var(--u)*3);background:radial-gradient(120% 95% at 50% 42%,#1b4f8f55 0,#0b244d33 62%,#06143055 100%);box-shadow:inset 0 0 0 1px #ffffff1c,inset 0 calc(var(--u)*1) calc(var(--u)*5) #0006}
+.cam .tok span{transform:rotateZ(var(--cz,0deg)) rotateX(var(--cs,0deg));transform-origin:50% 100%}
+.cam .tok.cur span{animation:none}
+.cam .tok{transition:left .36s linear,top .36s linear}
+.cam .tok.hop span{animation:camhop .36s ease-out!important}
+@keyframes camhop{50%{transform:rotateZ(var(--cz,0deg)) rotateX(var(--cs,0deg)) translateY(calc(var(--u)*-2.6)) scaleY(1.1)}}
+/* números parados: salen de la misma franja de color de la carta y miran a la cámara */
+.dnb.stand{display:none;position:absolute;width:0;height:0;transform:none;pointer-events:none;z-index:auto}
+.cam3d .dnb.stand{display:block}
+.bfb{display:none}
+.cam3d .bfb{display:block;position:absolute;inset:calc(var(--u)*-1.5);border-radius:calc(var(--u)*3.9);background:linear-gradient(#0a4a33,#052b1e);transform:translateZ(calc(var(--u)*-3.6));box-shadow:0 0 calc(var(--u)*3) calc(var(--u)*.8) #000b;pointer-events:none}
+.cam3d #board{box-shadow:none}
+/* el giro de la mesa cambia --cz en cada cuadro: solo lo heredan las capas que lo usan (fichas, números y la ayuda de los dados); el resto del tablero no recalcula estilos */
+.cam3d #board>*{--cz:0deg;--cs:0deg}
+.cam3d #board>#tkl,.cam3d #board>#owl,.cam3d #board>#ctr{--cz:inherit;--cs:inherit}
+.cam3d .thint{top:50%;bottom:auto;transform:translate(-50%,-50%) rotate(var(--cz,0deg)) translateY(calc(var(--u)*8.4))}
+.cam3d .cop{transform:translate(-50%,-70%) rotateZ(var(--cz,0deg)) rotateX(var(--cs,0deg))}
+.cam3d .dnb.edge,.cam3d .dn{display:none}
+.dnb.stand.dim,.dnb.stand.gone{display:none!important}
+.dnb.stand .dnf{position:absolute;left:calc(var(--u)*-3.4);top:calc(var(--u)*-.9);width:calc(var(--u)*6.8);height:calc(var(--u)*1.9);border-radius:50%;background:var(--c);border:calc(var(--u)*.25) solid #fff;box-shadow:0 calc(var(--u)*.4) calc(var(--u)*.6) #000a}
+.dnb.stand .dns{position:absolute;left:calc(var(--u)*-3.4);top:calc(var(--u)*-5.4);width:calc(var(--u)*6.8);height:calc(var(--u)*5.4);transform-origin:50% 100%;transform:rotateZ(var(--cz,0deg)) rotateX(var(--cs,0deg))}
+.dnb.stand .dni{font-size:calc(var(--u)*3.8);padding-bottom:calc(var(--u)*.3);animation:dnsIn .3s ease-out backwards}
+.cam3d .dnb.stand.hit .dni{animation:dnsIn .3s ease-out backwards!important}
+@keyframes dnsIn{from{opacity:0}to{opacity:1}}
+.dnb.stand.circ .dns{left:calc(var(--u)*-2.7);width:calc(var(--u)*5.4)}
+.dnb.stand.circ .dni{border-radius:50%;border:calc(var(--u)*.45) solid var(--c);align-items:center;padding:0}
+
+/* ===== v3.51 estilo Monopoly Plus ===== */
+.bgs{display:none}
+.cam3d .bgs{display:block;position:absolute;left:-30%;width:160%;top:0;height:300%;pointer-events:none;will-change:transform;
+  background:linear-gradient(180deg,#4fa8ee 0,#8fcdfa 20%,#cfeeff 31%,#eaf8ff 33.1%,#46b0d8 33.4%,#2b86c6 36%,#86cf6e 36.3%,#4c9d45 52%,#2f7436 100%)}
+.cam3d .bgs i{position:absolute;display:block;bottom:66.6%;border-radius:calc(var(--u)*.6) calc(var(--u)*.6) 0 0;filter:blur(calc(var(--u)*.45));opacity:.92}
+.cam3d .bgs i:nth-child(1){left:8%;width:6%;height:5.8%;background:linear-gradient(#a3849a,#7b5f74)}
+.cam3d .bgs i:nth-child(2){left:15%;width:4.5%;height:9.4%;background:linear-gradient(#b99089,#8f6c6c)}
+.cam3d .bgs i:nth-child(3){left:41%;width:5%;height:4.3%;background:linear-gradient(#7aa585,#527e5f)}
+.cam3d .bgs i:nth-child(4){left:66%;width:7%;height:11.5%;background:linear-gradient(#9482b0,#6d5c90)}
+.cam3d .bgs i:nth-child(5){left:75%;width:5%;height:6.1%;background:linear-gradient(#c9a085,#a3806a)}
+.cam3d .bgs i:nth-child(6){left:87%;width:4%;height:13.3%;background:linear-gradient(#8ba0c4,#6479a0)}
+.cam #stage{background:#2b6a3a}
+.av{margin-right:4px;vertical-align:middle;flex:0 0 auto}
+.pk .ph .av{margin-right:0}
+#emoL .m b .av{margin-right:5px}
+.tp3i .a .av{vertical-align:-4px}
+.hd .av{vertical-align:middle}
+.tchip{max-width:176px}.tchip .av{margin-right:0}
+.cam3d .tok span{font-size:calc(var(--u)*5.6);left:calc(var(--u)*-3.2);top:calc(var(--u)*-6.8);width:calc(var(--u)*6.4)}
+.cam3d .tok b{left:calc(var(--u)*-2.8);top:calc(var(--u)*-.9);width:calc(var(--u)*5.6);height:calc(var(--u)*2.3)}
+.cam3d .tok.cur b{box-shadow:0 0 calc(var(--u)*2.8) calc(var(--u)*1.3) var(--c),0 calc(var(--u)*.4) calc(var(--u)*.6) #000a}
+/* carteles de número: altos, parados al borde, con el ícono de la casilla abajo */
+.dnb.stand .dns{left:calc(var(--u)*-3.3);top:calc(var(--u)*-13);width:calc(var(--u)*6.6);height:calc(var(--u)*13)}
+.dnb.stand .dni,.dnb.stand.circ .dni{border-radius:calc(var(--u)*1.1);border:calc(var(--u)*.45) solid #ffffffb0;background:var(--c);background:linear-gradient(180deg,color-mix(in srgb,var(--c) 80%,#fff),var(--c) 55%,color-mix(in srgb,var(--c) 72%,#000));flex-direction:column;align-items:center;justify-content:flex-start;padding:calc(var(--u)*1) 0 0;font-size:calc(var(--u)*5);box-shadow:0 0 calc(var(--u)*1.2) #0009,inset 0 0 calc(var(--u)*1.6) #fff6;text-shadow:0 calc(var(--u)*.2) calc(var(--u)*.3) #0008}
+.dnb.stand.circ .dns{left:calc(var(--u)*-3.3);width:calc(var(--u)*6.6)}
+.dnb.stand .dnf{opacity:.55}
+.cam .dnb.stand{transform-style:preserve-3d}
+.dnx{display:block;width:62%;height:calc(var(--u)*2.4);margin-top:auto;margin-bottom:calc(var(--u)*1.3);border-radius:calc(var(--u)*.5);box-shadow:inset 0 0 0 calc(var(--u)*.2) #0005}
+.dnx.e{width:auto;height:auto;background:none;box-shadow:none;font-size:calc(var(--u)*3.6);line-height:1;filter:drop-shadow(0 calc(var(--u)*.2) calc(var(--u)*.2) #0008)}
+.dnb.stand.hit .dni{background:linear-gradient(#ffe066,#ff9f1c);color:#4a2700;border-color:#fff}
+/* dados grandes en pantalla */
+#dvo{position:absolute;left:0;right:0;top:calc(var(--u)*24);z-index:30;pointer-events:none;display:flex;flex-direction:column;align-items:center;transition:opacity .4s}
+#dvo.out{opacity:0}
+.dvb{position:absolute;left:50%;top:50%;width:calc(var(--u)*80);height:calc(var(--u)*50);transform:translate(-50%,-55%);background:radial-gradient(closest-side,#fff7 0,#fff0 100%);animation:dvbIn .5s ease-out both}
+#dvo.dbl .dvb{background:radial-gradient(closest-side,#ffe94dee 0,#ffd22e88 45%,#ffd22e00 100%);width:calc(var(--u)*110);height:calc(var(--u)*70)}
+@keyframes dvbIn{from{transform:translate(-50%,-55%) scale(.2);opacity:0}to{transform:translate(-50%,-55%) scale(1);opacity:1}}
+.dvr{position:relative;display:flex;gap:calc(var(--u)*6);animation:dvPop .45s cubic-bezier(.3,1.6,.5,1) both}
+@keyframes dvPop{from{transform:scale(.3) rotate(-25deg);opacity:0}to{transform:none;opacity:1}}
+.dvd{width:calc(var(--u)*19);height:calc(var(--u)*19);border-radius:22%;background:linear-gradient(145deg,#f4c27a,#c98a3c);display:grid;grid-template:repeat(3,1fr)/repeat(3,1fr);padding:calc(var(--u)*2.2);box-sizing:border-box;box-shadow:0 calc(var(--u)*1.2) calc(var(--u)*2.4) #0008,inset 0 0 0 calc(var(--u)*.5) #ffe7b8aa,0 0 0 calc(var(--u)*.9) #fff9}
+.dvd:nth-child(2){transform:rotate(7deg)}.dvd:nth-child(1){transform:rotate(-6deg)}
+.dvd i{border-radius:50%;margin:16%}
+.dvd i.on{background:radial-gradient(circle at 35% 30%,#4a3319,#140a02);box-shadow:inset 0 calc(var(--u)*.3) calc(var(--u)*.5) #000}
+.dvt{position:relative;margin-top:calc(var(--u)*-6);font-family:var(--fh);font-size:calc(var(--u)*14);line-height:1;letter-spacing:.04em;color:#ffd21f;-webkit-text-stroke:calc(var(--u)*.8) #4a2a00;paint-order:stroke fill;text-shadow:0 calc(var(--u)*1) 0 #7a4300,0 calc(var(--u)*1.6) calc(var(--u)*2) #0009;animation:dvPop .5s .1s cubic-bezier(.3,1.7,.5,1) both}
 </style>
 </head>
 <body>
@@ -1410,7 +1519,7 @@ a.chip.clubb:active{transform:translateY(2px);box-shadow:0 1px 0 #0a1b55}
     <div class="bt-msg" id="btm">Cargando juego…</div>
     <div class="bt-tip" id="btt"></div>
     <button class="bt-retry" id="btr" onclick="location.reload()">🔄 Reintentar</button>
-    <div class="bt-ver">v3.41.0</div>
+    <div class="bt-ver">v3.48.0</div>
   </div>
 </div>
 <script>
@@ -1495,7 +1604,7 @@ window.BOOT=(function(){
 <button id="emoB" type="button" aria-label="Reacciones y chat">😊<span class="bd" id="emoBd"></span></button>
 <script>
 'use strict';
-const VERSION='3.41.0';
+const VERSION='3.52.0';
 /* Firebase (mismo proyecto que Wolvevilles). Los datos van en el nodo "monopoly/" */
 const FBCFG={apiKey:"AIzaSyBfrs6B-j22O67pnUb5DYq5CevrIg0dtEs",authDomain:"project-349e4491-0828-4f64-bb5.firebaseapp.com",databaseURL:"https://project-349e4491-0828-4f64-bb5-default-rtdb.firebaseio.com",projectId:"project-349e4491-0828-4f64-bb5",storageBucket:"project-349e4491-0828-4f64-bb5.firebasestorage.app",messagingSenderId:"180444249462",appId:"1:180444249462:web:bdf189d171d908a0274e57"};
 
@@ -1606,15 +1715,16 @@ const monopoly=(S,pid,g)=>GR[g].every(i=>S.owner[i]===pid);
 const ownedCount=(S,pid,g)=>GR[g].filter(i=>S.owner[i]===pid).length;
 function supply(S){let hs=0,ht=0;Object.keys(S.houses).forEach(k=>{const h=S.houses[k];if(h===5)ht++;else hs+=h;});return{hs,ht};}
 
-function newState(hid,name,dev){
+function newState(hid,name,dev,au){
   const S={v:VERSION,phase:'lobby',host:hid,cash:1500,players:[],owner:{},houses:{},mort:{},turn:0,sub:'roll',dice:[1,1],doubles:0,debt:null,auction:null,trade:null,pendMove:null,deckC:[],deckH:[],log:[],ln:0,n:0,rollId:0,winner:null};
-  addPlayer(S,hid,name,dev);return S;
+  addPlayer(S,hid,name,dev,au);return S;
 }
-function addPlayer(S,id,name,dev){
+function addPlayer(S,id,name,dev,au){
   const used=S.players.map(p=>p.tk);const k=TOKS.findIndex(x=>!used.includes(x.e));
   const taken=new Set();S.players.forEach(p=>{if(p.sl!==undefined)taken.add(p.sl);else{const q=SLOTS.findIndex(x=>x.c===p.col);if(q>=0)taken.add(q);}});   /* en salas viejas se respeta el color que ya tenían */
   let sl=0;while(taken.has(sl)&&sl<5)sl++;
   const o={id,name,tk:TOKS[k].e,sl,col:SLOTS[sl].c,money:0,pos:0,jail:0,jc:[],bankrupt:false};
+  if(au)o.au=String(au).slice(0,60);
   if(dev)o.dev=String(dev).slice(0,24);      /* identificador del dispositivo: lo que realmente te identifica */
   S.players.push(o);
 }
@@ -1878,10 +1988,10 @@ function reduce(S,a){
     if(!nm)return'Escribe tu nombre';
     if(a.dev&&S.players.some(p=>p.dev===a.dev))return'Ya estás en esta sala desde este dispositivo';
     const un=uniqueName(S,nm);
-    addPlayer(S,by,un,a.dev);LOG(S,`${un} se unió a la sala`);return true;
+    addPlayer(S,by,un,a.dev,a.au);LOG(S,`${un} se unió a la sala`);return true;
   }
   const me=P(S,by);if(!me)return'No estás en la sala';
-  if(a.t==='bind'){if(!me.dev&&a.dev)me.dev=String(a.dev).slice(0,24);return true;}
+  if(a.t==='bind'){if(!me.dev&&a.dev)me.dev=String(a.dev).slice(0,24);if(a.au&&me.au!==a.au)me.au=String(a.au).slice(0,60);return true;}
   const host=by===S.host,play=S.phase==='play',cp=S.players[S.turn],mine=!!cp&&cp.id===by;
   if(S.card&&['roll','buy','decline','end','payJail','useJc','payDebt','bankrupt'].includes(a.t))return'Primero cierra la carta';
   if(S.trade&&S.phase==='play'&&['roll','buy','decline','end','payJail','useJc'].includes(a.t))return'⏸ Partida en pausa: hay un trato esperando respuesta';
@@ -2373,6 +2483,181 @@ function processFx(){
     }
   });
 }
+/* ===== v3.50 cámara por detrás de la ficha ===== */
+const CAM={
+  tOv:40,        /* vista general: el tablero se inclina 40° → la cámara mira 50° hacia abajo, al centro */
+  tTurn:58,      /* esperando los dados: la cámara baja un poco (43° hacia abajo) */
+  tFol:64,       /* siguiendo a la ficha: va baja y por detrás, inclinada 35° hacia abajo */
+  tAct:40,       /* al caer en una casilla: 50° hacia abajo */
+  lean:12,       /* fichas y números parados: cuánto se inclinan hacia atrás respecto a la pantalla */
+  pw:2.2,        /* distancia de la cámara en anchos de tablero (perspectiva suave) */
+  mg:.04,        /* margen de la vista general a cada lado */
+  zTurn:1.45,zFol:2.2,zAct:1.8,fT:.45,   /* acercamientos respecto a la vista general: turno / siguiendo / casilla de acción */
+  axT:-.06,ayT:.1,axF:-.12,ayF:.2,axA:-.23,ayA:.3,   /* dónde queda la ficha en pantalla (fracción del ancho del tablero): un poco a la izquierda y abajo, para ver el camino que viene */
+  look:4,   /* cuántas casillas hacia adelante mira la cámara para girar la mesa */
+  out:28,           /* la cámara se corre un poco hacia afuera de la ficha: mira hacia el interior del tablero (grados) */
+  k:6,kYaw:4,yMax:60,     /* amortiguación exponencial 1-exp(-k·dt), aplicada dos veces: arranca y frena suave (el giro de la mesa es un poco más lento y nunca pasa de ~240°/s) */
+  step:360,pause:500,dive:900,hold:900,ovHold:600,
+  glMin:.6,glMax:1,glK:.45,ease:'cubic-bezier(.45,0,.2,1)',   /* saltos largos (cárcel, cartas): la ficha se desliza entre .6 y 1 s con ease-in-out */
+  swT:.55,swZ:.55,swP:.005    /* balanceo en reposo: cabeceo, giro y desplazamiento (casi imperceptible) */
+};
+const camOn=()=>!!ui.cam&&!ui.flat;
+const CKEYS=['fx','fy','z','t','ay','ax','yw'];
+const wrap180=a=>((a+180)%360+360)%360-180;
+function toggleCam(){ui.cam=!ui.cam;store.set('mono_cam',ui.cam?'1':'0');const w=$('boardwrap');if(w)w.classList.toggle('cam',camOn());if(ui.cam)camStart();else camStop();render();}
+function setCam(v){if(!!v!==!!ui.cam)toggleCam();}
+function setSway(v){ui.sway=!!v;store.set('mono_sway',v?'1':'0');renderModal();}
+function setRot(v){ui.rot=!!v;store.set('mono_rot',v?'1':'0');renderModal();}
+function camStart(){if(ui.camRaf)return;ui.camT=performance.now();ui.camRaf=requestAnimationFrame(camLoop);}
+function camRelease(){   /* suelta el tablero: vuelve a su inclinación de siempre */
+  const bd=$('board');if(bd){bd.style.transform='';bd.style.transformOrigin='';bd.style.removeProperty('--cs');bd.style.removeProperty('--cz');}
+  const st=$('stage');if(st){st.style.perspective='';st.style.perspectiveOrigin='';}
+  const w=$('boardwrap');if(w)w.classList.remove('cam3d');
+  ui.cam3d=false;ui.camGo=false;ui.cs=null;ui.camStr='';ui.camCs=undefined;ui.camCz=undefined;ui.camEl=null;ui.camKey='';ui.camMode='';ui.camPendT=0;ui.calm=0;ui.swA=0;ui.glide=null;
+}
+function camStop(){if(ui.camRaf)cancelAnimationFrame(ui.camRaf);ui.camRaf=0;camRelease();}
+/* dónde caen en pantalla las esquinas del tablero (el origen es su centro; vy = punto de fuga; cy = desplazamiento vertical) */
+function camBox(s,t,W,P,vy,cy){
+  const th=t*Math.PI/180,c=Math.cos(th),n=Math.sin(th),h=W/2;
+  let x0=1e9,x1=-1e9,y0=1e9,y1=-1e9;
+  for(const [x,y] of [[-h,-h],[h,-h],[h,h],[-h,h+W*.045]]){   /* el último punto incluye el grosor del borde */
+    const f=P/(P-y*s*n),px=x*s*f,py=vy+(y*s*c+cy-vy)*f;
+    if(px<x0)x0=px;if(px>x1)x1=px;if(py<y0)y0=py;if(py>y1)y1=py;
+  }
+  return{x0,x1,y0,y1};
+}
+/* escala con la que TODO el tablero cabe en pantalla con margen, y desplazamiento para dejarlo centrado en la ventana de la cámara */
+function camFitCalc(W,sh,po,P){
+  const vy=po*sh-W/2,yc=(sh-W)/2,aw=W*(1-2*CAM.mg),ah=sh*(1-2*CAM.mg);
+  let lo=.3,hi=1.6;
+  for(let i=0;i<26;i++){const m=(lo+hi)/2,b=camBox(m,CAM.tOv,W,P,vy,0);if(b.x1-b.x0<=aw&&b.y1-b.y0<=ah)lo=m;else hi=m;}
+  let cy=yc;
+  for(let i=0;i<5;i++){const b=camBox(lo,CAM.tOv,W,P,vy,cy);cy-=(b.y0+b.y1)/2-yc;}
+  return{s:lo,cy};
+}
+function camTok(pid){
+  const el=document.querySelector('.tok[data-tk="'+pid+'"]');if(!el)return null;
+  const c=getComputedStyle(el),x=parseFloat(c.left),y=parseFloat(c.top);
+  return isFinite(x)&&isFinite(y)?{x,y}:null;
+}
+/* deslizamiento largo de una ficha (a la cárcel o por una carta): la cámara apunta al destino desde el primer instante y no la pierde de vista */
+function camEase(u){   /* cubic-bezier(.45,0,.2,1): valor y primera y segunda derivada (para que la cámara no se atrase de la ficha) */
+  const x1=.45,y1=0,x2=.2,y2=1;u=Math.max(0,Math.min(1,u));
+  const B=(s,a,b)=>3*(1-s)*(1-s)*s*a+3*(1-s)*s*s*b+s*s*s,D=(s,a,b)=>3*(1-s)*(1-s)*a+6*(1-s)*s*(b-a)+3*s*s*(1-b),E=(s,a,b)=>6*(1-s)*(b-2*a)+6*s*(1-2*b+a);
+  let s=u;for(let i=0;i<10;i++){const f=B(s,x1,x2)-u,d=D(s,x1,x2);if(Math.abs(f)<1e-6||!d)break;s=Math.max(0,Math.min(1,s-f/d));}
+  const X1=D(s,x1,x2),Y1=D(s,y1,y2),X2=E(s,x1,x2),Y2=E(s,y1,y2);
+  return[B(s,y1,y2),Y1/X1,(Y2*X1-Y1*X2)/(X1*X1*X1)];
+}
+function camGlide(pid,sec,a,b){
+  const bd=$('board');
+  if(!a)a=camTok(pid);
+  if(!b){const q=tokXY(pid);b={x:q.x/100*bd.clientWidth,y:q.y/100*bd.clientHeight};}
+  const t=Date.now();ui.glide={pid,t0:t,dur:sec,a:a||b,b,end:t+sec*1000+150};ui.fxHold=Math.max(ui.fxHold||0,ui.glide.end);
+}
+function camSlide(el,q,pid){
+  const bd=$('board'),cw=bd.clientWidth||1,chh=bd.clientHeight||1,c=getComputedStyle(el);
+  const a={x:parseFloat(c.left)||0,y:parseFloat(c.top)||0},b={x:q.x/100*cw,y:q.y/100*chh};
+  const dist=Math.hypot(b.x-a.x,b.y-a.y)/(bd.offsetWidth||1);
+  const sec=Math.max(CAM.glMin,Math.min(CAM.glMax,CAM.glMin+CAM.glK*dist));
+  el.style.transition='left '+sec.toFixed(2)+'s '+CAM.ease+',top '+sec.toFixed(2)+'s '+CAM.ease;
+  setTimeout(()=>{el.style.transition='';},sec*1000+150);
+  camGlide(pid,sec,a,b);
+}
+/* qué debe mirar la cámara: la vista general, el turno de alguien, su ficha en movimiento o la casilla donde hay una acción */
+function camPlan(nw){
+  const cp=S.phase==='play'?curP(S):null;
+  if(!cp||cp.bankrupt||S.sub==='order')return{m:'ov'};
+  const mv=S.players.find(p=>!p.bankrupt&&ui.tcur[p.id]!==undefined&&ui.tcur[p.id]!==p.pos);
+  const free=!ui.dice.anim&&nw>=(ui.cardHold||0);
+  if(!mv||!free)ui.camPendT=0;else if(!ui.camPendT)ui.camPendT=nw;
+  if(mv){   /* primero se ven los dados; recién después la cámara se acerca y la ficha empieza a caminar */
+    const chg=ui.camWho!==mv.id;ui.camWho=mv.id;ui.camLast=nw;
+    if(chg&&(ui.camMode==='move'||ui.camMode==='act'))return{m:'ov'};   /* otro jugador: primero se aleja, no cruza el tablero girando */
+    if(ui.camMode==='ov'&&nw-(ui.camOvT0||0)<CAM.ovHold)return{m:'ov'};
+    if(ui.camMode==='move'||ui.camMode==='act')return{m:free?'move':'act',pid:mv.id};   /* ya está cerca: no se aleja para volver a acercarse */
+    return{m:(free&&nw-ui.camPendT>=CAM.pause)?'move':'turn',pid:mv.id};
+  }
+  const gl=ui.glide&&nw<ui.glide.end?ui.glide:null,gj=gl&&(gl.jl||(ui.jail[gl.pid]&&ui.jail[gl.pid].stage!=='done'));
+  if(gl&&!gj&&P(S,gl.pid)){ui.camWho=gl.pid;ui.camLast=nw;return{m:'move',pid:gl.pid};}   /* salto largo: la cámara va al destino con la ficha centrada */
+  const jp=S.players.find(p=>{const j=ui.jail[p.id];return j&&j.stage!=='done';});
+  const dec=['buy','auction','debt'].includes(S.sub);
+  if(S.card||jp||nw<(ui.fxHold||0)||dec){   /* comprar, carta, cárcel: la cámara se queda en esa casilla */
+    ui.camLast=nw;
+    return{m:'act',pid:S.card?S.card.pid:jp?jp.id:dec?cp.id:(ui.camWho||cp.id)};
+  }
+  if(nw-(ui.camLast||0)<CAM.hold&&(ui.camMode==='move'||ui.camMode==='act'))return{m:'act',pid:ui.camWho||cp.id};
+  if(S.sub==='roll'){
+    if(ui.camMode==='move'||ui.camMode==='act')return{m:'ov'};   /* viene de seguir una ficha o de una casilla de acción: primero se aleja */
+    if(ui.camMode==='ov'&&nw-(ui.camOvT0||0)<CAM.ovHold)return{m:'ov'};   /* y se queda un instante en la vista general */
+    return{m:'turn',pid:cp.id};
+  }
+  return{m:'ov'};
+}
+/* giro de la mesa para que la cámara quede por detrás de la ficha: el camino que viene (L casillas) apunta hacia arriba en la pantalla */
+function camYaw(pos,L,cw,ch){
+  const a=boardPos(((pos%40)+40)%40),b=boardPos((((pos+L)%40)+40)%40);
+  const vx=(cenU(b[1])-cenU(a[1]))/100*cw,vy=(cenU(b[0])-cenU(a[0]))/100*ch;
+  if(!vx&&!vy)return 0;
+  return -Math.atan2(vx,-vy)*180/Math.PI;
+}
+function camGoal(pl,cw,ch,W,sh){
+  const g={fx:0,fy:0,z:1,t:CAM.tOv,ay:0,ax:0,yw:0};
+  if(pl.m==='ov')return g;
+  let tk;
+  if(ui.glide&&ui.glide.pid===pl.pid&&Date.now()<ui.glide.end&&P(S,pl.pid)){   /* deslizamiento: la cámara apunta un poco adelante de la ficha, justo lo que compensa su amortiguación */
+    const gl=ui.glide,u=(Date.now()-gl.t0)/(gl.dur*1000),e=camEase(u),kT=CAM.k*gl.dur,w=u>=1?1:e[0]+2*e[1]/kT+e[2]/(kT*kT);
+    tk={x:gl.a.x+(gl.b.x-gl.a.x)*w,y:gl.a.y+(gl.b.y-gl.a.y)*w};
+  }
+  else tk=camTok(pl.pid);
+  if(tk)ui.camTk={x:tk.x-cw/2,y:tk.y-ch/2};
+  const T=ui.camTk||{x:0,y:0};
+  const f=pl.m==='turn'?CAM.fT:1;   /* esperando los dados: la cámara apunta entre la ficha y el centro del tablero, para ver también los dados */
+  g.fx=T.x*f/W;g.fy=T.y*f/W;
+  if(pl.m==='turn'){g.z=CAM.zTurn;g.t=CAM.tTurn;g.ax=CAM.axT;g.ay=CAM.ayT;}
+  else if(pl.m==='move'){g.z=CAM.zFol;g.t=CAM.tFol;g.ax=CAM.axF;g.ay=CAM.ayF;}
+  else{g.z=CAM.zAct;g.t=CAM.tAct;g.ax=CAM.axA;g.ay=CAM.ayA;}   /* al caer: 50° hacia abajo, la ficha abajo a la izquierda, libre de la tarjeta de compra */
+  const q0=ui.tcur[pl.pid];
+  if(ui.rot&&q0!==undefined)g.yw=camYaw(q0,CAM.look,cw,ch)-CAM.out;
+  return g;
+}
+function camLoop(now){
+  if(!ui.cam){ui.camRaf=0;return;}
+  ui.camRaf=requestAnimationFrame(camLoop);
+  const dt=Math.min(.1,Math.max(.001,(now-(ui.camT||now))/1000));ui.camT=now;
+  const bd=$('board'),st=$('stage'),w=$('boardwrap');
+  if(!bd||!st||!w||!S||(S.phase!=='play'&&S.phase!=='end')||ui.flat){if(ui.cam3d)camRelease();return;}
+  const W=bd.offsetWidth,cw=bd.clientWidth,ch=bd.clientHeight,sh=st.clientHeight;if(!W||!sh)return;
+  const nw=Date.now();
+  if(ui.camEl!==bd){ui.camEl=bd;ui.camStr='';ui.camKey='';ui.camCs=undefined;ui.camCz=undefined;}
+  const P=CAM.pw*W,po=.45,key=W+'|'+sh;
+  if(ui.camKey!==key){ui.camKey=key;ui.camFit=camFitCalc(W,sh,po,P);st.style.perspective=P.toFixed(0)+'px';st.style.perspectiveOrigin='50% '+(po*100)+'%';}
+  if(!w.classList.contains('cam3d')){w.classList.add('cam3d');ui.cam3d=true;}
+  let bg=st.querySelector('.bgs');if(!bg){bg=document.createElement('div');bg.className='bgs';bg.innerHTML='<i></i><i></i><i></i><i></i><i></i><i></i>';st.insertBefore(bg,st.firstChild);}
+  const F=ui.camFit,pl=camPlan(nw);if(pl.m==='ov'&&ui.camMode!=='ov')ui.camOvT0=nw;ui.camMode=pl.m;ui.camPid=pl.pid;
+  const g=camGoal(pl,cw,ch,W,sh);
+  if(!ui.cs){const i={fx:0,fy:0,z:1/F.s,t:16,ay:0,ax:0,yw:0};ui.cs={a:Object.assign({},i),b:Object.assign({},i)};}   /* entra deslizándose desde la vista de siempre */
+  const A=ui.cs.a,B=ui.cs.b,k=1-Math.exp(-CAM.k*dt),kY=1-Math.exp(-CAM.kYaw*dt);
+  g.yw=B.yw+wrap180(g.yw-B.yw);   /* la mesa gira siempre por el camino más corto */
+  CKEYS.forEach(q=>{
+    if(q==='yw'){const m=CAM.yMax,c=e=>Math.max(-m,Math.min(m,e));A.yw+=c(g.yw-A.yw)*kY;B.yw+=c(A.yw-B.yw)*kY;return;}   /* la mesa gira con velocidad máxima: un cambio grande no se siente brusco */
+    A[q]+=(g[q]-A[q])*k;B[q]+=(A[q]-B[q])*k;});   /* dos pasadas de amortiguación = arranque y frenada suaves */
+  ui.camGy=g.yw;
+  if(B.yw>360||B.yw<-360){const s=B.yw>0?-360:360;A.yw+=s;B.yw+=s;}   /* vueltas completas: se reinicia el contador, se ve igual */
+  const eZ=Math.abs(B.z-g.z),eP=Math.hypot(B.fx-g.fx,B.fy-g.fy),eY=Math.abs(B.yw-g.yw);
+  ui.camGo=pl.m==='move'&&eZ<.06&&eP<.03&&eY<8&&Math.abs(B.t-g.t)<2.5;   /* la cámara ya llegó: la ficha puede salir */
+  const still=pl.m!=='move'&&eZ<.01&&eP<.004&&eY<.4&&Math.abs(B.t-g.t)<.3&&Math.abs(B.ay-g.ay)<.004&&Math.abs(B.ax-g.ax)<.004;
+  ui.calm=(ui.calm||0)+((still?1:0)-(ui.calm||0))*(1-Math.exp(-dt*1.3));
+  ui.swA=(ui.swA||0)+(((ui.sway?ui.calm:0)-(ui.swA||0))*(1-Math.exp(-dt*2.5)));
+  const T=now/1000,a0=ui.swA;
+  const sT=a0*CAM.swT*Math.sin(T*.55),sZ=a0*CAM.swZ*Math.sin(T*.37+1.1),sx=a0*CAM.swP*W*Math.sin(T*.83+.4),sy=a0*CAM.swP*.6*W*Math.sin(T*.61+2);
+  const t=B.t+sT,s=F.s*B.z,yw=B.yw+sZ;
+  {const hz=Math.max(-.25,Math.min(.45,-.25+(B.t-40)/24*.62)),by=(hz-1)*sh,bx=-Math.sin(B.yw*Math.PI/180)*.12*W;bg.style.transform='translate('+bx.toFixed(1)+'px,'+by.toFixed(1)+'px)';}
+  const str=`translate(${(B.ax*W+sx).toFixed(2)}px,${(F.cy+B.ay*W+sy).toFixed(2)}px) rotateX(${t.toFixed(3)}deg) rotateZ(${yw.toFixed(3)}deg) scale(${s.toFixed(4)}) translate(${(-B.fx*W).toFixed(2)}px,${(-B.fy*W).toFixed(2)}px)`;
+  if(str!==ui.camStr){ui.camStr=str;bd.style.transformOrigin='50% 50%';bd.style.transform=str;}
+  const cs=-(B.t-CAM.lean),cz=-B.yw;   /* fichas y números se paran mirando a la cámara, un poco recostados hacia atrás (sin el balanceo, para no repintar todo en cada cuadro) */
+  if(ui.camCs===undefined||Math.abs(cs-ui.camCs)>.04){ui.camCs=cs;bd.style.setProperty('--cs',cs.toFixed(2)+'deg');}
+  if(ui.camCz===undefined||Math.abs(cz-ui.camCz)>.05){ui.camCz=cz;bd.style.setProperty('--cz',cz.toFixed(2)+'deg');}
+}
 function toggle3d(){ui.flat=!ui.flat;store.set('mono_3d',ui.flat?'0':'1');render();}
 
 let toastT=null;
@@ -2815,7 +3100,9 @@ function bub(pid,kind,txt,col,name,ms){
     if(performance.now()-t0>ms){d.remove();return;}
     const sp=anc(),W=window.innerWidth,w=d.offsetWidth,hh=d.offsetHeight;
     let x,y,below=false;
-    if(sp){const r=sp.getBoundingClientRect();x=r.left+r.width/2;y=r.top-6;if(y-hh<6){y=r.bottom+12;below=true;}}
+    if(sp){const r=sp.getBoundingClientRect();x=r.left+r.width/2;y=r.top-6;
+      if(ui.cam3d){const sr=$('stage').getBoundingClientRect();if(sr.width){x=Math.max(sr.left+10,Math.min(sr.right-10,x));y=Math.max(sr.top+hh+10,Math.min(sr.bottom-8,y));}}
+      if(y-hh<6){y=r.bottom+12;below=true;}}
     else{x=W-w/2-12;y=window.innerHeight-150-(parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--sab'))||0);}
     let l=Math.max(w/2+6,Math.min(W-w/2-6,x));
     d.style.left=(l-w/2)+'px';d.style.top=(below?y:y-hh)+'px';
@@ -2841,7 +3128,7 @@ function chatAdd(v,key){
   const em=l.querySelector('.e');if(em)em.remove();
   const near=l.scrollHeight-l.scrollTop-l.clientHeight<60;
   const d=document.createElement('div');d.className='m'+(v.i===me?' me':'');
-  if(v.i!==me){const b=document.createElement('b');b.textContent=String(v.n||'?').slice(0,14);if(/^#[0-9a-fA-F]{3,8}$/.test(v.c||''))d.style.setProperty('--c',v.c);d.appendChild(b);}
+  if(v.i!==me){const b=document.createElement('b');b.textContent=String(v.n||'?').slice(0,14);{const q=P(S,v.i);if(q&&q.au){const a=document.createElement('span');a.className='av';a.dataset.au=q.au;a.dataset.nm=q.name||'';a.dataset.sz='16';b.prepend(a);}}if(/^#[0-9a-fA-F]{3,8}$/.test(v.c||''))d.style.setProperty('--c',v.c);d.appendChild(b);}
   d.appendChild(document.createTextNode(String(v.m||'').slice(0,140)));
   l.appendChild(d);while(l.children.length>60)l.removeChild(l.firstChild);
   if(near||v.i===me)l.scrollTop=l.scrollHeight;
@@ -2887,7 +3174,7 @@ function enterRoom(v){
   let st=null;try{st=JSON.parse(v.s);}catch(e){}
   saveSess();if(st){const pl=P(st,me);recAdd(code,me,pl?pl.name:'');}
   holdPresence();watchPresence();watchDraft();watchEmo();if(st)pushIndex(st,true);
-  if(st){const pl=P(st,me);if(pl&&!pl.dev)setTimeout(()=>D('bind',{dev:DEV}),600);}   /* asientos antiguos: se ligan a este dispositivo */
+  if(st){const pl=P(st,me);if(pl&&(!pl.dev||(ACCT_UID&&pl.au!==ACCT_UID)))setTimeout(()=>D('bind',{dev:DEV,au:ACCT_UID}),600);}   /* asientos antiguos: se ligan a este dispositivo */
   ui.retry=false;onData(v);
 }
 function loadSess(){try{return JSON.parse(store.get('mono_sess')||'null');}catch(e){return null;}}
@@ -3017,7 +3304,7 @@ async function createRoom(){
     let c,exists=true;
     for(let k=0;k<6&&exists;k++){c=randCode();const s=await tmo(db.ref('monopoly/'+c).once('value'));exists=s.exists();}
     if(exists)throw new Error('No se pudo generar un código libre');
-    me=uid();const st=newState(me,name,DEV);
+    me=uid();const st=newState(me,name,DEV,ACCT_UID);
     await tmo(db.ref('monopoly/'+c).set({s:JSON.stringify(st),u:Date.now()}));
     const v=await listen(c);enterRoom(v);
   }catch(e){me=null;homeErr(errMsg(e));}
@@ -3047,7 +3334,7 @@ async function joinRoom(cArg){
     let err=null;
     const r=await tmo(ref.transaction(cur=>{
       if(!cur||!cur.s)return;
-      const s2=JSON.parse(cur.s);const res=reduce(s2,{t:'join',by:me,name,dev:DEV});
+      const s2=JSON.parse(cur.s);const res=reduce(s2,{t:'join',by:me,name,dev:DEV,au:ACCT_UID});
       if(res!==true){err=res;return;}
       return{s:JSON.stringify(s2),u:Date.now()};
     }),10000);
@@ -3096,7 +3383,7 @@ function render(){
   if(rolled){
     const cpp=curP(S),cur=ui.tcur[cpp.id],dd=cur===undefined?0:(cpp.pos-cur+40)%40;
     dly=Math.max(0,(ui.cardHold||0)-Date.now());
-    ui.holdUntil=Date.now()+dly+diceDur()+250+((dd>0&&dd<=14)?dd*240:0)+150;
+    ui.holdUntil=Date.now()+dly+diceDur()+250+((dd>0&&dd<=14)?dd*(camOn()?CAM.step:240)+(camOn()?CAM.pause+CAM.dive:0):0)+150;
     if(S.ordRes&&S.ordRes.rid===S.rollId){ui.ordRevealAt=Date.now()+dly+diceDur()+250;ui.ordShowUntil=ui.ordRevealAt+3300;ui.holdUntil=Math.max(ui.holdUntil,ui.ordShowUntil);setTimeout(()=>{if(S)render();},Math.max(0,ui.ordRevealAt-Date.now())+40);}
   }
   let ctrNew=true;
@@ -3254,7 +3541,7 @@ function tokPanel(){
 function lobbyHTML(){
   const host=S.host===me,vis=S.players.filter(p=>isOn(p.id));ui.lobSig=vis.map(p=>p.id).join(',');
   return`<div class="wrap"><div class="top"><span class="chip">Sala</span><b class="code">${code}</b><span class="sp"></span><button class="chip sndb" onclick="toggleSnd()">${SND.on?'🔊':'🔇'}</button><span id="dot" class="dot ${connected?'on':'off'}"></span></div>
-  <div class="panel"><div class="hd">Jugadores (${vis.length}/6)</div>${vis.map(p=>`<div class="lp" data-lp="${p.id}" style="--c:${p.col}"><span class="pt">${p.tk}</span><span class="pn">${esc(p.name)}${p.id===S.host?' 👑':''}${p.id===me?' (tú)':''}</span><i class="pst"></i>${shapeMini(p,'lgm')}${host&&p.id!==me?`<button class="x" onclick="D('kick',{pid:'${p.id}'})">✕</button>`:''}</div>`).join('')}</div>
+  <div class="panel"><div class="hd">Jugadores (${vis.length}/6)</div>${vis.map(p=>`<div class="lp" data-lp="${p.id}" style="--c:${p.col}">${av(p,34)}<span class="pt">${p.tk}</span><span class="pn">${esc(p.name)}${p.id===S.host?' 👑':''}${p.id===me?' (tú)':''}</span><i class="pst"></i>${shapeMini(p,'lgm')}${host&&p.id!==me?`<button class="x" onclick="D('kick',{pid:'${p.id}'})">✕</button>`:''}</div>`).join('')}</div>
   ${tokPanel()}
   <button class="big sec" onclick="shareCode(this)">📤 Compartir código</button>
   ${host?`<div class="panel"><div class="hd">Dinero inicial</div><div class="row">${[1000,1500,2000,3000].map(v=>`<button class="${S.cash===v?'pri':'sec'}" onclick="D('cash',{v:${v}})">${v}</button>`).join('')}</div></div>
@@ -3371,7 +3658,7 @@ function sqHTML(i){
   const mg=!!S.mort[i];
   const cls=['sq',sideOf(i),sq.t==='prop'?'':sq.t,hot.trim(),mg?'mg':''].filter(Boolean).join(' ');
   let dn='';
-  if(ui.dn){const d=(i-ui.dn.pos+40)%40;if(d>=1&&d<=12)dn=`<span class="dn${d>=6&&d<=8?' lk8':''}${d===1?' no1':''}${ui.dn.hit===d?' hit':''}${(ui.dn.hit&&ui.dn.hit!==d)?' dim':''}" style="--c:${ui.dn.col};--k:${inkOn(ui.dn.col)}">${d}</span>`;}
+  if(ui.dn&&i%10===0){const d=(i-ui.dn.pos+40)%40;if(d>=1&&d<=12)dn=`<span class="dn${d===1?' no1':''}${ui.dn.hit===d?' hit':''}${(ui.dn.hit&&ui.dn.hit!==d)?' dim':''}" style="--c:${ui.dn.col};--k:${inkOn(ui.dn.col)}">${d}</span>`;}
   return`<div class="${cls}" data-i="${i}" style="grid-row:${r};grid-column:${c}" onclick="openModal('sq',${i})">${band}<div class="sb">${body}</div>${mg?'<span class="lkm">🔒</span>':''}${dn}</div>`;
 }
 /* fichas: capa aparte para poder animarlas casilla por casilla */
@@ -3390,6 +3677,35 @@ function tokXY(pid){
   return{x:cenU(c)+ox+tx*sp,y:cenU(r)+oy+ty*sp};
 }
 /* marcas de dueño: salen hacia afuera del borde del tablero */
+/* v3.42 medios óvalos de distancia: sobre el borde superior de cada casilla (fuera de la casilla, para que no se recorten) */
+function dnbHTML(){
+  if(!ui.dn)return'';
+  const fresh=!ui.dn.seen;ui.dn.seen=true;
+  let h='';
+  const stand=(cls,x,y,d,i)=>{const q=SQ[i]||{};const fx=q.t==='prop'?`<i class="dnx" style="background:${GC[q.g]||'#999'}"></i>`:`<i class="dnx e">${q.i||''}</i>`;return`<div class="${cls}" style="left:${x.toFixed(2)}%;top:${y.toFixed(2)}%;--c:${ui.dn.col}"><i class="dnf"></i><div class="dns"><div class="dni"><span>${d}</span>${fx}</div></div></div>`;};
+  for(let d=1;d<=12;d++){
+    const i=(ui.dn.pos+d)%40,ht=ui.dn.hit;
+    const st=(ht===d?' hit':'')+((ht&&ht!==d)?' gone':'');
+    if(i%10!==0){
+      const [r,c]=boardPos(i),sd=sideOf(i);
+      /* se pega al lado de la carta donde va su franja de color (hacia el centro del tablero) */
+      const k=sd==='side-b'?'b':sd==='side-t'?'t':sd==='side-l'?'l':'r';
+      const L=FRU*.92,T=FRU*.56,cx=cenU(c),cy=cenU(r),hw=cwU(c)/2,hr=cwU(r)/2;
+      let x,y,w,hh;
+      if(k==='b'){x=cx;y=cy-hr;w=L;hh=T;}
+      else if(k==='t'){x=cx;y=cy+hr;w=L;hh=T;}
+      else if(k==='l'){x=cx+hw;y=cy;w=T;hh=L;}
+      else{x=cx-hw;y=cy;w=T;hh=L;}
+      h+=`<div class="dnb edge dq${k}${fresh?' fresh':''}${d===1?' no1':''}${st}" style="left:${x.toFixed(2)}%;top:${y.toFixed(2)}%;width:${w.toFixed(2)}%;height:${hh.toFixed(2)}%;--c:${ui.dn.col};--k:${d}"><div class="dni"><span>${d}</span></div></div>`;
+      /* con la cámara cercana el mismo número se levanta desde el mismo punto de la franja */
+      if(camOn())h+=stand('dnb stand'+(d===1?' no1':'')+st,x,y,d,i);
+    }else if(camOn()){   /* esquinas: el mismo círculo de siempre (abajo a la derecha), pero parado */
+      const [r,c]=boardPos(i);
+      h+=stand('dnb stand circ'+st,cenU(c)+cwU(c)/2-2.6,cenU(r)+cwU(r)/2-1.2,d,i);
+    }
+  }
+  return h;
+}
 function ownersHTML(){
   let h='<div id="owl">';
   const L=FRU*.88,T=3.4;
@@ -3403,7 +3719,7 @@ function ownersHTML(){
     else{x=99.2;y=cenU(r)-L/2;w=T;hh=L;}
     h+=`<div class="om${S.mort[i]?' mg':''}" style="left:${x.toFixed(2)}%;top:${y.toFixed(2)}%;width:${w.toFixed(2)}%;height:${hh.toFixed(2)}%">${shapeSVG(p,sd)}</div>`;
   }
-  return h+'</div>';
+  return h+dnbHTML()+'</div>';
 }
 function tokensHTML(){
   const cp=S.phase==='play'?curP(S):null;
@@ -3419,6 +3735,15 @@ function tickTokens(){
     if((want&&!ui.dn)||(!want&&ui.dn)){render();return;}
   }
   if(ui.dice.anim||Date.now()<(ui.cardHold||0))return;
+  if(camOn()&&ui.cam3d&&S.phase==='play'){   /* con la cámara: se ven los dados y la ficha sale cuando la cámara ya llegó */
+    const pend=S.players.some(p=>!p.bankrupt&&ui.tcur[p.id]!==undefined&&ui.tcur[p.id]!==p.pos);
+    if(!pend)ui.camPendT=0;
+    else{
+      const nw=Date.now();if(!ui.camPendT)ui.camPendT=nw;
+      if(!ui.camGo&&nw-ui.camPendT<CAM.pause+CAM.dive&&nw-(ui.stepAt||0)>1500)return;
+    }
+  }
+  if(Date.now()-(ui.stepAt||0)<(camOn()?CAM.step:240)-25)return;   /* ritmo de los pasos (más lento con la cámara) */
   let ch=false;
   S.players.forEach(p=>{
     let cur=ui.tcur[p.id];
@@ -3429,18 +3754,22 @@ function tickTokens(){
     if(cur!==target){
       const d=(target-cur+40)%40;
       ui.tcur[p.id]=(d>14)?target:(cur+1)%40;ch=true;
+      if(d>14&&camOn()&&ui.cam3d)(ui.warpIds=ui.warpIds||[]).push(p.id);
       if(d<=14&&!(J&&J.stage==='arrest'))ui.hopIds.push(p.id);
       if(d>14)SND.warp();else{ui.stepN=(Date.now()-(ui.stepT||0)>700)?0:(ui.stepN||0)+1;ui.stepT=Date.now();SND.step(ui.stepN);}
     }
   });
   if(!ch)return;
+  ui.stepAt=Date.now();
   S.players.forEach(p=>{
     if(p.bankrupt)return;
     const el=document.querySelector('[data-tk="'+p.id+'"]');if(!el)return;
-    const q=tokXY(p.id);el.style.left=q.x+'%';el.style.top=q.y+'%';
-    if(ui.hopIds.includes(p.id)){el.classList.remove('hop');void el.offsetWidth;el.classList.add('hop');setTimeout(()=>el.classList.remove('hop'),260);}
+    const q=tokXY(p.id);
+    if(ui.warpIds&&ui.warpIds.includes(p.id))camSlide(el,q,p.id);
+    el.style.left=q.x+'%';el.style.top=q.y+'%';
+    if(ui.hopIds.includes(p.id)){el.classList.remove('hop');void el.offsetWidth;el.classList.add('hop');setTimeout(()=>el.classList.remove('hop'),camOn()?400:260);}
   });
-  ui.hopIds=[];
+  ui.hopIds=[];ui.warpIds=[];
 }
 /* ¿sigue en marcha la animación de dados / fichas / carta? Mientras sí, no se muestran acciones. */
 function animBusy(){
@@ -3448,7 +3777,7 @@ function animBusy(){
   const now=Date.now();
   const raw=ui.dice.anim||now<ui.holdUntil||now<(ui.cardHold||0)||now<(ui.fxHold||0)||S.players.some(p=>!p.bankrupt&&ui.tcur[p.id]!==undefined&&ui.tcur[p.id]!==p.pos);
   if(!raw){ui.busyT=0;return false;}
-  if(!ui.busyT)ui.busyT=now;else if(now-ui.busyT>9000)return false;   /* seguro: nunca bloquea más de 9 s */
+  if(!ui.busyT)ui.busyT=now;else if(now-ui.busyT>(camOn()?15000:9000))return false;   /* seguro: nunca bloquea más de 9 s */
   return true;
 }
 /* ---------- animación de arresto: sirenas, patrulla, la ficha entra y caen los barrotes ---------- */
@@ -3477,7 +3806,7 @@ function arrestFx(pid,from){
       requestAnimationFrame(()=>requestAnimationFrame(()=>{cop.style.left=(cenU(c1)-3)+'%';cop.style.top=(cenU(r1)+1)+'%';}));
       setTimeout(()=>cop.remove(),1300);
     }
-    ui.jail[pid]={stage:'glide'};ui.tcur[pid]=10;updateTokensPos(true);
+    ui.jail[pid]={stage:'glide'};ui.tcur[pid]=10;camGlide(pid,.95);if(ui.glide)ui.glide.jl=1;updateTokensPos(true);
   },750);
   setTimeout(()=>{   /* caen los barrotes */
     slamBars();SND.jail();
@@ -3490,6 +3819,7 @@ function slamBars(){
   const r=sq.getBoundingClientRect(),d=document.createElement('div');d.className='slam';
   d.style.cssText=`left:${r.left-4}px;top:${r.top-4}px;width:${r.width+8}px;height:${r.height+8}px`;
   $('fxl').appendChild(d);
+  if(ui.cam3d)(function trk(){if(!d.isConnected)return;const q=sq.getBoundingClientRect();d.style.left=(q.left-4)+'px';d.style.top=(q.top-4)+'px';d.style.width=(q.width+8)+'px';d.style.height=(q.height+8)+'px';requestAnimationFrame(trk);})();
   d.animate([{transform:'translateY(-170%)',opacity:1},{offset:.38,transform:'translateY(6%)'},{offset:.52,transform:'translateY(-5%)'},{offset:.66,transform:'translateY(0)'},{offset:.85,transform:'translateY(0)',opacity:1},{transform:'translateY(0)',opacity:0}],{duration:1500,easing:'ease-in'}).onfinish=()=>d.remove();
   const st=$('stage');if(st)st.animate([{transform:'translateX(0)'},{transform:'translateX(-5px)'},{transform:'translateX(4px)'},{transform:'translateX(-3px)'},{transform:'translateX(0)'}],{duration:380,delay:520});
 }
@@ -3511,7 +3841,7 @@ const FACES=[1,2,3,4,5,6].map(v=>`<div class="cf f${v}">${[1,2,3,4,5,6,7,8,9].ma
 const DICE_LAYER=`<div id="hl"></div><div id="dl"><i class="dsh" id="s0"></i><i class="dsh" id="s1"></i><div class="d3" id="d0"><div class="cube">${FACES}</div></div><div class="d3" id="d1"><div class="cube">${FACES}</div></div></div>`;
 function boardParts(){
   const cp=curP(S);
-  if(!animBusy())ui.dn=(S.phase==='play'&&S.sub==='roll'&&!S.card&&!cp.jail&&!cp.bankrupt)?{pos:cp.pos,col:cp.col,hit:null}:null;
+  if(!animBusy())ui.dn=(S.phase==='play'&&S.sub==='roll'&&!S.card&&!cp.jail&&!cp.bankrupt)?{pos:cp.pos,col:cp.col,hit:null,seen:!!(ui.dn&&ui.dn.pos===cp.pos&&ui.dn.col===cp.col&&ui.dn.seen)}:null;
   const rl=S.sub==='roll'||S.sub==='order';
   const ready=S.phase==='play'&&cp.id===me&&rl&&!S.card&&!S.trade&&!P(S,me).bankrupt&&!animBusy();
   const endR=S.phase==='play'&&cp.id===me&&S.sub==='end'&&!S.card&&!S.trade&&!P(S,me).bankrupt&&!animBusy();
@@ -3617,8 +3947,18 @@ function startDice(){
   SND.rattle();
   D.raf=requestAnimationFrame(stepDice);
 }
-function markHit(){
-  if(S&&S.sub!=='order'&&ui.dn){const sum=S.dice[0]+S.dice[1];ui.dn.hit=sum;document.querySelectorAll('.dn').forEach(x=>{const h=+x.textContent===sum;x.classList.toggle('hit',h);x.classList.toggle('dim',!h);});}
+function diceBanner(){
+  if(!(camOn()&&ui.cam3d)||!S||!S.dice)return;
+  const w=$('boardwrap');if(!w)return;
+  const old=$('dvo');if(old)old.remove();
+  const [a,b]=S.dice,dbl=a===b&&S.sub!=='order';
+  const pips=n=>{const on={1:[4],2:[0,8],3:[0,4,8],4:[0,2,6,8],5:[0,2,4,6,8],6:[0,2,3,5,6,8]}[n]||[4];return Array.from({length:9},(_,i)=>`<i class="${on.includes(i)?'on':''}"></i>`).join('');};
+  const o=document.createElement('div');o.id='dvo';o.className=dbl?'dbl':'';
+  o.innerHTML=`<div class="dvb"></div><div class="dvr"><div class="dvd">${pips(a)}</div><div class="dvd">${pips(b)}</div></div>${dbl?'<div class="dvt">DOBLE</div>':''}`;
+  w.appendChild(o);setTimeout(()=>{o.classList.add('out');setTimeout(()=>o.remove(),450);},1400);
+}
+function markHit(){diceBanner();
+  if(S&&S.sub!=='order'&&ui.dn){const sum=S.dice[0]+S.dice[1];ui.dn.hit=sum;document.querySelectorAll('.dnb,.dn').forEach(x=>{const h=+x.textContent===sum;x.classList.remove('fresh');x.classList.toggle('hit',h);x.classList.toggle('dim',!h);});}
 }
 function stepDice(now){
   const D=ui.dice;if(!D.anim)return;
@@ -3743,35 +4083,11 @@ function debtHTML(mine){
   if(mine)h+=`<div class="row"><button class="pri" ${p.money<tot?'disabled':''} onclick="D('payDebt')">Pagar ${money(tot)}</button><button onclick="openModal('props')">Vender / hipotecar</button></div><button class="bad" onclick="doBankrupt()">Declararme en quiebra</button>`;
   return h;
 }
-/* ===== CUENTA Y EXPERIENCIA DEL CLUB CAMPESTRE =====
-   El menú (../) guarda cc_uid al iniciar sesión. Sin sesión se vuelve al menú para entrar. */
-const ACCT_UID=(()=>{try{return localStorage.getItem('cc_uid')||''}catch(e){return ''}})();
-function monoCuenta(){
-  if(!ACCT_UID){try{location.replace('../')}catch(e){}return;}
-  try{
-    firebase.auth().onAuthStateChanged(u=>{
-      if(!u){localStorage.removeItem('cc_uid');localStorage.removeItem('cc_name');location.replace('../');return;}
-      if(u.uid!==ACCT_UID){localStorage.setItem('cc_uid',u.uid);location.reload();}
-    });
-    if(window.ClubXP){
-      try{ClubXP.config({levelUp:()=>{try{SND.win()}catch(e){}}});}catch(e){}
-      ClubXP.init({db:db,uid:ACCT_UID,game:'monopoly',legacy:0});
-    }
-  }catch(e){}
-}
-// ⭐ Experiencia: 25 por terminar la partida, +75 si ganas
-function monoXp(){
-  try{
-    if(!window.ClubXP||!S||S.phase!=='end'||!code)return;
-    const mp=P(S,me);if(!mp)return;
-    ClubXP.add(25+(S.winner===me?75:0),'monopoly',{key:code+'_'+(S.ln||0)+'_'+S.winner});
-  }catch(e){}
-}
 function actionHTML(){
   const cp=curP(S),mp=P(S,me),mineT=cp.id===me,base='<div class="panel">';let h=base;
   if(S.phase==='end'){
     const w=P(S,S.winner);
-    h+=`<div class="hd" style="font-size:20px;text-align:center">🏆 ¡Ganó ${w?w.tk+' '+esc(w.name):'nadie'}!</div>`;
+    h+=`<div class="hd" style="font-size:20px;text-align:center">${w?av(w,36)+' ':''}🏆 ¡Ganó ${w?w.tk+' '+esc(w.name):'nadie'}!</div>`;
     h+=S.host===me?`<button class="big pri" onclick="D('restart')">Nueva partida</button>`:'<div class="note">Esperando que el anfitrión inicie otra partida…</div>';
     return h+'</div>';
   }
@@ -3799,7 +4115,7 @@ function jailPanel(cp){
 }
 function buyInner(cp){
   const sq=SQ[cp.pos],mp=P(S,me),cant=mp.money<sq.p;
-  return`<div class="buyh"><span>${cp.tk}</span><b>${esc(cp.name)}</b></div><div class="buyb">Esta propiedad está <b>DISPONIBLE.</b> ¿Quieres comprarla por<em>${money(sq.p)}</em>${cant?'<small>No te alcanza el efectivo</small>':''}</div><div class="buyf"><button class="gb" ${(cant||S.trade)?'disabled':''} onclick="D('buy')">Comprar</button><button class="bb" ${S.trade?'disabled':''} onclick="D('decline')">Subasta</button></div>`;
+  return`<div class="buyh">${av(cp,30)}<span>${cp.tk}</span><b>${esc(cp.name)}</b></div><div class="buyb">Esta propiedad está <b>DISPONIBLE.</b> ¿Quieres comprarla por<em>${money(sq.p)}</em>${cant?'<small>No te alcanza el efectivo</small>':''}</div><div class="buyf"><button class="gb" ${(cant||S.trade)?'disabled':''} onclick="D('buy')">Comprar</button><button class="bb" ${S.trade?'disabled':''} onclick="D('decline')">Subasta</button></div>`;
 }
 /* fuera de una decisión, la carta y el aviso se ven solo unos segundos para no tapar los dados */
 function landShow(li){
@@ -3850,11 +4166,11 @@ function playersHTML(){
   const list=(hold?S.ordRes.seat.map(id=>P(S,id)).filter(Boolean):S.players).filter(p=>!p.left);
   const cp=(S.phase==='play'&&!hold)?curP(S):null;
   const m=p=>ui.shown[p.id]===undefined?p.money:ui.shown[p.id];
-  return`<div class="pks pk-${ui.side}">${list.map(p=>`<div class="pk${cp&&p.id===cp.id?' cur':''}${p.bankrupt?' dead':''}${p.left?' gone':''}${isOn(p.id)?'':' offl'}" data-pl="${p.id}" onclick="openModal('pp','${p.id}')" style="${pkVars(p.col)}">${shapeMini(p)}<div class="ph"><span class="ptk">${p.tk}</span><span class="pn">${esc(p.name)}${p.id===me?' ·tú':''}${p.jail?' 🔒':''}${p.left?' 🚪':(p.bankrupt?' 💀':'')}</span><i class="pst"></i></div><div class="pbody"><span class="pm${ui.cnt[p.id]?' '+ui.cnt[p.id].dir:''}">${money(m(p))}</span>${ui.side==='heap'?heapEl(p.id):''}${ui.side==='cards'?miniHTML(p.id):''}</div></div>`).join('')}</div>`;
+  return`<div class="pks pk-${ui.side}">${list.map(p=>`<div class="pk${cp&&p.id===cp.id?' cur':''}${p.bankrupt?' dead':''}${p.left?' gone':''}${isOn(p.id)?'':' offl'}" data-pl="${p.id}" onclick="openModal('pp','${p.id}')" style="${pkVars(p.col)}">${shapeMini(p)}<div class="ph">${av(p,18)}<span class="ptk">${p.tk}</span><span class="pn">${esc(p.name)}${p.id===me?' ·tú':''}${p.jail?' 🔒':''}${p.left?' 🚪':(p.bankrupt?' 💀':'')}</span><i class="pst"></i></div><div class="pbody"><span class="pm${ui.cnt[p.id]?' '+ui.cnt[p.id].dir:''}">${money(m(p))}</span>${ui.side==='heap'?heapEl(p.id):''}${ui.side==='cards'?miniHTML(p.id):''}</div></div>`).join('')}</div>`;
 }
 const topHTML=()=>{const cp=S.phase==='play'?curP(S):null,mt=cp&&cp.id===me;
-  const tc=cp?`<span class="tchip${mt?' me':''}" style="${pkVars(cp.col)}"><b>${cp.tk}</b><span>${(S.phase==='play'&&S.trade)?'⏸ Trato en curso':(mt?'TU TURNO':'Turno de '+esc(cp.name))}</span></span>`:'';
-  return`<span class="chip">Sala ${code}</span><span id="dot" class="dot ${connected?'on':'off'}"></span>${tc}<span class="sp"></span><button class="chip sndb" onclick="toggleSnd()">${SND.on?'🔊':'🔇'}</button><button class="chip" onclick="toggle3d()">${ui.flat?'🧊 3D':'🗺 2D'}</button>`;};
+  const tc=cp?`<span class="tchip${mt?' me':''}" style="${pkVars(cp.col)}">${av(cp,17)}<b>${cp.tk}</b><span>${(S.phase==='play'&&S.trade)?'⏸ Trato en curso':(mt?'TU TURNO':'Turno de '+esc(cp.name))}</span></span>`:'';
+  return`<span class="chip">Sala ${code}</span><span id="dot" class="dot ${connected?'on':'off'}"></span>${tc}<span class="sp"></span><button class="chip sndb" onclick="toggleSnd()">${SND.on?'🔊':'🔇'}</button><button class="chip" onclick="toggle3d()">${ui.flat?'🧊 3D':'🗺 2D'}</button><button class="chip" onclick="toggleCam()" aria-label="Cámara">${ui.cam?'🎥 ✓':'🎥'}</button>`;};
 const barHTML=()=>{const mp=P(S,me),canR=S.phase==='play'&&mp&&!mp.bankrupt;
   return`<button class="${tradeBlock()?'dim':''}" onclick="openModal('trade')"><b>🤝</b><span>Tratos</span></button>${(S.phase==='play'&&mp&&!mp.bankrupt)?'<button onclick="openModal(\'pp\',me)"><b>🏘️</b><span>Propiedades</span></button>':''}<button onclick="openModal('stats')"><b>📈</b><span>Estadísticas</span></button>${canR?'<button class="rend" onclick="doResign()"><b>🏳️</b><span>Rendirse</span></button>':''}<button onclick="openModal('menu')"><b>☰</b><span>Menú</span></button>`;};
 function gameParts(){
@@ -3864,7 +4180,7 @@ function gameParts(){
   return{top:topHTML(),flat:!!ui.flat,tiles:b.tiles,ctr:b.ctr,owl:b.owl,tkl:b.tkl,act:'',landL:L,landR:R,landK:kind,pl:playersHTML(),bar:barHTML()};
 }
 function gameFull(G){
-  return`<div class="wrap"><div class="top" id="topbar">${G.top}</div><div id="boardwrap"${G.flat?' class="flat"':''}><div id="stage"><div id="board">${G.tiles.join('')}${G.ctr}${G.owl}${G.tkl}${DICE_LAYER}</div></div><div id="landov" class="${(G.landL||G.landR)?'on':''}${G.landK==='gen'?' gen':''}${G.landK==='ord'?' ord':''}"><div class="lrow${G.landR?'':' solo'}"><div id="landL">${G.landL}</div><div id="landR">${G.landR}</div></div></div></div><div id="actp">${G.act}</div><div id="pkl">${G.pl}</div></div><div class="bar" id="botbar">${G.bar}</div>`;
+  return`<div class="wrap"><div class="top" id="topbar">${G.top}</div><div id="boardwrap" class="${G.flat?'flat':''}${camOn()?' cam':''}"><div id="stage"><div id="board">${G.tiles.join('')}${G.ctr}${G.owl}${G.tkl}${DICE_LAYER}<i class="bfb"></i></div></div><div id="landov" class="${(G.landL||G.landR)?'on':''}${G.landK==='gen'?' gen':''}${G.landK==='ord'?' ord':''}"><div class="lrow${G.landR?'':' solo'}"><div id="landL">${G.landL}</div><div id="landR">${G.landR}</div></div></div></div><div id="actp">${G.act}</div><div id="pkl">${G.pl}</div></div><div class="bar" id="botbar">${G.bar}</div>`;
 }
 function gameHTML(){return gameFull(gameParts());}
 const tpl=document.createElement('template');
@@ -3877,7 +4193,7 @@ function renderGame(){
   }
   const O=ui.rg||{tiles:[]};let ctr=false;
   if(G.top!==O.top)$('topbar').innerHTML=G.top;
-  if(G.flat!==O.flat)$('boardwrap').classList.toggle('flat',G.flat);
+  if(G.flat!==O.flat){$('boardwrap').classList.toggle('flat',G.flat);$('boardwrap').classList.toggle('cam',camOn());}
   const sq=$('board').querySelectorAll(':scope>.sq');
   if(sq.length===40)for(let i=0;i<40;i++)if(G.tiles[i]!==O.tiles[i])swapEl(sq[i],G.tiles[i]);
   if(G.ctr!==O.ctr){swapEl($('ctr'),G.ctr);ctr=true;}
@@ -4131,6 +4447,7 @@ function menuHTML(){
     S.players.filter(p=>p.id!==me&&!p.bankrupt).forEach(p=>{h+=`<button class="sec" onclick="doKick('${p.id}')">🚪 Expulsar a ${p.tk} ${esc(p.name)}</button>`;});
   }
   h+=`<div class="note"><b>🔊 Sonido</b><div class="row" style="align-items:center;margin-top:8px"><button class="sec sndb" style="flex:none;padding:8px 14px" onclick="toggleSnd()">${SND.on?'🔊':'🔇'}</button><input type="range" min="0" max="100" value="${Math.round(SND.vol*100)}" oninput="SND.setVol(this.value/100)" onchange="SND.pick()"></div></div>
+  <div class="note"><b>🎥 Cámara</b><div class="row" style="margin-top:8px">${[[1,'Sigue la ficha'],[0,'Fija']].map(([v,l])=>`<button class="${(ui.cam?1:0)===v?'pri':'sec'}" style="padding:10px 4px" onclick="setCam(${v})">${l}</button>`).join('')}</div><div class="row" style="margin-top:8px">${[[1,'La mesa gira'],[0,'Mesa fija']].map(([v,l])=>`<button class="${(ui.rot?1:0)===v?'pri':'sec'}" style="padding:10px 4px" onclick="setRot(${v})">${l}</button>`).join('')}</div><div class="row" style="margin-top:8px">${[[1,'Balanceo suave'],[0,'Sin balanceo']].map(([v,l])=>`<button class="${(ui.sway?1:0)===v?'pri':'sec'}" style="padding:10px 4px" onclick="setSway(${v})">${l}</button>`).join('')}</div><div class="mut" style="margin-top:10px">La cámara va por detrás de la ficha y la mesa gira para seguirla; al caer en una casilla se inclina a 50°. Con “Mesa fija” la cámara siempre mira desde el lado de la Salida. El balanceo es un movimiento muy leve cuando la cámara está quieta.</div></div>
   <div class="note"><b>Junto al nombre de cada jugador</b><div class="row" style="margin-top:8px">${[['heap','💵 Fajos'],['cards','🃏 Tarjetas'],['none','Nada']].map(([k,l])=>`<button class="${ui.side===k?'pri':'sec'}" style="padding:10px 4px" onclick="setSide('${k}')">${l}</button>`).join('')}</div><div class="mut" style="margin-top:6px">${ui.side==='heap'?'Una columna de billetes que sube con tu dinero.':ui.side==='cards'?'Mini tarjetas de color: qué propiedades tiene cada jugador.':'Solo nombre y dinero.'}</div></div>
   <div class="note"><b>Reglas rápidas</b><br>• Cobras S/200 al pasar por la SALIDA.<br>• Si no compras, la propiedad se subasta.<br>• Casas parejas dentro de un color; 32 casas y 12 hoteles.<br>• Tres dobles seguidos = cárcel.<br>• Puedes hacer tratos y construir en cualquier momento (también en el turno de otros o estando preso), pero no mientras ruedan los dados, hay una carta o una subasta.<br>• Mientras un trato espera respuesta, la partida se pausa para todos.<br>• En un trato, las propiedades hipotecadas 🔒 cuestan 10% extra a quien las recibe, y no se pueden tratar colores con edificios.</div>`;
   if(S.phase==='play'&&!P(S,me).bankrupt)h+=`<button class="bad" onclick="doResign()">🏳️ Rendirme</button>`;
@@ -4282,7 +4599,7 @@ function trLeft(side){const pl=side==='give'?P(S,me):P(S,ui.tr.to);return pl.mon
 function trPanel(side,pl){
   const t=ui.tr[side];
   const jcs=pl.jc.length?`<div class="tzjr">${pl.jc.map((_,k)=>tjc(side,k,k<(t.jc||0)?'ghost':'pool')).join('')}</div>`:'';
-  return`<div class="tp3" data-side="${side}" style="${pkVars(pl.col)}"><span class="tp3k">${pl.tk}</span><div class="tp3i"><span class="a">${esc(pl.name)}${pl.id===me?' ·tú':''}</span></div><div class="tp3m">${money(trLeft(side))}</div>${trGrid(side,pl)}${jcs}${trMoney(side,pl)}</div>`;
+  return`<div class="tp3" data-side="${side}" style="${pkVars(pl.col)}"><span class="tp3k">${pl.tk}</span><div class="tp3i"><span class="a">${av(pl,18)}${esc(pl.name)}${pl.id===me?' ·tú':''}</span></div><div class="tp3m">${money(trLeft(side))}</div>${trGrid(side,pl)}${jcs}${trMoney(side,pl)}</div>`;
 }
 /* controles de dinero de un jugador (van a los lados de la vista previa) */
 function trMoney(side,pl){
@@ -4409,7 +4726,7 @@ function renderIncoming(){
 
 /* ---------- arranque ---------- */
 function boot(){
-  ui.flat=store.get('mono_3d')==='0';ui.side=store.get('mono_side_v')==='2'?(store.get('mono_side')||'cards'):'cards';setInterval(tickTokens,240);setInterval(pruneTick,1000);
+  ui.flat=store.get('mono_3d')==='0';ui.cam=store.get('mono_cam')==='1';ui.rot=store.get('mono_rot')!=='0';{const sv=store.get('mono_sway');ui.sway=sv===null?!(window.matchMedia&&matchMedia('(prefers-reduced-motion: reduce)').matches):sv!=='0';}if(ui.cam)setTimeout(camStart,500);ui.side=store.get('mono_side_v')==='2'?(store.get('mono_side')||'cards'):'cards';setInterval(tickTokens,120);setInterval(pruneTick,1000);
   ['pointerdown','touchstart','keydown'].forEach(ev=>document.addEventListener(ev,()=>SND.unlock(),{passive:true,capture:true}));
   document.addEventListener('click',e=>{
     const el=e.target.closest&&e.target.closest('button,.pk,.cc,.rm,.sq');
@@ -4433,6 +4750,42 @@ function boot(){
   if(window.BOOT)BOOT.stage(75,'Conectando con Firebase…');
   resume();
 }
+/* ===== CUENTA, EXPERIENCIA Y AVATAR DEL CLUB CAMPESTRE =====
+   El menú (../) guarda cc_uid al iniciar sesión. Sin sesión se vuelve al menú para entrar. */
+const ACCT_UID=(()=>{try{return localStorage.getItem('cc_uid')||''}catch(e){return ''}})();
+function monoCuenta(){
+  if(!ACCT_UID){try{location.replace('../')}catch(e){}return;}
+  try{
+    firebase.auth().onAuthStateChanged(u=>{
+      if(!u){localStorage.removeItem('cc_uid');localStorage.removeItem('cc_name');location.replace('../');return;}
+      if(u.uid!==ACCT_UID){localStorage.setItem('cc_uid',u.uid);location.reload();}
+    });
+    if(window.ClubXP){
+      try{ClubXP.config({levelUp:()=>{try{SND.win()}catch(e){}}});}catch(e){}
+      ClubXP.init({db:db,uid:ACCT_UID,game:'monopoly',legacy:0});
+    }
+    if(window.ClubAvatar){try{ClubAvatar.init({db:db});}catch(e){}}
+  }catch(e){}
+}
+// ⭐ Experiencia: 25 por terminar la partida, +75 si ganas
+function monoXp(){
+  try{
+    if(!window.ClubXP||!S||S.phase!=='end'||!code)return;
+    const mp=P(S,me);if(!mp)return;
+    ClubXP.add(25+(S.winner===me?75:0),'monopoly',{key:code+'_'+(S.ln||0)+'_'+S.winner});
+  }catch(e){}
+}
+/* avatar: cada jugador con cuenta guarda su uid (au); los elementos .av se pintan solos cuando aparecen */
+const av=(p,sz)=>p&&p.au?`<span class="av" data-au="${esc(p.au)}" data-nm="${esc(p.name||'')}" data-sz="${sz}"></span>`:'';
+function avPaint(){
+  if(!window.ClubAvatar)return;
+  document.querySelectorAll('.av[data-au]:not([data-ok])').forEach(el=>{el.dataset.ok='1';try{ClubAvatar.render(el.dataset.au,el,{name:el.dataset.nm,size:+el.dataset.sz||24,shape:'circle'});}catch(e){}});
+}
+function avWatch(){
+  try{new MutationObserver(()=>{if(ui.avT)return;ui.avT=requestAnimationFrame(()=>{ui.avT=0;avPaint();});}).observe(document.body,{childList:true,subtree:true});}catch(e){}
+  avPaint();
+}
+document.addEventListener('DOMContentLoaded',avWatch);
 document.addEventListener('DOMContentLoaded',boot);
 </script>
 </body>
