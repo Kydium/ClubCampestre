@@ -1604,7 +1604,7 @@ window.BOOT=(function(){
 <button id="emoB" type="button" aria-label="Reacciones y chat">😊<span class="bd" id="emoBd"></span></button>
 <script>
 'use strict';
-const VERSION='3.52.1';
+const VERSION='3.52.2';
 /* Firebase (mismo proyecto que Wolvevilles). Los datos van en el nodo "monopoly/" */
 const FBCFG={apiKey:"AIzaSyBfrs6B-j22O67pnUb5DYq5CevrIg0dtEs",authDomain:"project-349e4491-0828-4f64-bb5.firebaseapp.com",databaseURL:"https://project-349e4491-0828-4f64-bb5-default-rtdb.firebaseio.com",projectId:"project-349e4491-0828-4f64-bb5",storageBucket:"project-349e4491-0828-4f64-bb5.firebasestorage.app",messagingSenderId:"180444249462",appId:"1:180444249462:web:bdf189d171d908a0274e57"};
 
@@ -3388,7 +3388,7 @@ function render(){
     if(S.ordRes&&S.ordRes.rid===S.rollId){ui.ordRevealAt=Date.now()+dly+diceDur()+250;ui.ordShowUntil=ui.ordRevealAt+3300;ui.holdUntil=Math.max(ui.holdUntil,ui.ordShowUntil);setTimeout(()=>{if(S)render();},Math.max(0,ui.ordRevealAt-Date.now())+40);}
   }
   let ctrNew=true;
-  if(S.phase==='lobby'){const app=$('app');app.innerHTML=lobbyHTML();app.dataset.mode='lobby';ui.rg=null;}
+  if(S.phase==='lobby'){const app=$('app');if(app.dataset.mode==='lobby'&&app.firstElementChild)lobbyMorph(app,lobbyHTML());else app.innerHTML=lobbyHTML();app.dataset.mode='lobby';ui.rg=null;}
   else ctrNew=renderGame().full;
   ui.lastRoll=S.rollId;
   if(S.phase!=='lobby'){
@@ -3538,6 +3538,26 @@ function doKick(pid){const q=P(S,pid);if(!q)return;ask({ic:'🚪',t:'¿Expulsar 
 
 function tokPanel(){
   return`<div class="panel"><div class="hd">Elige tu pieza</div><div class="tkg">${TOKS.map(T=>{const o=S.players.find(p=>p.tk===T.e),mine=o&&o.id===me;return`<button class="tkb${mine?' me':''}" style="--c:${mine?(P(S,me)||{}).col:'#8fb3ff'}" ${(o&&!mine)?'disabled':''} onclick="D('token',{tk:'${T.e}'})">${T.e}${(o&&!mine)?`<i class="tkdot" style="--c:${o.col}"></i>`:''}</button>`;}).join('')}</div></div>`;
+}
+/* sala de espera: solo se tocan las partes que cambiaron (antes se rehacía toda la pantalla y parpadeaba al escoger pieza) */
+function lobbyMorph(app,html){
+  const t=document.createElement('template');t.innerHTML=html;
+  const kids=(o,n)=>{
+    const oc=[...o.childNodes],nc=[...n.childNodes];
+    for(let i=0;i<nc.length;i++){
+      const a=oc[i],b=nc[i];
+      if(!a){o.appendChild(b);continue;}
+      if(a.nodeType!==b.nodeType||a.nodeName!==b.nodeName){a.replaceWith(b);continue;}
+      if(a.nodeType===3){if(a.nodeValue!==b.nodeValue)a.nodeValue=b.nodeValue;continue;}
+      if(a.nodeType!==1)continue;
+      if(a.classList.contains('av')&&b.classList.contains('av')&&a.dataset.au===b.dataset.au&&a.dataset.nm===b.dataset.nm&&a.dataset.sz===b.dataset.sz)continue;
+      for(const at of [...a.attributes])if(!b.hasAttribute(at.name))a.removeAttribute(at.name);
+      for(const at of [...b.attributes])if(a.getAttribute(at.name)!==at.value)a.setAttribute(at.name,at.value);
+      kids(a,b);
+    }
+    while(o.childNodes.length>nc.length)o.lastChild.remove();
+  };
+  kids(app,t.content);
 }
 function lobbyHTML(){
   const host=S.host===me,vis=S.players.filter(p=>isOn(p.id));ui.lobSig=vis.map(p=>p.id).join(',');
