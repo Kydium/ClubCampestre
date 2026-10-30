@@ -201,7 +201,9 @@ body{font-family:"Trebuchet MS",system-ui,-apple-system,"Segoe UI",Roboto,sans-s
  border-radius:5px;padding:1px 6px;font-size:10px;font-weight:900;letter-spacing:.02em;white-space:nowrap;margin-left:6px;text-shadow:none}
 /* foto de perfil de Club Campestre (la pone club-avatar.js) */
 /* la foto llena todo el cuadro del icono (no un círculo) */
-.plr .av .cav2,.tm em .cav2,#cartel .cav .cav2{margin:0;width:100%;height:100%;align-self:stretch}
+/* retrato del menú: la foto de la cuenta encima del personaje, llenando el marco */
+.hport{position:relative}#hAv{position:absolute;inset:0;display:flex}#hAv:empty{display:none}#hAv .cav2{margin:0;width:100%!important;height:100%!important;box-shadow:none}#hAv .cav2 *{width:100%!important;height:100%!important;max-width:none!important}
+.plr .av .cav2,.tm em .cav2,#cartel .cav .cav2{margin:0;width:100%!important;height:100%!important;align-self:stretch;box-shadow:none}
 .cav2 *,.cav2c *{border-radius:0!important;object-fit:cover;box-sizing:border-box}
 .plr .av .cav2 *,.tm em .cav2 *,#cartel .cav .cav2 *{width:100%!important;height:100%!important;max-width:none!important}
 .plr .av:has(.cav2),#cartel .cav:has(.cav2){padding:0;align-items:stretch;justify-content:stretch}
@@ -803,7 +805,7 @@ body:not(.desktop) #armWrap .r1x{position:absolute;right:0;bottom:calc(100% + 32
 <canvas class="bw" id="bw4" width="150" height="150"></canvas>
 </div>
 <div id="home" class="scr wm">
- <div class="vsm">v20.80.2</div>
+ <div class="vsm">v20.80.4</div>
  <div class="mcol">
   <div class="wlogo"><canvas id="lgw" width="300" height="180"></canvas><b>WORMS</b><i>AMIGOS</i></div>
   <div class="news"><div class="nh">NOTICIAS</div><canvas id="newsC" width="480" height="224"></canvas><div class="ny" id="newsT">¡Salta a una partida con tus amigos!</div></div>
@@ -819,7 +821,7 @@ body:not(.desktop) #armWrap .r1x{position:absolute;right:0;bottom:calc(100% + 32
  </div>
  <div class="hudbar">
   <div class="hleft">
-   <div class="hport"><canvas id="avC" width="92" height="92"></canvas></div>
+   <div class="hport"><canvas id="avC" width="92" height="92"></canvas><span id="hAv" class="cav2c"></span></div>
    <div class="hinfo">
     <div class="nmrow"><input id="nm" maxlength="12" placeholder="TU NOMBRE" autocomplete="off"><span class="srb" id="hsr">Plata 1000</span></div>
     <div class="hbw"><div class="hbar"><i id="hbF"></i><em id="hbN">0</em></div><b class="hlvl" id="hlvl">1</b></div>
@@ -1031,7 +1033,7 @@ body:not(.desktop) #armWrap .r1x{position:absolute;right:0;bottom:calc(100% + 32
 <script>
 'use strict';
 /* ================= CONFIG / FIREBASE (mismo proyecto que Monopoly y Wolvevilles) ================= */
-const VER='20.80.2';
+const VER='20.80.4';
 const FBCFG={apiKey:"AIzaSyBfrs6B-j22O67pnUb5DYq5CevrIg0dtEs",authDomain:"project-349e4491-0828-4f64-bb5.firebaseapp.com",databaseURL:"https://project-349e4491-0828-4f64-bb5-default-rtdb.firebaseio.com",projectId:"project-349e4491-0828-4f64-bb5",storageBucket:"project-349e4491-0828-4f64-bb5.firebasestorage.app",messagingSenderId:"180444249462",appId:"1:180444249462:web:bdf189d171d908a0274e57"};
 let db=null;
 try{if(typeof firebase==='undefined')throw new Error('No cargó el SDK de Firebase. Revisa tu internet y recarga.');firebase.initializeApp(FBCFG);db=firebase.database()}catch(e){window.__fbErr=e.message}
@@ -10811,7 +10813,8 @@ function cuentaIniciar(){
  firebase.auth().onAuthStateChanged(u=>{
   if(!u){localStorage.removeItem('cc_uid');localStorage.removeItem('cc_name');location.replace('../');return}
   if(u.uid!==uid){_lsSet.call(localStorage,'cc_uid',u.uid);location.reload();return}
-  clubAvIniciar();clubAvEn($('cuAv'),uid,localStorage.getItem('wm_name')||'',28);
+  clubAvIniciar();clubAvEn($('cuAv'),uid,localStorage.getItem('wm_name')||'',28);clubAvEn($('hAv'),uid,localStorage.getItem('wm_name')||'',92);
+  $('nm').addEventListener('change',()=>{clubAvEn($('hAv'),uid,$('nm').value||'',92);clubAvEn($('cuAv'),uid,$('nm').value||'',28)});
   perfSincronizar(u);
  });
 }
