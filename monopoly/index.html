@@ -1604,7 +1604,7 @@ window.BOOT=(function(){
 <button id="emoB" type="button" aria-label="Reacciones y chat">😊<span class="bd" id="emoBd"></span></button>
 <script>
 'use strict';
-const VERSION='3.52.0';
+const VERSION='3.52.1';
 /* Firebase (mismo proyecto que Wolvevilles). Los datos van en el nodo "monopoly/" */
 const FBCFG={apiKey:"AIzaSyBfrs6B-j22O67pnUb5DYq5CevrIg0dtEs",authDomain:"project-349e4491-0828-4f64-bb5.firebaseapp.com",databaseURL:"https://project-349e4491-0828-4f64-bb5-default-rtdb.firebaseio.com",projectId:"project-349e4491-0828-4f64-bb5",storageBucket:"project-349e4491-0828-4f64-bb5.firebasestorage.app",messagingSenderId:"180444249462",appId:"1:180444249462:web:bdf189d171d908a0274e57"};
 
@@ -2496,7 +2496,7 @@ const CAM={
   axT:-.06,ayT:.1,axF:-.12,ayF:.2,axA:-.23,ayA:.3,   /* dónde queda la ficha en pantalla (fracción del ancho del tablero): un poco a la izquierda y abajo, para ver el camino que viene */
   look:4,   /* cuántas casillas hacia adelante mira la cámara para girar la mesa */
   out:28,           /* la cámara se corre un poco hacia afuera de la ficha: mira hacia el interior del tablero (grados) */
-  k:6,kYaw:4,yMax:60,     /* amortiguación exponencial 1-exp(-k·dt), aplicada dos veces: arranca y frena suave (el giro de la mesa es un poco más lento y nunca pasa de ~240°/s) */
+  k:5.5,kYaw:2.8,yMax:30,     /* amortiguación exponencial 1-exp(-k·dt), aplicada dos veces: arranca y frena suave (el giro de la mesa es un poco más lento y nunca pasa de ~240°/s) */
   step:360,pause:500,dive:900,hold:900,ovHold:600,
   glMin:.6,glMax:1,glK:.45,ease:'cubic-bezier(.45,0,.2,1)',   /* saltos largos (cárcel, cartas): la ficha se desliza entre .6 y 1 s con ease-in-out */
   swT:.55,swZ:.55,swP:.005    /* balanceo en reposo: cabeceo, giro y desplazamiento (casi imperceptible) */
@@ -2635,6 +2635,7 @@ function camLoop(now){
   let bg=st.querySelector('.bgs');if(!bg){bg=document.createElement('div');bg.className='bgs';bg.innerHTML='<i></i><i></i><i></i><i></i><i></i><i></i>';st.insertBefore(bg,st.firstChild);}
   const F=ui.camFit,pl=camPlan(nw);if(pl.m==='ov'&&ui.camMode!=='ov')ui.camOvT0=nw;ui.camMode=pl.m;ui.camPid=pl.pid;
   const g=camGoal(pl,cw,ch,W,sh);
+  if(pl.m==='ov'&&ui.rot&&ui.cs)g.yw=Math.round(ui.cs.b.yw/90)*90;
   if(!ui.cs){const i={fx:0,fy:0,z:1/F.s,t:16,ay:0,ax:0,yw:0};ui.cs={a:Object.assign({},i),b:Object.assign({},i)};}   /* entra deslizándose desde la vista de siempre */
   const A=ui.cs.a,B=ui.cs.b,k=1-Math.exp(-CAM.k*dt),kY=1-Math.exp(-CAM.kYaw*dt);
   g.yw=B.yw+wrap180(g.yw-B.yw);   /* la mesa gira siempre por el camino más corto */
