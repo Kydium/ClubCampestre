@@ -483,7 +483,7 @@ input.pts{width:92px;padding:10px;text-align:center;font-weight:700}
   <div class="sp"></div>
   <button class="btn ghost" id="bRanks">🏆 Clasificación</button>
   <div class="center mut" id="homeMsg" style="margin-top:16px;min-height:22px"></div>
-  <div class="center mut" style="font-size:11px;opacity:.6;margin-top:6px">versión 29-oct · avatares 2</div>
+  <div class="center mut" style="font-size:11px;opacity:.6;margin-top:6px">versión 30-oct · sin parpadeo</div>
  </div></div>
 </section>
 
@@ -1143,7 +1143,8 @@ function initAvatars(){
     if (avInitDone || !window.ClubAvatar) return;
     avInitDone = true;
     try { ClubAvatar.init({db:firebase.database()}); avReady = true; } catch(e){ console.warn('club-avatar', e); return; }
-    new MutationObserver(queueAv).observe(document.body, {childList:true, subtree:true});
+    // se pinta en el mismo instante en que aparece el elemento (antes de dibujar la pantalla): sin parpadeo
+    new MutationObserver(hydrateAv).observe(document.body, {childList:true, subtree:true});
     queueAv();
   };
   if (window.ClubAvatar) go(); else loadScript('../club-avatar.js').then(go).catch(() => console.warn('club-avatar.js no encontrado'));
@@ -1636,13 +1637,18 @@ function renderLobby(){
   $('lCfg').classList.toggle('locked', !isHost);
   const ps = r.players || {}, ids = Object.keys(ps).sort((a, b) => (ps[a].t || 0) - (ps[b].t || 0));
   $('lCount').textContent = `Jugadores (${ids.length}/${MAX_PLAYERS})`;
-  $('lPlayers').innerHTML = ids.map(id => {
-    const p = ps[id], on = !!pres[id], sk = (r.streak || {})[id] || 0, isNew = !view.lobbyKnown.has(id);
-    return `<div class="li ${id === me.id ? 'me' : ''}" style="${isNew ? '' : 'animation:none'}" data-pinfo="${id}">${avWrap(p.name, sk, '', id)}
+  const lpHTML = ids.map(id => {
+    const p = ps[id], on = !!pres[id], sk = (r.streak || {})[id] || 0;
+    return `<div class="li ${id === me.id ? 'me' : ''}" data-pinfo="${id}">${avWrap(p.name, sk, '', id)}
       <div class="lt"><b>${esc(p.name)}${id === me.id ? ' (tú)' : ''}</b><small>${sk >= 2 ? stkText(sk) : (on ? 'conectado' : 'desconectado')}</small></div>
       ${id === r.host ? '<span class="chip play">👑</span>' : ''}<span class="dot ${on ? '' : 'off'}" title="${on ? 'conectado' : 'desconectado'}"></span>
       ${isHost && id !== me.id ? `<button class="x" data-kick="${id}" title="Sacar">✕</button>` : ''}</div>`;
   }).join('');
+  // solo se vuelve a dibujar la lista si algo cambió (si no, las fotos parpadean al cambiar el modo)
+  if ($('lPlayers').dataset.h !== lpHTML){
+    $('lPlayers').innerHTML = lpHTML; $('lPlayers').dataset.h = lpHTML;
+    $('lPlayers').querySelectorAll('.li[data-pinfo]').forEach(el => { if (view.lobbyKnown.has(el.dataset.pinfo)) el.style.animation = 'none'; });
+  }
   if (view.lobbyKnown.size && ids.some(id => !view.lobbyKnown.has(id) && id !== me.id)) sfx('join');
   ids.forEach(id => view.lobbyKnown.add(id));
   const online = ids.filter(id => pres[id] || id === me.id).length;
