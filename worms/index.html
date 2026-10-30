@@ -9,6 +9,7 @@
 <script src="https://cdn.jsdelivr.net/npm/firebase@9.22.2/firebase-database-compat.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/firebase@9.22.2/firebase-auth-compat.js"></script>
 <script src="../club-avatar.js"></script>
+<script src="../club-xp.js"></script>
 <style>
 *{box-sizing:border-box;-webkit-tap-highlight-color:transparent;-webkit-user-select:none;user-select:none}
 html,body{margin:0;height:100%;background:#0b1020;color:#e8eefc;font-family:system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;overflow:hidden;overscroll-behavior:none;-webkit-text-size-adjust:100%}
@@ -805,7 +806,7 @@ body:not(.desktop) #armWrap .r1x{position:absolute;right:0;bottom:calc(100% + 32
 <canvas class="bw" id="bw4" width="150" height="150"></canvas>
 </div>
 <div id="home" class="scr wm">
- <div class="vsm">v20.80.4</div>
+ <div class="vsm">v20.80.5</div>
  <div class="mcol">
   <div class="wlogo"><canvas id="lgw" width="300" height="180"></canvas><b>WORMS</b><i>AMIGOS</i></div>
   <div class="news"><div class="nh">NOTICIAS</div><canvas id="newsC" width="480" height="224"></canvas><div class="ny" id="newsT">¡Salta a una partida con tus amigos!</div></div>
@@ -1033,7 +1034,7 @@ body:not(.desktop) #armWrap .r1x{position:absolute;right:0;bottom:calc(100% + 32
 <script>
 'use strict';
 /* ================= CONFIG / FIREBASE (mismo proyecto que Monopoly y Wolvevilles) ================= */
-const VER='20.80.4';
+const VER='20.80.5';
 const FBCFG={apiKey:"AIzaSyBfrs6B-j22O67pnUb5DYq5CevrIg0dtEs",authDomain:"project-349e4491-0828-4f64-bb5.firebaseapp.com",databaseURL:"https://project-349e4491-0828-4f64-bb5-default-rtdb.firebaseio.com",projectId:"project-349e4491-0828-4f64-bb5",storageBucket:"project-349e4491-0828-4f64-bb5.firebasestorage.app",messagingSenderId:"180444249462",appId:"1:180444249462:web:bdf189d171d908a0274e57"};
 let db=null;
 try{if(typeof firebase==='undefined')throw new Error('No cargó el SDK de Firebase. Revisa tu internet y recarga.');firebase.initializeApp(FBCFG);db=firebase.database()}catch(e){window.__fbErr=e.message}
@@ -7009,7 +7010,7 @@ function showOver(){
   const solo=Object.keys(players||{}).length<2;
   localStorage.setItem('wm_played',(+(localStorage.getItem('wm_played')||0))+1);
   if(mineW)localStorage.setItem('wm_wins',(+(localStorage.getItem('wm_wins')||0))+1);
-  const xp=(mineW?35:10)+Math.round(((myTeam()||{}).dmg||0)/12);
+  const xp=25+(mineW?75:0)+Math.min(50,Math.round(((myTeam()||{}).dmg||0)/12));   /* como los demás juegos del club: 25 por jugar, +75 si ganas (+ un extra por daño) */
   const sr=rk&&!solo?(mineW?SRWIN[rk]||25:-(SRLOSS[rk]||15)):0;
   clearPendingRanked();
   renderFeats(xp,sr,rk,mineW);
@@ -10813,7 +10814,7 @@ function cuentaIniciar(){
  firebase.auth().onAuthStateChanged(u=>{
   if(!u){localStorage.removeItem('cc_uid');localStorage.removeItem('cc_name');location.replace('../');return}
   if(u.uid!==uid){_lsSet.call(localStorage,'cc_uid',u.uid);location.reload();return}
-  clubAvIniciar();clubAvEn($('cuAv'),uid,localStorage.getItem('wm_name')||'',28);clubAvEn($('hAv'),uid,localStorage.getItem('wm_name')||'',92);
+  clubAvIniciar();clubXpIniciar();clubAvEn($('cuAv'),uid,localStorage.getItem('wm_name')||'',28);clubAvEn($('hAv'),uid,localStorage.getItem('wm_name')||'',92);
   $('nm').addEventListener('change',()=>{clubAvEn($('hAv'),uid,$('nm').value||'',92);clubAvEn($('cuAv'),uid,$('nm').value||'',28)});
   perfSincronizar(u);
  });
@@ -10962,8 +10963,15 @@ function addSr(d){
  if(after!==before)toast((d>0?'¡Ascendiste a ':'Bajaste a ')+after+'!');
  updateHudBar();
 }
-function xpTotal(){return +(localStorage.getItem('wm_xp')||0)}
-function xpLevel(xp){let lv=1,need=100,acc=0;while(xp>=acc+need){acc+=need;lv++;need=Math.round(need*1.35)}return{lv,base:acc,need}}
+/* La experiencia es la de Club Campestre (club-xp.js): una sola barra y un
+   solo nivel para todos los juegos. La XP vieja de Worms se suma una vez a la
+   cuenta (legacy) al entrar. Sin el módulo, sigue la cuenta local de antes. */
+const clubXp=()=>!!(window.ClubXP&&ClubXP.uid&&ClubXP.uid());
+function xpTotal(){return clubXp()?(+ClubXP.total()||0):+(localStorage.getItem('wm_xp')||0)}
+function xpLevel(xp){if(window.ClubXP){const L=ClubXP.levelOf(xp);return{lv:L.l,base:xp-L.xp,need:L.need}}let lv=1,need=100,acc=0;while(xp>=acc+need){acc+=need;lv++;need=Math.round(need*1.35)}return{lv,base:acc,need}}
+let clubXpOk=false;
+function clubXpIniciar(){if(clubXpOk||!window.ClubXP||!db||!ACCT_UID)return;clubXpOk=true;
+ try{ClubXP.init({db:db,uid:ACCT_UID,game:'worms',legacy:()=>+(localStorage.getItem('wm_xp')||0)});ClubXP.onChange(()=>{try{updateHudBar()}catch(e){}})}catch(e){console.warn('ClubXP',e)}}
 function updateHudBar(){
  const n=($('nm').value||'').trim();
  $('hWarn').classList.toggle('hide',!!n);
@@ -10974,6 +10982,7 @@ function updateHudBar(){
  const sb=$('hsr');if(sb){const i=srInfo(mySr());sb.textContent=i.name+' '+i.sr;sb.style.setProperty('--c',i.col)}
 }
 function addXp(n){
+ if(window.ClubXP&&clubXpOk){try{ClubXP.add(n,'worms',{key:gid||('g'+Date.now())})}catch(e){}return}   /* la barra compartida lo enseña ella misma */
  const before=xpLevel(xpTotal()).lv;
  localStorage.setItem('wm_xp',xpTotal()+n);
  const after=xpLevel(xpTotal()).lv;
