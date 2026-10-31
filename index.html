@@ -329,6 +329,23 @@
 </script>
 <script src="club-xp.js"></script>
 <script src="club-avatar.js"></script>
+<script>
+  // Arranque instantáneo: con lo último guardado en este dispositivo se muestra ya tu nombre, foto y nivel.
+  // Cuando Firebase confirma la sesión, se corrige solo si algo cambió.
+  (function () {
+    try {
+      var u = localStorage.getItem('cc_uid'), n = localStorage.getItem('cc_name');
+      if (!u || !window.ClubXP || !window.ClubAvatar) return;
+      var $ = function (id) { return document.getElementById(id); };
+      $('who').textContent = n || '';
+      $('userbar').hidden = false;
+      $('xpWrap').hidden = false;
+      ClubXP.mountBar($('menuXp'));
+      ClubAvatar.render(u, $('avImg'), { name: n || '', size: 40 });
+      window.__ccXpMounted = true;
+    } catch (e) {}
+  })();
+</script>
 <script type="module">
   const $ = id => document.getElementById(id);
   let A = null;
@@ -381,7 +398,7 @@
       ClubAvatar.pick().then(r => { if (r) avSay('Foto actualizada'); }).catch(e => avSay(e && e.message ? e.message : 'No se pudo guardar'));
     });
 
-    let xpOff = null, xpMounted = false;
+    let xpOff = null, xpMounted = !!window.__ccXpMounted;
     A.watchUser(user => {
       // Barra de experiencia compartida
       if (window.ClubXP) {
