@@ -806,7 +806,7 @@ body:not(.desktop) #armWrap .r1x{position:absolute;right:0;bottom:calc(100% + 32
 <canvas class="bw" id="bw4" width="150" height="150"></canvas>
 </div>
 <div id="home" class="scr wm">
- <div class="vsm">v20.80.5</div>
+ <div class="vsm">v20.81.0</div>
  <div class="mcol">
   <div class="wlogo"><canvas id="lgw" width="300" height="180"></canvas><b>WORMS</b><i>AMIGOS</i></div>
   <div class="news"><div class="nh">NOTICIAS</div><canvas id="newsC" width="480" height="224"></canvas><div class="ny" id="newsT">¡Salta a una partida con tus amigos!</div></div>
@@ -1034,7 +1034,7 @@ body:not(.desktop) #armWrap .r1x{position:absolute;right:0;bottom:calc(100% + 32
 <script>
 'use strict';
 /* ================= CONFIG / FIREBASE (mismo proyecto que Monopoly y Wolvevilles) ================= */
-const VER='20.80.5';
+const VER='20.81.0';
 const FBCFG={apiKey:"AIzaSyBfrs6B-j22O67pnUb5DYq5CevrIg0dtEs",authDomain:"project-349e4491-0828-4f64-bb5.firebaseapp.com",databaseURL:"https://project-349e4491-0828-4f64-bb5-default-rtdb.firebaseio.com",projectId:"project-349e4491-0828-4f64-bb5",storageBucket:"project-349e4491-0828-4f64-bb5.firebasestorage.app",messagingSenderId:"180444249462",appId:"1:180444249462:web:bdf189d171d908a0274e57"};
 let db=null;
 try{if(typeof firebase==='undefined')throw new Error('No cargó el SDK de Firebase. Revisa tu internet y recarga.');firebase.initializeApp(FBCFG);db=firebase.database()}catch(e){window.__fbErr=e.message}
@@ -3749,29 +3749,111 @@ function paintTerrain(){
     else if(dep>gh+6){const c=TSR[tsr+TXI[x]],fz=(dep-gh-6)/34,f0=1-fz;
      r=((v&255)*f0+(c&255)*fz+gr)*k;g=(((v>>8)&255)*f0+((c>>8)&255)*fz+gr)*k;b=(((v>>16)&255)*f0+((c>>16)&255)*fz+gr)*k}
     else{r=((v&255)+gr)*k;g=(((v>>8)&255)+gr)*k;b=(((v>>16)&255)+gr)*k}}
-   /* ---- luz ---- */
-   let L=1;
-   /* filo iluminado con la luz a 135° (arriba a la izquierda): normal sacada de las distancias al aire */
-   if(dm<AB){const nx=(dLx<9?dLx:9)-(dR<9?dR:9),ny=(dep<9?dep:9)-(dD<9?dD:9),nl=Math.sqrt(nx*nx+ny*ny);
-    if(nl>0){const nd=-(nx+ny)*.70711/nl,w=(1-dm/AB)*(1-dm/AB)*(pasto?.6:1);L*=nd>0?1+LB*nd*w:1+LBS*nd*w}}
-   /* oclusión ambiental: menos aire alrededor del que tendría un borde llano = rincón o grieta */
-   if(DG[ci]<18){const c0=BXI[x],dq=DRb[c0]+(DRb[c0+1]-DRb[c0])*BXF[x],dp=dm<7?dm:(dq>7?dq:7);   /* distancia suave (sin escalones de 4 px) */
-    if(dp<20){const bb=BR[c0]+(BR[c0+1]-BR[c0])*BXF[x],fl=.5-dp/28;let ao=bb-(fl>0?fl:0);
-     if(ao<-.42)ao=-.42;else if(ao>.25)ao=.25;const w=1-dp/20;L*=ao<0?1+LAO*ao*w:1+.5*ao*w}}
-   /* la luz que cae del cielo: brillo cálido en lo que se ve desde arriba, sombra bajo los salientes */
-   let sol=0;
-   if(!cueva&&dep<SA){const sy=y-dep,w=(1-dep/SA)*(1-dep/SA);let vis=0;
-    for(let q=-6;q<=6;q+=3){const xx=x+q;if(xx<0||xx>=W||colTop[xx]>=sy-2)vis++}
-    sol=w*vis/5;L*=1-LSS*w*(1-vis/5)}
-   r*=L*(1+LS*sol);g*=L*(1+LS*.75*sol);b*=L*(1+LS*.2*sol);
-   /* el borde de abajo, más oscuro */
-   if(dD<7){const k=1-dD/7;r*=1-.3*k;g*=1-.3*k;b*=1-.26*k}
-   /* contorno oscuro con un anillo suave */
-   if(dm===0){r*=.42;g*=.46;b*=.42}else if(dm===1){r*=.84;g*=.86;b*=.84}
+   /* el color sin luz (albedo): la luz la pone luz25Pinta, por píxel, con relieve */
    const R8=r>255?255:r<0?0:r|0,G8=g>255?255:g<0?0:g|0,B8=b>255?255:b<0?0:b|0;
    d32[i]=0xff000000|(B8<<16)|(G8<<8)|R8}}
- tctx.putImageData(img,0,0);
+ /* albedo guardado (para re-iluminar cráteres y el paso del día); capas de luz */
+ PTB.alb=d32;PTB.estr=new Uint8Array(W*H);
+ if(!PTB.nx||PTB.nx.length!==W*H){PTB.nx=new Int8Array(W*H);PTB.ny=new Int8Array(W*H);PTB.ll=new Uint8Array(W*H)}
+ else{PTB.nx.fill(0);PTB.ny.fill(0);PTB.ll.fill(0)}
+ tctx.clearRect(0,0,W,H);
+ luzDia(typeof st!=='undefined'&&st?st.turn:0,true);luzTintV=LUZD.tint.slice();luzRelY=-1;
+ luz25Pinta(0,0,W,H);
 }
+/* ================= LUZ 2.5D =================
+   El terreno se ilumina por píxel como una losa con volumen: la distancia al
+   aire da un canto redondeado, la propia textura da relieve (lo claro
+   sobresale), y con la normal resultante se calcula luz difusa, brillo y
+   oclusión en las grietas. Debajo de cada borde se pinta la pared lateral
+   (grosor). Los cráteres se re-iluminan en su caja y, con el paso de los
+   turnos, el sol se mueve y todo el mapa se re-ilumina poco a poco. */
+const L25={R:16,THK:12,rgh:1.2,amb:.45,dif:.75,spec:60};
+const LUZD={ang:135,lz:.72,fuerza:1,amb:.45,tint:[1,1,1],ciel:0,Lx:0,Ly:0,Lz:1};
+function luzDia(turno,ya){
+ /* un día cada 20 turnos: amanece (sol a la izquierda), mediodía, atardece
+    (sol a la derecha) y noche (luna fría). */
+ const p=((turno||0)%20)/20;let ang,lz,f,amb,tint,ciel;
+ if(p<.5){const q=p*2;ang=165-q*150;lz=.35+Math.sin(q*Math.PI)*.55;const w=1-Math.sin(q*Math.PI);
+  f=.85+.25*(1-w);amb=.4+.1*(1-w);ciel=w*.9}
+ else{const q=(p-.5)*2;ang=100-q*20;lz=.8;f=.6;amb=.32;ciel=-1}
+ tint=[1,1,1];   /* el color del día lo pone la capa de pantalla (así tiñe también estructuras y personajes) */
+ const o={ang,lz,fuerza:f,amb,tint,ciel};
+ if(ya){Object.assign(LUZD,o);luzVec()}else{luzMeta=o}}
+let luzMeta=null,luzRelY=-1;
+function luzVec(){const a=LUZD.ang*Math.PI/180,lx=-Math.cos(a)*.7,ly=-Math.sin(a)*.7,lz=LUZD.lz,n=Math.hypot(lx,ly,lz);LUZD.Lx=lx/n;LUZD.Ly=ly/n;LUZD.Lz=lz/n}
+/* re-ilumina una caja [x0,x1)×[y0,y1) a partir del albedo guardado */
+function luz25Pinta(x0,y0,x1,y1){
+ if(!PTB.alb||!mask)return;
+ const R=L25.R,THK=L25.THK,M=R+2;
+ x0=Math.max(0,x0|0);y0=Math.max(0,y0|0);x1=Math.min(W,x1|0);y1=Math.min(H,y1|0);if(x1<=x0||y1<=y0)return;
+ /* caja ampliada para que la distancia y las normales sean correctas en el borde */
+ const ax0=Math.max(0,x0-M),ay0=Math.max(0,y0-M),ax1=Math.min(W,x1+M),ay1=Math.min(H,y1+M+THK),bw=ax1-ax0,bh=ay1-ay0;
+ const D=new Uint8Array(bw*bh),ALB=PTB.alb,ESTR=PTB.estr,ESC3=3*R;
+ /* chaflán 3-4 (capado a R) */
+ for(let y=0;y<bh;y++){const o=(ay0+y)*W+ax0,q=y*bw;for(let x=0;x<bw;x++)D[q+x]=mask[o+x]?ESC3:0}
+ for(let y=1;y<bh;y++){const q=y*bw;for(let x=0;x<bw;x++){const i=q+x;let v=D[i];if(!v)continue;
+  if(x>0&&D[i-1]+3<v)v=D[i-1]+3;if(D[i-bw]+3<v)v=D[i-bw]+3;if(x>0&&D[i-bw-1]+4<v)v=D[i-bw-1]+4;if(x<bw-1&&D[i-bw+1]+4<v)v=D[i-bw+1]+4;D[i]=v}}
+ for(let y=bh-2;y>=0;y--){const q=y*bw;for(let x=bw-1;x>=0;x--){const i=q+x;let v=D[i];if(!v)continue;
+  if(x<bw-1&&D[i+1]+3<v)v=D[i+1]+3;if(D[i+bw]+3<v)v=D[i+bw]+3;if(x<bw-1&&D[i+bw+1]+4<v)v=D[i+bw+1]+4;if(x>0&&D[i+bw-1]+4<v)v=D[i+bw-1]+4;D[i]=v}}
+ /* altura: canto redondeado + relieve de la textura (luminancia); la normal se
+    saca con un stencil de ±2 px, que ya suaviza el grano de 1 px */
+ const Hh=new Float32Array(bw*bh),rg=L25.rgh,K5=rg*5,NEG=-R*.6;
+ const SN=new Float32Array(ESC3+1),KT=new Float32Array(ESC3+1);for(let k=0;k<=ESC3;k++){const t=k/ESC3;SN[k]=Math.sin(t*1.5708)*R;KT[k]=K5*(.3+.7*t)*.003922}
+ Hh.fill(NEG);
+ for(let y=0;y<bh;y++){const o=(ay0+y)*W+ax0,q=y*bw;for(let x=0;x<bw;x++){const i=q+x;const dd=D[i];if(!dd)continue;const c=ALB[o+x];
+  const lum=(c&255)*.3+((c>>8)&255)*.59+((c>>16)&255)*.11;
+  Hh[i]=SN[dd]+(lum-127.5)*KT[dd]}}
+ /* píxeles de salida */
+ const img=tctx.getImageData(x0,y0,x1-x0,y1-y0),d=img.data,d32=new Uint32Array(d.buffer),ow=x1-x0;
+ const Lx=LUZD.Lx,Ly=LUZD.Ly,Lz=LUZD.Lz,hn=Math.hypot(Lx,Ly,Lz+1),Hx=Lx/hn,Hy=Ly/hn,Hz=(Lz+1)/hn,F=LUZD.fuerza,AMB=LUZD.amb,DIF=L25.dif*F,SP=L25.spec*F/255,tr=LUZD.tint[0],tg=LUZD.tint[1],tb=LUZD.tint[2];
+ const NX=PTB.nx,NY=PTB.ny,LL=PTB.ll,IE=1/ESC3,bw2=bw*2;
+ /* filas con algo de tierra (o techo a menos de THK): las demás se saltan */
+ const rowHas=new Uint8Array(bh);for(let y=0;y<bh;y++){const o=(ay0+y)*W+ax0;for(let x=0;x<bw;x++)if(mask[o+x]){rowHas[y]=1;break}}
+ for(let y=y0;y<y1;y++){const by=y-ay0,o=y*W,q=by*bw,oy=(y-y0)*ow-x0;
+  {let hay=false;for(let t=0;t<=THK;t++){const yy=by-t;if(yy<0)break;if(rowHas[yy]){hay=true;break}}if(!hay)continue}
+  for(let x=x0;x<x1;x++){const i=o+x;if(ESTR[i])continue;const bi=q+(x-ax0),oi=oy+x;
+   if(!mask[i]){
+    let k=0;for(let t=1;t<=THK;t++){if(y-t<0)break;if(mask[i-t*W]){k=t;break}}
+    if(!k)continue;
+    const c=ALB[i-k*W],f=1-k/THK,sh=(.42+.4*f)*(.7+.3*F);
+    let r=(c&255)*sh*.75,g=((c>>8)&255)*sh*.7,b=((c>>16)&255)*sh*.65;if(k<=2){r*=.5;g*=.5;b*=.5}
+    r*=tr;g*=tg;b*=tb;const A=(255*Math.min(1,.4+f*.9))|0;
+    d32[oi]=(A<<24)|((b>255?255:b|0)<<16)|((g>255?255:g|0)<<8)|(r>255?255:r|0);NX[i]=0;NY[i]=0;LL[i]=0;continue}
+   const h0=Hh[bi],bx=x-ax0;let l1,l2,r1,r2,u1,u2,d1,d2;
+   if(bx>1&&bx<bw-2&&by>1&&by<bh-2){l1=Hh[bi-1];l2=Hh[bi-2];r1=Hh[bi+1];r2=Hh[bi+2];u1=Hh[bi-bw];u2=Hh[bi-bw2];d1=Hh[bi+bw];d2=Hh[bi+bw2]}
+   else{l1=bx>0?Hh[bi-1]:NEG;l2=bx>1?Hh[bi-2]:NEG;r1=bx<bw-1?Hh[bi+1]:NEG;r2=bx<bw-2?Hh[bi+2]:NEG;u1=by>0?Hh[bi-bw]:NEG;u2=by>1?Hh[bi-bw2]:NEG;d1=by<bh-1?Hh[bi+bw]:NEG;d2=by<bh-2?Hh[bi+bw2]:NEG}
+   let nx=(l1+l2-r1-r2)*.25,ny=(u1+u2-d1-d2)*.25,nz=1.5;const nn=Math.sqrt(nx*nx+ny*ny+nz*nz);nx/=nn;ny/=nn;nz/=nn;
+   const dif=Math.max(0,nx*Lx+ny*Ly+nz*Lz),sp0=Math.max(0,nx*Hx+ny*Hy+nz*Hz),sp2=sp0*sp0,sp4=sp2*sp2,sp8=sp4*sp4,spec=sp8*sp8*sp8*sp4;
+   const lap=(l1+r1+u1+d1)*.5+(l2+r2+u2+d2)*.5-4*h0;let ao=1+lap*.04;if(ao<.6)ao=.6;else if(ao>1.06)ao=1.06;
+   const L=(AMB+dif*DIF)*ao*(1.1-D[bi]*IE*.1)+spec*SP;
+   const c=ALB[i];const r=(c&255)*L*tr,g=((c>>8)&255)*L*tg,b=((c>>16)&255)*L*tb;
+   NX[i]=nx*127;NY[i]=ny*127;LL[i]=L*64>255?255:L*64;
+   d32[oi]=0xff000000|((b>255?255:b|0)<<16)|((g>255?255:g|0)<<8)|(r>255?255:r|0)}}
+ tctx.putImageData(img,x0,y0)}
+/* paso del día: vuelve a iluminar todo el mapa por bandas, sin recalcular el
+   relieve (usa la normal guardada y escala el color por luzNueva/luzVieja,
+   así lo que haya pintado encima —flores, raíces— también cambia de tono) */
+function luzRelTick(){
+ if(luzRelY<0||!PTB.nx||!mask)return;
+ const BAND=Math.max(8,Math.round(3e5/W));const y0=luzRelY,y1=Math.min(H,y0+BAND);
+ const img=tctx.getImageData(0,y0,W,y1-y0),d=img.data,ESTR=PTB.estr,NX=PTB.nx,NY=PTB.ny,LL=PTB.ll;
+ const Lx=LUZD.Lx,Ly=LUZD.Ly,Lz=LUZD.Lz,hn=Math.hypot(Lx,Ly,Lz+1),Hx=Lx/hn,Hy=Ly/hn,Hz=(Lz+1)/hn,F=LUZD.fuerza,AMB=LUZD.amb,DIF=L25.dif*F,SP=L25.spec*F;
+ const tr=LUZD.tint[0]/luzTintV[0],tg=LUZD.tint[1]/luzTintV[1],tb=LUZD.tint[2]/luzTintV[2];
+ for(let y=y0;y<y1;y++){const o=y*W,q=(y-y0)*W;
+  for(let x=0;x<W;x++){const i=o+x;if(!mask[i]||ESTR[i]||!LL[i])continue;
+   const nx=NX[i]/127,ny=NY[i]/127,nz=Math.sqrt(Math.max(0,1-nx*nx-ny*ny));
+   const dif=Math.max(0,nx*Lx+ny*Ly+nz*Lz),sp0=Math.max(0,nx*Hx+ny*Hy+nz*Hz),sp2=sp0*sp0,sp4=sp2*sp2,sp8=sp4*sp4,spec=sp8*sp8*sp8*sp4;
+   const L=(AMB+dif*DIF)+spec*SP/255,Lo=LL[i]/64,k=L/Lo,j=(q+x)*4;
+   let r=d[j]*k*tr,g=d[j+1]*k*tg,b=d[j+2]*k*tb;
+   d[j]=r>255?255:r;d[j+1]=g>255?255:g;d[j+2]=b>255?255:b;LL[i]=L*64>255?255:L*64}}
+ tctx.putImageData(img,0,y0);luzRelY=y1;if(luzRelY>=H){luzRelY=-1;luzTintV=LUZD.tint.slice()}}
+let luzTintV=[1,1,1];
+/* cambio de turno: nueva luz y re-iluminado progresivo (sólo si cambia) */
+function luzTurno(turno){
+ luzDia(turno,false);const o=luzMeta;if(!o)return;
+ if(Math.abs(o.ang-LUZD.ang)<.5&&Math.abs(o.lz-LUZD.lz)<.01&&o.ciel===LUZD.ciel)return;
+ if(luzRelY>=0){luzRelTick();while(luzRelY>=0)luzRelTick()}   /* termina la pasada anterior */
+ Object.assign(LUZD,o);luzVec();luzRelY=0}
 /* ================= ESTRUCTURAS DEL ESCENARIO =================
    Casas, edificios, hangares, tanques destruidos, aviones estrellados, grúas,
    contenedores... Cada estructura se dibuja sobre el terreno Y se añade a la
@@ -3820,8 +3902,10 @@ function paintStructures(seed,fase){estrPos=[];
     pegado al terreno (con sombra y profundidad) se hace al final, cuando ya
     se sabe que la estructura se queda (ver la comprobación de huecos) */
  let pend=null,pidAct=null,zocalo=false;const ESCE=1.44;
+ const marcaEstr=st=>{if(!PTB.estr)return;const {x0,y0,w,h,d}=st,E=PTB.estr;for(let yy=0;yy<h;yy++){const my=y0+yy;if(my<0||my>=H)continue;const o=my*W;for(let xx=0;xx<w;xx++){const mx=x0+xx;if(mx<0||mx>=W)continue;if(d[(yy*w+xx)*4+3]>20)E[o+mx]=1}}};
  const marcaStamp=st=>{const {x0,y0,w,h,d}=st;for(let yy=0;yy<h;yy++){const my=y0+yy;if(my<0||my>=H)continue;const o=my*W;for(let xx=0;xx<w;xx++){const mx=x0+xx;if(mx<0||mx>=W)continue;if(d[(yy*w+xx)*4+3]>150)mask[o+mx]=1}}};
  const pintaStamp=st=>{const {x0,y0,w,h,c,g}=st;
+  marcaEstr(st);
   if(st.zo){tctx.drawImage(c,x0,y0);return}   /* el montículo de tierra va tal cual, sin costado */
   /* Profundidad: el edificio se ve un poco de lado (desde arriba a la
      derecha): detrás de la fachada sale su costado (más oscuro) y su techo
@@ -5341,6 +5425,11 @@ function carve(cx,cy,r,fx){
  tctx.save();
  tctx.globalCompositeOperation='destination-out';
  pathOf(tctx,pts);tctx.fill();
+ tctx.restore();
+ /* el canto nuevo se ilumina como el resto del terreno (relieve, luz, pared lateral) */
+ {const m=L25.R+4;let bx0=1e9,bx1=-1e9;for(const p of pts){if(p[0]<bx0)bx0=p[0];if(p[0]>bx1)bx1=p[0]}
+  luz25Pinta(Math.floor(bx0)-m,y0-m,Math.ceil(bx1)+m+1,y1+m+L25.THK+1)}
+ tctx.save();
  tctx.globalCompositeOperation='source-atop';
  /* tizne general, pegado al borde y hacia afuera */
  const gr=tctx.createRadialGradient(cx,cy,r*.98,cx,cy,r*1.75+14);
@@ -7083,7 +7172,7 @@ function onSt(v){if(!v||!inGame)return;if(!histDone){pendingSt=v;return}if(v.tur
 function applySt(n){
  try{lvFlush()}catch(e){}   /* lo que quedaba por ver del turno anterior, ya */
  const primera=!st;
- st=n;appliedTurn=n.turn;lastLv=Date.now();turnStartAt=Date.now();lvSeq=-1;lvFin=0;
+ st=n;appliedTurn=n.turn;try{luzTurno(n.turn)}catch(e){}lastLv=Date.now();turnStartAt=Date.now();lvSeq=-1;lvFin=0;
  lastRound=n.round||0;teamsFix=null;
  const old=new Map(world.worms.map(w=>[w.id,w]));
  const myTurn=!!(n.teams[n.tm]&&n.teams[n.tm].u===uid)&&!n.over;
@@ -10212,6 +10301,8 @@ function draw(t,dt){
  if(MAPA.cerrado)drawRocaDura(cam.x-cw/2/s-4,cam.x+cw/2/s+4,cam.y-ch*.45/s-4,cam.y+ch*.55/s+4);
  ctx.restore();
  drawAmb(cw,ch);
+ if(luzRelY>=0)luzRelTick();
+ if(LUZD.ciel!==0&&!(MAPA&&MAPA.cueva)){const n=LUZD.ciel<0;ctx.save();ctx.globalCompositeOperation='multiply';ctx.fillStyle=n?'rgba(150,165,215,.55)':'rgba(255,'+(255-40*LUZD.ciel|0)+','+(255-90*LUZD.ciel|0)+','+(.45*LUZD.ciel).toFixed(2)+')';ctx.fillRect(0,0,cw,ch);ctx.restore()}
  if(flashScr>0){ctx.fillStyle='rgba(255,242,206,'+(flashScr*.5)+')';ctx.fillRect(0,0,cw,ch)}
  /* ---- capa de pantalla ---- */
  ctx.textAlign='center';ctx.textBaseline='middle';ctx.lineJoin='round';
