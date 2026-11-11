@@ -1034,7 +1034,7 @@ body:not(.desktop) #armWrap .r1x{position:absolute;right:0;bottom:calc(100% + 32
 <script>
 'use strict';
 /* ================= CONFIG / FIREBASE (mismo proyecto que Monopoly y Wolvevilles) ================= */
-const VER='20.81.0';
+const VER='20.81.1';
 const FBCFG={apiKey:"AIzaSyBfrs6B-j22O67pnUb5DYq5CevrIg0dtEs",authDomain:"project-349e4491-0828-4f64-bb5.firebaseapp.com",databaseURL:"https://project-349e4491-0828-4f64-bb5-default-rtdb.firebaseio.com",projectId:"project-349e4491-0828-4f64-bb5",storageBucket:"project-349e4491-0828-4f64-bb5.firebasestorage.app",messagingSenderId:"180444249462",appId:"1:180444249462:web:bdf189d171d908a0274e57"};
 let db=null;
 try{if(typeof firebase==='undefined')throw new Error('No cargó el SDK de Firebase. Revisa tu internet y recarga.');firebase.initializeApp(FBCFG);db=firebase.database()}catch(e){window.__fbErr=e.message}
@@ -3754,10 +3754,10 @@ function paintTerrain(){
    d32[i]=0xff000000|(B8<<16)|(G8<<8)|R8}}
  /* albedo guardado (para re-iluminar cráteres y el paso del día); capas de luz */
  PTB.alb=d32;PTB.estr=new Uint8Array(W*H);
- if(!PTB.nx||PTB.nx.length!==W*H){PTB.nx=new Int8Array(W*H);PTB.ny=new Int8Array(W*H);PTB.ll=new Uint8Array(W*H)}
+ if(!PTB.nx||PTB.nx.length!==W*H){PTB.nx=new Int8Array(W*H);PTB.ny=new Int8Array(W*H);PTB.ll=new Float32Array(W*H)}
  else{PTB.nx.fill(0);PTB.ny.fill(0);PTB.ll.fill(0)}
  tctx.clearRect(0,0,W,H);
- luzDia(typeof st!=='undefined'&&st?st.turn:0,true);luzTintV=LUZD.tint.slice();luzRelY=-1;
+ luzDia(luzMin(),true);luzRelloj=Date.now();luzTintV=LUZD.tint.slice();luzRelY=-1;
  luz25Pinta(0,0,W,H);
 }
 /* ================= LUZ 2.5D =================
@@ -3769,17 +3769,23 @@ function paintTerrain(){
    turnos, el sol se mueve y todo el mapa se re-ilumina poco a poco. */
 const L25={R:16,THK:12,rgh:1.2,amb:.45,dif:.75,spec:60};
 const LUZD={ang:135,lz:.72,fuerza:1,amb:.45,tint:[1,1,1],ciel:0,Lx:0,Ly:0,Lz:1};
-function luzDia(turno,ya){
- /* un día cada 20 turnos: amanece (sol a la izquierda), mediodía, atardece
-    (sol a la derecha) y noche (luna fría). */
- const p=((turno||0)%20)/20;let ang,lz,f,amb,tint,ciel;
- if(p<.5){const q=p*2;ang=165-q*150;lz=.35+Math.sin(q*Math.PI)*.55;const w=1-Math.sin(q*Math.PI);
-  f=.85+.25*(1-w);amb=.4+.1*(1-w);ciel=w*.9}
- else{const q=(p-.5)*2;ang=100-q*20;lz=.8;f=.6;amb=.32;ciel=-1}
- tint=[1,1,1];   /* el color del día lo pone la capa de pantalla (así tiñe también estructuras y personajes) */
- const o={ang,lz,fuerza:f,amb,tint,ciel};
+/* el tiempo pasa con el reloj real de la partida (igual para todos: cuenta
+   desde meta.t0, la hora en que empezó): cada 5 minutos una fase y entre
+   medias cambia poco a poco. Amanecer → mediodía → atardecer → noche → ... */
+const LUZ_FASE_MIN=5;
+const LUZ_K=[ /* ang (sol: 160 izq · 90 arriba · 20 der), alto, fuerza, ambiente, cielo (+cálido / -noche) */
+ {ang:160,lz:.4,f:.86,amb:.41,ciel:.9},   /* amanecer */
+ {ang:90,lz:.9,f:1.1,amb:.5,ciel:0},      /* mediodía */
+ {ang:20,lz:.4,f:.86,amb:.41,ciel:.9},    /* atardecer */
+ {ang:90,lz:.8,f:.6,amb:.32,ciel:-1}];    /* noche (luna) */
+let luzT0Loc=Date.now();
+function luzMin(){const t0=(typeof meta!=='undefined'&&meta&&+meta.t0)||luzT0Loc;return Math.max(0,(Date.now()-t0)/60000)}
+function luzDia(min,ya){
+ const n=LUZ_K.length,u=((min||0)/LUZ_FASE_MIN)%n,a=Math.floor(u),A=LUZ_K[a],B=LUZ_K[(a+1)%n];
+ let q=u-a;q=q*q*(3-2*q);const m=(k)=>A[k]+(B[k]-A[k])*q;
+ const o={ang:m('ang'),lz:m('lz'),fuerza:m('f'),amb:m('amb'),tint:[1,1,1],ciel:m('ciel')};
  if(ya){Object.assign(LUZD,o);luzVec()}else{luzMeta=o}}
-let luzMeta=null,luzRelY=-1;
+let luzMeta=null,luzRelY=-1,luzRelloj=0;
 function luzVec(){const a=LUZD.ang*Math.PI/180,lx=-Math.cos(a)*.7,ly=-Math.sin(a)*.7,lz=LUZD.lz,n=Math.hypot(lx,ly,lz);LUZD.Lx=lx/n;LUZD.Ly=ly/n;LUZD.Lz=lz/n}
 /* re-ilumina una caja [x0,x1)×[y0,y1) a partir del albedo guardado */
 function luz25Pinta(x0,y0,x1,y1){
@@ -3827,7 +3833,7 @@ function luz25Pinta(x0,y0,x1,y1){
    const lap=(l1+r1+u1+d1)*.5+(l2+r2+u2+d2)*.5-4*h0;let ao=1+lap*.04;if(ao<.6)ao=.6;else if(ao>1.06)ao=1.06;
    const L=(AMB+dif*DIF)*ao*(1.1-D[bi]*IE*.1)+spec*SP;
    const c=ALB[i];const r=(c&255)*L*tr,g=((c>>8)&255)*L*tg,b=((c>>16)&255)*L*tb;
-   NX[i]=nx*127;NY[i]=ny*127;LL[i]=L*64>255?255:L*64;
+   NX[i]=nx*127;NY[i]=ny*127;LL[i]=L||1e-4;
    d32[oi]=0xff000000|((b>255?255:b|0)<<16)|((g>255?255:g|0)<<8)|(r>255?255:r|0)}}
  tctx.putImageData(img,x0,y0)}
 /* paso del día: vuelve a iluminar todo el mapa por bandas, sin recalcular el
@@ -3843,16 +3849,20 @@ function luzRelTick(){
   for(let x=0;x<W;x++){const i=o+x;if(!mask[i]||ESTR[i]||!LL[i])continue;
    const nx=NX[i]/127,ny=NY[i]/127,nz=Math.sqrt(Math.max(0,1-nx*nx-ny*ny));
    const dif=Math.max(0,nx*Lx+ny*Ly+nz*Lz),sp0=Math.max(0,nx*Hx+ny*Hy+nz*Hz),sp2=sp0*sp0,sp4=sp2*sp2,sp8=sp4*sp4,spec=sp8*sp8*sp8*sp4;
-   const L=(AMB+dif*DIF)+spec*SP/255,Lo=LL[i]/64,k=L/Lo,j=(q+x)*4;
+   const L=(AMB+dif*DIF)+spec*SP/255,Lo=LL[i],k=L/Lo,j=(q+x)*4;
    let r=d[j]*k*tr,g=d[j+1]*k*tg,b=d[j+2]*k*tb;
-   d[j]=r>255?255:r;d[j+1]=g>255?255:g;d[j+2]=b>255?255:b;LL[i]=L*64>255?255:L*64}}
+   d[j]=r>255?255:r;d[j+1]=g>255?255:g;d[j+2]=b>255?255:b;LL[i]=L||1e-4}}
  tctx.putImageData(img,0,y0);luzRelY=y1;if(luzRelY>=H){luzRelY=-1;luzTintV=LUZD.tint.slice()}}
 let luzTintV=[1,1,1];
 /* cambio de turno: nueva luz y re-iluminado progresivo (sólo si cambia) */
-function luzTurno(turno){
- luzDia(turno,false);const o=luzMeta;if(!o)return;
- if(Math.abs(o.ang-LUZD.ang)<.5&&Math.abs(o.lz-LUZD.lz)<.01&&o.ciel===LUZD.ciel)return;
- if(luzRelY>=0){luzRelTick();while(luzRelY>=0)luzRelTick()}   /* termina la pasada anterior */
+function luzTurno(){}
+/* cada cuadro: el tono del cielo sigue al reloj; cada 12 s el sol se mueve y
+   el terreno se re-ilumina por bandas (unos pocos cuadros, sin tirones) */
+function luzReloj(){
+ if(!PTB.nx)return;luzDia(luzMin(),false);const o=luzMeta;if(!o)return;
+ LUZD.ciel=o.ciel;const ahora=Date.now();
+ if(luzRelY>=0||ahora-luzRelloj<12000)return;luzRelloj=ahora;
+ if(Math.abs(o.ang-LUZD.ang)<.3&&Math.abs(o.lz-LUZD.lz)<.005&&Math.abs(o.fuerza-LUZD.fuerza)<.005&&Math.abs(o.amb-LUZD.amb)<.004)return;
  Object.assign(LUZD,o);luzVec();luzRelY=0}
 /* ================= ESTRUCTURAS DEL ESCENARIO =================
    Casas, edificios, hangares, tanques destruidos, aviones estrellados, grúas,
@@ -7172,7 +7182,7 @@ function onSt(v){if(!v||!inGame)return;if(!histDone){pendingSt=v;return}if(v.tur
 function applySt(n){
  try{lvFlush()}catch(e){}   /* lo que quedaba por ver del turno anterior, ya */
  const primera=!st;
- st=n;appliedTurn=n.turn;try{luzTurno(n.turn)}catch(e){}lastLv=Date.now();turnStartAt=Date.now();lvSeq=-1;lvFin=0;
+ st=n;appliedTurn=n.turn;lastLv=Date.now();turnStartAt=Date.now();lvSeq=-1;lvFin=0;
  lastRound=n.round||0;teamsFix=null;
  const old=new Map(world.worms.map(w=>[w.id,w]));
  const myTurn=!!(n.teams[n.tm]&&n.teams[n.tm].u===uid)&&!n.over;
@@ -10301,8 +10311,8 @@ function draw(t,dt){
  if(MAPA.cerrado)drawRocaDura(cam.x-cw/2/s-4,cam.x+cw/2/s+4,cam.y-ch*.45/s-4,cam.y+ch*.55/s+4);
  ctx.restore();
  drawAmb(cw,ch);
- if(luzRelY>=0)luzRelTick();
- if(LUZD.ciel!==0&&!(MAPA&&MAPA.cueva)){const n=LUZD.ciel<0;ctx.save();ctx.globalCompositeOperation='multiply';ctx.fillStyle=n?'rgba(150,165,215,.55)':'rgba(255,'+(255-40*LUZD.ciel|0)+','+(255-90*LUZD.ciel|0)+','+(.45*LUZD.ciel).toFixed(2)+')';ctx.fillRect(0,0,cw,ch);ctx.restore()}
+ try{luzReloj()}catch(e){}if(luzRelY>=0)luzRelTick();
+ if(Math.abs(LUZD.ciel)>.01&&!(MAPA&&MAPA.cueva)){const n=LUZD.ciel<0;ctx.save();ctx.globalCompositeOperation='multiply';ctx.fillStyle=n?'rgba(150,165,215,'+(-.55*LUZD.ciel).toFixed(3)+')':'rgba(255,'+(255-40*LUZD.ciel|0)+','+(255-90*LUZD.ciel|0)+','+(.45*LUZD.ciel).toFixed(2)+')';ctx.fillRect(0,0,cw,ch);ctx.restore()}
  if(flashScr>0){ctx.fillStyle='rgba(255,242,206,'+(flashScr*.5)+')';ctx.fillRect(0,0,cw,ch)}
  /* ---- capa de pantalla ---- */
  ctx.textAlign='center';ctx.textBaseline='middle';ctx.lineJoin='round';
