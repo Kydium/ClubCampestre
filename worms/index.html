@@ -805,7 +805,7 @@ body:not(.desktop) #armWrap .r1x{position:absolute;right:0;bottom:calc(100% + 32
 <canvas class="bw" id="bw3" width="150" height="150"></canvas>
 <canvas class="bw" id="bw4" width="150" height="150"></canvas>
 </div>
-<div id="home" class="scr wm">
+<div id="home" class="scr wm"><div id="verTag" style="position:absolute;right:8px;bottom:6px;font:700 12px system-ui,sans-serif;color:#fff;opacity:.75;text-shadow:0 1px 2px #000;z-index:50;pointer-events:none"></div>
  <div class="vsm">v20.81.0</div>
  <div class="mcol">
   <div class="wlogo"><canvas id="lgw" width="300" height="180"></canvas><b>WORMS</b><i>AMIGOS</i></div>
@@ -1034,7 +1034,7 @@ body:not(.desktop) #armWrap .r1x{position:absolute;right:0;bottom:calc(100% + 32
 <script>
 'use strict';
 /* ================= CONFIG / FIREBASE (mismo proyecto que Monopoly y Wolvevilles) ================= */
-const VER='20.81.1';
+const VER='20.81.2';try{document.getElementById('verTag').textContent='v'+VER}catch(e){}
 const FBCFG={apiKey:"AIzaSyBfrs6B-j22O67pnUb5DYq5CevrIg0dtEs",authDomain:"project-349e4491-0828-4f64-bb5.firebaseapp.com",databaseURL:"https://project-349e4491-0828-4f64-bb5-default-rtdb.firebaseio.com",projectId:"project-349e4491-0828-4f64-bb5",storageBucket:"project-349e4491-0828-4f64-bb5.firebasestorage.app",messagingSenderId:"180444249462",appId:"1:180444249462:web:bdf189d171d908a0274e57"};
 let db=null;
 try{if(typeof firebase==='undefined')throw new Error('No cargó el SDK de Firebase. Revisa tu internet y recarga.');firebase.initializeApp(FBCFG);db=firebase.database()}catch(e){window.__fbErr=e.message}

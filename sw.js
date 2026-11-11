@@ -1,7 +1,7 @@
 // Service worker de Club Campestre.
 // Guarda el menú y los juegos en el dispositivo para que abran al instante.
 // Cuando cambies un archivo, sube el número de VERSION: así todos los dispositivos descargan lo nuevo.
-const VERSION = 'cc-v7';
+const VERSION = 'cc-v8';
 const EXT = 'cc-ext-v1';   // Firebase SDK y tipografías (no cambian)
 
 // Menú
@@ -48,6 +48,22 @@ function cacheThenUpdate(req, key, cacheName) {
   );
 }
 
+async function networkFirst(req, key, cacheName) {
+  const cache = await caches.open(cacheName);
+  const net = fetch(req, { cache: 'no-cache' }).then(res => {
+    if (res && res.ok && !res.redirected) cache.put(key, res.clone());
+    return res;
+  }).catch(() => null);
+  const fix = r => (r && r.redirected) ? Response.redirect(r.url, 302) : r;
+  const r = await Promise.race([net, new Promise(ok => setTimeout(() => ok('lento'), 4000))]);
+  if (r && r !== 'lento') return fix(r);
+  const hit = await cache.match(key);
+  if (hit) return hit;
+  const r2 = await net;
+  if (r2) return fix(r2);
+  return (req.mode === 'navigate' && await cache.match('index.html')) || Response.error();
+}
+
 self.addEventListener('fetch', e => {
   const req = e.request;
   if (req.method !== 'GET') return;
@@ -66,6 +82,13 @@ self.addEventListener('fetch', e => {
   if (!url.pathname.startsWith(scope)) return;
   if (url.pathname.endsWith('/sw.js')) return;
 
-  // Menú y juegos: copia guardada primero y se actualiza por detrás.
-  e.respondWith(cacheThenUpdate(req, new Request(url.origin + url.pathname), VERSION));
+  const key = new Request(url.origin + url.pathname);
+  // Páginas (menú y juegos): primero la versión de internet, para que siempre
+  // se vea lo último que se subió. Sin internet (o si tarda más de 4 s) se usa la copia guardada.
+  if (req.mode === 'navigate' || url.pathname.endsWith('/') || url.pathname.endsWith('.html')) {
+    e.respondWith(networkFirst(req, key, VERSION));
+    return;
+  }
+  // Lo demás (scripts, iconos): copia guardada primero y se actualiza por detrás.
+  e.respondWith(cacheThenUpdate(req, key, VERSION));
 });
