@@ -1,7 +1,7 @@
 // Service worker de Club Campestre.
 // Guarda el menú y los juegos en el dispositivo para que abran al instante.
 // Cuando cambies un archivo, sube el número de VERSION: así todos los dispositivos descargan lo nuevo.
-const VERSION = 'cc-v6';
+const VERSION = 'cc-v7';
 const EXT = 'cc-ext-v1';   // Firebase SDK y tipografías (no cambian)
 
 // Menú
