@@ -284,6 +284,7 @@
 </div>
 <div id="hud"><span class="hb" id="hudVer" style="cursor:default;opacity:.7"></span><span id="hudRounds" class="hb" style="display:none;cursor:default"></span><span id="hudTag"></span><button class="hb" id="hudInv" style="display:none">📨 Invitar</button><button class="hb" id="hudCal" style="display:none">🎯 Calibrar</button><button class="hb" id="hudDiag" style="display:none" title="Copiar diagnóstico">📋</button><button class="hb" id="hudRes" style="display:none">🏁 Resultado</button><button class="hb" id="hudExit">✕ Salir</button></div>
 <div id="calib"><b>🎯 RESULTADO AUTOMÁTICO</b><div id="calStep" class="small"></div><div id="calDots" class="mut small"></div>
+  <button class="hb" id="calDone" style="display:none;margin-top:6px;width:100%">✓ Terminar ya con lo encontrado</button>
   <div class="row" style="margin-top:8px"><button class="hb" id="calCancel">Cancelar</button><button class="btn" id="calMark" style="padding:9px">MARCAR</button></div></div>
 <div class="modal" id="endScreen"><div class="card" style="text-align:center">
   <div id="endTitle" style="font-family:var(--display);font-weight:900;font-size:2rem;letter-spacing:.06em"></div>
@@ -318,7 +319,7 @@ const firebaseConfig = {
   messagingSenderId: "180444249462",
   appId: "1:180444249462:web:bdf189d171d908a0274e57"
 };
-const APP_V = 'v3.1';   // versión de la página: súbela en cada cambio
+const APP_V = 'v3.2';   // versión de la página: súbela en cada cambio
 const ACC_DOMAIN = 'clubcampestre.app';
 const P_PLAYERS = 'br2_players', P_MATCHES = 'br2_matches';
 const EJS_DATA = 'https://cdn.emulatorjs.org/stable/data/';
@@ -1168,13 +1169,23 @@ function monCut(strict){
 }
 function calShow(){
   $('calStep').innerHTML = '<b>Pelea ' + cal.fight + (cal.fight <= 2 ? ' de 2' : '') + '</b> · paso ' + (cal.i + 1) + '/4<br>' + CAL_STEPS[cal.i];
-  $('calDots').textContent = 'Tranquilo: toca MARCAR cuando ya se pueda pelear (no en la pantalla de "Round").';
+  $('calDots').textContent = 'Toca MARCAR cuando ya se pueda pelear (no en la pantalla de "Round").' +
+    (cal.prev ? ' Posibles hasta ahora: ' + cal.prev.p1.length + ' / ' + cal.prev.p2.length + '.' : '');
+  $('calDone').style.display = cal.prev ? '' : 'none';
   $('calMark').disabled = false; $('calMark').textContent = 'MARCAR';
 }
 function calStart(){
   if (!emuReady()) { toast('Primero que arranque el juego'); return; }
+  if (!cal || !cal.keep) {   // ¿quedó una calibración a medias (por ejemplo, al recargar la página)?
+    try {
+      const sv = JSON.parse(localStorage.getItem('br2_calkeep') || 'null');
+      if (sv && Date.now() - sv.t < 3 * 3600000 && confirm('Tienes una calibración a medias (' + (sv.fight - 1) + ' pelea(s) hechas). ¿Continuarla?'))
+        cal = {keep:sv.keep, fight:sv.fight, n:sv.n};
+      else localStorage.removeItem('br2_calkeep');
+    } catch(e){}
+  }
   const keep = cal && cal.keep ? cal.keep : null, last = cal && cal.lastSnap;
-  cal = {i:0, snaps:[], prev:keep, fight: keep ? (cal.fight || 2) : 1};
+  cal = {i:0, snaps:[], prev:keep, fight: keep ? (cal.fight || 2) : 1, n: cal && cal.n};
   // la siguiente pelea empieza justo donde marcaste el último paso: ese ya cuenta como su paso 1
   if (keep && last) { cal.snaps = [last]; cal.i = 1; }
   cal.mon = null; if (cal.i >= 1) monStart(last.d);
@@ -1241,21 +1252,37 @@ function calFinish(){
     return;
   }
   const pack = list => list.map(k => [k, base(k), stepOf[k]]);
-  if (!cal.prev || p1.length > 6 || p2.length > 6) {
-    // calibración completa: siempre 2 peleas (y más si aún quedan muchas opciones)
+  // ¿otra pelea más? solo si es la primera, o si todavía quedan muchísimas opciones y siguen bajando
+  const prevN = cal.prev ? cal.prev.p1.length + cal.prev.p2.length : Infinity;
+  const needMore = !cal.prev || ((p1.length > 40 || p2.length > 40) && p1.length + p2.length < prevN && (cal.fight || 1) < 4);
+  if (needMore) {
+    // calibración completa: siempre 2 peleas (más solo si quedan demasiadas opciones; máximo 4)
     const keep = {p1:pack(p1), p2:pack(p2)}, wasPrev = !!cal.prev, nextFight = (cal.fight || 1) + 1;
     cal = {keep, lastSnap:D, fight:nextFight}; $('calib').classList.remove('on');
+    try { localStorage.setItem('br2_calkeep', JSON.stringify({keep, fight:nextFight, n, t:Date.now()})); } catch(e){}
     toast(wasPrev ? 'Bien. Quedan ' + p1.length + ' y ' + p2.length + ' opciones: una pelea más para afinar.' : '✅ Pelea 1 lista. Sigue jugando esta pelea para la 2 (ya está marcado su round 1).', 6000);
     setTimeout(calStart, 400);
     return;
   }
   const cfg = {n, v:CAL_V, p1:pack(p1), p2:pack(p2), by:me ? me.name : '?', t:Date.now()};
+  try { localStorage.removeItem('br2_calkeep'); } catch(e){}
   cal = null; $('calib').classList.remove('on');
   db.ref(P_MEM).set(cfg).then(() => toast('🎯 ¡Listo! El resultado online ahora se detecta solo.', 6000))
     .catch(e => toast('No se pudo guardar la calibración (' + (e.code || e.message) + ')', 6000));
   memCfg = cfg; updateCalBtn();
 }
 function calCancel(){ cal = null; $('calib').classList.remove('on'); }
+function calSaveKeep(){
+  // guarda lo que ya se encontró en las peleas anteriores
+  const k = cal && cal.prev; if (!k || !k.p1.length || !k.p2.length) { toast('Aún no hay nada que guardar'); return; }
+  const n = cal.snaps[0] ? cal.snaps[0].d.length : (cal.n || 0);
+  const cfg = {n, v:CAL_V, p1:k.p1, p2:k.p2, by:me ? me.name : '?', t:Date.now()};
+  cal = null; $('calib').classList.remove('on');
+  try { localStorage.removeItem('br2_calkeep'); } catch(e){}
+  memCfg = cfg; updateCalBtn();
+  db.ref(P_MEM).set(cfg).then(() => toast('🎯 ¡Listo! Calibración guardada.', 6000)).catch(e => toast('No se pudo guardar (' + (e.code || e.message) + ')', 6000));
+}
+$('calDone').onclick = calSaveKeep;
 $('hudCal').onclick = () => { if (memCfg && !confirm('El resultado automático ya está calibrado. ¿Calibrar de nuevo?')) return; calStart(); };
 $('calMark').onclick = calMark;
 $('bCopyCal').onclick = () => {
