@@ -1136,22 +1136,24 @@ function updateCalBtn(){
 }
 // --- calibración: 4 marcas en una pelea ---
 const CAL_STEPS = [
-  'Entra a una pelea (Versus 1P vs 2P, o Arcade contra la CPU). Cuando empiece el <b>ROUND 1</b>, toca MARCAR.',
+  'Entra a una pelea (Versus 1P vs 2P, o Arcade contra la CPU). Cuando empiece el <b>ROUND 1</b> y ya se pueda pelear, toca MARCAR.',
   'Deja que gane el round el <b>Jugador 1</b> (izquierda). Cuando empiece el <b>ROUND 2</b>, toca MARCAR.',
   'Ahora que gane el round el <b>Jugador 2</b> (derecha). Cuando empiece el <b>ROUND 3</b>, toca MARCAR.',
-  'Termina esa pelea como sea. Cuando empiece el <b>ROUND 1 de una pelea nueva</b> (revancha), toca MARCAR.'
+  'Termina la pelea como sea, elijan personajes otra vez y, cuando empiece el <b>ROUND 1 de la siguiente pelea</b>, toca MARCAR.'
   // se hace 2 veces (2 peleas) para que quede exacto
 ];
 let cal = null;   // {i, snaps:[{d, ok}], prev:{p1,p2}|null, fight:1|2}
 function calShow(){
-  $('calStep').innerHTML = '<b>Pelea ' + cal.fight + ' de 2</b> · paso ' + (cal.i + 1) + '/4<br>' + CAL_STEPS[cal.i];
+  $('calStep').innerHTML = '<b>Pelea ' + cal.fight + (cal.fight <= 2 ? ' de 2' : '') + '</b> · paso ' + (cal.i + 1) + '/4<br>' + CAL_STEPS[cal.i];
   $('calDots').textContent = 'Tranquilo: toca MARCAR cuando ya se pueda pelear (no en la pantalla de "Round").';
   $('calMark').disabled = false; $('calMark').textContent = 'MARCAR';
 }
 function calStart(){
   if (!emuReady()) { toast('Primero que arranque el juego'); return; }
-  const keep = cal && cal.keep ? cal.keep : null;
-  cal = {i:0, snaps:[], prev:keep, fight: keep ? 2 : 1};
+  const keep = cal && cal.keep ? cal.keep : null, last = cal && cal.lastSnap;
+  cal = {i:0, snaps:[], prev:keep, fight: keep ? (cal.fight || 2) : 1};
+  // la siguiente pelea empieza justo donde marcaste el último paso: ese ya cuenta como su paso 1
+  if (keep && last) { cal.snaps = [last]; cal.i = 1; }
   $('calib').classList.add('on'); calShow();
 }
 async function stableSnap(){
@@ -1196,9 +1198,9 @@ function calFinish(){
   const pack = list => list.map(k => [k, base(k), stepOf[k]]);
   if (!cal.prev || p1.length > 6 || p2.length > 6) {
     // calibración completa: siempre 2 peleas (y más si aún quedan muchas opciones)
-    const keep = {p1:pack(p1), p2:pack(p2)}, wasPrev = !!cal.prev;
-    cal = {keep}; $('calib').classList.remove('on');
-    toast(wasPrev ? 'Bien. Quedan ' + p1.length + ' y ' + p2.length + ' opciones: una pelea más para afinar.' : '✅ Pelea 1 lista. Ahora la pelea 2 (los mismos pasos) para confirmar.', 6000);
+    const keep = {p1:pack(p1), p2:pack(p2)}, wasPrev = !!cal.prev, nextFight = (cal.fight || 1) + 1;
+    cal = {keep, lastSnap:D, fight:nextFight}; $('calib').classList.remove('on');
+    toast(wasPrev ? 'Bien. Quedan ' + p1.length + ' y ' + p2.length + ' opciones: una pelea más para afinar.' : '✅ Pelea 1 lista. Sigue jugando esta pelea para la 2 (ya está marcado su round 1).', 6000);
     setTimeout(calStart, 400);
     return;
   }
