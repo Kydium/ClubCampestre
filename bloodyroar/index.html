@@ -282,7 +282,7 @@
     <b class="sh l1" data-i="10">L1</b><b class="sh r1" data-i="11">R1</b><b class="sh st" data-i="3">START</b>
   </div>
 </div>
-<div id="hud"><span id="hudRounds" class="hb" style="display:none;cursor:default"></span><span id="hudTag"></span><button class="hb" id="hudInv" style="display:none">📨 Invitar</button><button class="hb" id="hudCal" style="display:none">🎯 Calibrar</button><button class="hb" id="hudRes" style="display:none">🏁 Resultado</button><button class="hb" id="hudExit">✕ Salir</button></div>
+<div id="hud"><span id="hudRounds" class="hb" style="display:none;cursor:default"></span><span id="hudTag"></span><button class="hb" id="hudInv" style="display:none">📨 Invitar</button><button class="hb" id="hudCal" style="display:none">🎯 Calibrar</button><button class="hb" id="hudDiag" style="display:none" title="Copiar diagnóstico">📋</button><button class="hb" id="hudRes" style="display:none">🏁 Resultado</button><button class="hb" id="hudExit">✕ Salir</button></div>
 <div id="calib"><b>🎯 RESULTADO AUTOMÁTICO</b><div id="calStep" class="small"></div><div id="calDots" class="mut small"></div>
   <div class="row" style="margin-top:8px"><button class="hb" id="calCancel">Cancelar</button><button class="btn" id="calMark" style="padding:9px">MARCAR</button></div></div>
 <div class="modal" id="endScreen"><div class="card" style="text-align:center">
@@ -1131,6 +1131,7 @@ function updateCalBtn(){
   $('bCopyCal').style.display = memCfg ? '' : 'none';
   const host = started && (!on || on.role === 'h');
   $('hudCal').style.display = host ? '' : 'none';
+  $('hudDiag').style.display = host && memCfg ? '' : 'none';
   $('hudCal').textContent = memCfg ? '🎯' : '🎯 Calibrar';
   $('hudCal').title = memCfg ? 'Resultado automático activado (tocar para recalibrar)' : 'Calibrar resultado automático';
 }
@@ -1264,6 +1265,7 @@ setInterval(() => {
   }
   const r1 = voteSteps(memCfg.p1, d), r2 = voteSteps(memCfg.p2, d);
   const key = r1 + ':' + r2, now = Date.now();
+  diagRec(d, r1, r2);
   // la misma lectura 2 veces seguidas (1 s) para tomarla en serio
   if (key !== watch.last) { watch.last = key; watch.same = 1; return; }
   if (++watch.same !== 2) return;
@@ -1290,6 +1292,26 @@ setInterval(() => {
   const r = on.room;
   processRoomResult(r.rn || 1, r, {w: p1won ? r.h : r.g, sc, auto:true});
 }, 500);
+
+// ----- diagnóstico: guarda cómo se mueven los bytes calibrados durante la partida -----
+const diag = {t0:0, log:[], lastSig:'', last:null};
+function diagRec(d, r1, r2){
+  if (!diag.t0) diag.t0 = Date.now();
+  diag.last = d;
+  const v1 = memCfg.p1.map(x => d[x[0]]), v2 = memCfg.p2.map(x => d[x[0]]);
+  const sig = v1.join(',') + '|' + v2.join(',') + '|' + (watch.armed ? 'A' : '-');
+  if (sig === diag.lastSig) return;
+  diag.lastSig = sig;
+  if (diag.log.length < 600) diag.log.push(Math.round((Date.now() - diag.t0) / 1000) + 's J1[' + v1.join(',') + '] J2[' + v2.join(',') + '] => ' + r1 + '-' + r2 + (watch.armed ? ' armado' : ''));
+}
+$('hudDiag').onclick = () => {
+  if (!memCfg) return;
+  const d = diag.last, near = k => d ? Array.from(d.slice(k - 8, k + 9)).map(v => v.toString(16).padStart(2, '0')).join(' ') : '';
+  const txt = 'BR2DIAG ' + JSON.stringify({n:memCfg.n, p1:memCfg.p1, p2:memCfg.p2,
+    cerca:{p1:memCfg.p1.map(x => near(x[0])), p2:memCfg.p2.map(x => near(x[0]))}, log:diag.log});
+  (navigator.clipboard ? navigator.clipboard.writeText(txt) : Promise.reject()).then(() => toast('Diagnóstico copiado: pégamelo en el chat', 5000))
+    .catch(() => prompt('Copia este texto:', txt));
+};
 
 // ----- pantalla de fin de pelea: se pausa el juego y se muestra el MMR -----
 function showEnd(r){
