@@ -319,7 +319,7 @@ const firebaseConfig = {
   messagingSenderId: "180444249462",
   appId: "1:180444249462:web:bdf189d171d908a0274e57"
 };
-const APP_V = 'v3.2';   // versión de la página: súbela en cada cambio
+const APP_V = 'v3.3';   // versión de la página: súbela en cada cambio
 const ACC_DOMAIN = 'clubcampestre.app';
 const P_PLAYERS = 'br2_players', P_MATCHES = 'br2_matches';
 const EJS_DATA = 'https://cdn.emulatorjs.org/stable/data/';
@@ -1121,9 +1121,11 @@ if (pendingSala) $('joinCode').value = pendingSala;
 const P_MEM = 'br2_cfg/mem';
 const SKIP = 36900;                 // cabecera + miniatura del estado: ahí no está la memoria del juego
 const RAM_END = SKIP + 0x200000 + 16;   // después vienen video y sonido: ahí tampoco
-const CAL_V = 3;                    // versión de la calibración (las anteriores se descartan)
+const CAL_V = 4;                    // versión de la calibración (las anteriores se descartan)
 // Calibración fija dentro de la página (si Firebase no tiene una, se usa esta). Pegar aquí la de "Copiar calibración".
-const DEFAULT_MEM = null;
+const DEFAULT_MEM = {n:4456472, v:4, by:'Michael (de fábrica)',
+  p1:[[1896021,0,1],[1896022,0,1],[1905073,0,1],[1905074,0,1],[1914125,0,1],[1914126,0,1]],
+  p2:[[1895757,0,1],[1895758,0,1],[1904809,0,1],[1904810,0,1],[1913861,0,1],[1913862,0,1]]};
 const okCfg = c => (c && c.v >= CAL_V) ? c : null;
 let memCfg = (() => { try { return okCfg(JSON.parse(localStorage.getItem('br2_mem') || 'null')) || DEFAULT_MEM; } catch(e){ return DEFAULT_MEM; } })();
 let lastGuestIn = 0, sizeWarned = false;
@@ -1141,10 +1143,11 @@ function updateCalBtn(){
   $('hudCal').title = memCfg ? 'Resultado automático activado (tocar para recalibrar)' : 'Calibrar resultado automático';
 }
 // --- calibración: 4 marcas en una pelea ---
+const calRev = () => cal && cal.fight % 2 === 0;   // en las peleas pares se invierte quién gana cada round
 const CAL_STEPS = [
   'Entra a una pelea (Versus 1P vs 2P, o Arcade contra la CPU). Cuando empiece el <b>ROUND 1</b> y ya se pueda pelear, toca MARCAR.',
-  'Deja que gane el round el <b>Jugador 1</b> (izquierda). Cuando empiece el <b>ROUND 2</b>, toca MARCAR.',
-  'Ahora que gane el round el <b>Jugador 2</b> (derecha). Cuando empiece el <b>ROUND 3</b>, toca MARCAR.',
+  () => 'Deja que gane el round el <b>' + (calRev() ? 'Jugador 2 (DERECHA)' : 'Jugador 1 (IZQUIERDA)') + '</b>. Cuando empiece el <b>ROUND 2</b>, toca MARCAR.',
+  () => 'Ahora que gane el round el <b>' + (calRev() ? 'Jugador 1 (IZQUIERDA)' : 'Jugador 2 (DERECHA)') + '</b>. Cuando empiece el <b>ROUND 3</b>, toca MARCAR.',
   'Termina la pelea como sea, elijan personajes otra vez y, cuando empiece el <b>ROUND 1 de la siguiente pelea</b>, toca MARCAR.'
   // se hace 2 veces (2 peleas) para que quede exacto
 ];
@@ -1168,7 +1171,8 @@ function monCut(strict){
   m.chg.fill(0);
 }
 function calShow(){
-  $('calStep').innerHTML = '<b>Pelea ' + cal.fight + (cal.fight <= 2 ? ' de 2' : '') + '</b> · paso ' + (cal.i + 1) + '/4<br>' + CAL_STEPS[cal.i];
+  const stp = CAL_STEPS[cal.i];
+  $('calStep').innerHTML = '<b>Pelea ' + cal.fight + (cal.fight <= 2 ? ' de 2' : '') + '</b> · paso ' + (cal.i + 1) + '/4<br>' + (typeof stp === 'function' ? stp() : stp);
   $('calDots').textContent = 'Toca MARCAR cuando ya se pueda pelear (no en la pantalla de "Round").' +
     (cal.prev ? ' Posibles hasta ahora: ' + cal.prev.p1.length + ' / ' + cal.prev.p2.length + '.' : '');
   $('calDone').style.display = cal.prev ? '' : 'none';
@@ -1213,19 +1217,21 @@ function calFinish(){
   const [A, B, C, D] = cal.snaps, n = A.d.length;
   let p1 = [], p2 = [];
   const st = {e1:0, e2:0, r1:0, r2:0, mov:0};   // diagnóstico: cuántos cumplían cada parte
-  const bad = cal.mon ? cal.mon.bad : null, end = Math.min(RAM_END, n);
+  const bad = cal.mon ? cal.mon.bad : null, end = Math.min(RAM_END, n), rev = calRev();
   for (let k = SKIP; k < end; k++){
     if (!(A.ok[k] && B.ok[k] && C.ok[k] && D.ok[k])) continue;
     if (bad && bad[k]) { st.mov++; continue; }            // se movió durante la pelea: no es un contador
     const a = A.d[k], b = B.d[k], c = C.d[k], d = D.d[k];
     // el contador puede SUBIR (0→1→2) o BAJAR (rounds que faltan: 2→1→0); cambia de a poco
-    const j1 = b !== a && Math.abs(b - a) <= 8 && c === b;   // cambió cuando ganó el J1 y no cuando ganó el J2
-    const j2 = b === a && c !== b && Math.abs(c - b) <= 8;   // al revés para el J2
+    const chR1 = b !== a && Math.abs(sd(a, b)) <= 8 && c === b;   // cambió solo al terminar el round 1
+    const chR2 = b === a && c !== b && Math.abs(sd(b, c)) <= 8;   // cambió solo al terminar el round 2
+    const j1 = rev ? chR2 : chR1, j2 = rev ? chR1 : chR2;          // según quién ganó cada round en esta pelea
     if (j1) st.e1++; if (j2) st.e2++;
     if (d !== a) continue;                                    // en la pelea siguiente vuelve a como estaba
     if (j1) { p1.push(k); st.r1++; } else if (j2) { p2.push(k); st.r2++; }
   }
-  const stepOf = {}; p1.forEach(k => stepOf[k] = B.d[k] - A.d[k]); p2.forEach(k => stepOf[k] = C.d[k] - B.d[k]);
+  const stepOf = {}, dR1 = k => sd(A.d[k], B.d[k]), dR2 = k => sd(B.d[k], C.d[k]);
+  p1.forEach(k => stepOf[k] = rev ? dR2(k) : dR1(k)); p2.forEach(k => stepOf[k] = rev ? dR1(k) : dR2(k));
   if (cal.prev) {
     // 2ª pelea: solo quedan los que se comportaron igual (mismo valor inicial y mismo salto) en las dos
     p1 = p1.filter(k => cal.prev.p1.some(x => x[0] === k && x[1] === A.d[k] && x[2] === stepOf[k]));
@@ -1239,7 +1245,8 @@ function calFinish(){
     for (let k = SKIP; k < end; k++){
       if (!(A.ok[k] && B.ok[k] && C.ok[k] && D.ok[k]) || D.d[k] !== A.d[k] || (bad && bad[k])) continue;
       const a = A.d[k], b = B.d[k], c = C.d[k];
-      if (b !== a && Math.abs(b - a) <= 8 && c === b) p1.push(k); else if (b === a && c !== b && Math.abs(c - b) <= 8) p2.push(k);
+      const r1c = b !== a && Math.abs(sd(a, b)) <= 8 && c === b, r2c = b === a && c !== b && Math.abs(sd(b, c)) <= 8;
+      if (rev ? r2c : r1c) p1.push(k); else if (rev ? r1c : r2c) p2.push(k);
     }
     cal.prev = null;
     toast('Esta pelea no coincidió con la anterior; la tomo como nueva pelea 1.', 5000);
@@ -1260,7 +1267,7 @@ function calFinish(){
     const keep = {p1:pack(p1), p2:pack(p2)}, wasPrev = !!cal.prev, nextFight = (cal.fight || 1) + 1;
     cal = {keep, lastSnap:D, fight:nextFight}; $('calib').classList.remove('on');
     try { localStorage.setItem('br2_calkeep', JSON.stringify({keep, fight:nextFight, n, t:Date.now()})); } catch(e){}
-    toast(wasPrev ? 'Bien. Quedan ' + p1.length + ' y ' + p2.length + ' opciones: una pelea más para afinar.' : '✅ Pelea 1 lista. Sigue jugando esta pelea para la 2 (ya está marcado su round 1).', 6000);
+    toast(wasPrev ? 'Bien. Quedan ' + p1.length + ' y ' + p2.length + ' opciones: una pelea más para afinar.' : '✅ Pelea 1 lista. En la pelea 2 se invierte: gana primero la DERECHA (su round 1 ya está marcado).', 7000);
     setTimeout(calStart, 400);
     return;
   }
@@ -1296,12 +1303,13 @@ $('calCancel').onclick = calCancel;
 // --- detección en vivo (solo el anfitrión de una sala online) ---
 const watch = {last:'', same:0, armed:false, cur:'0:0', at:0};
 let MIN_ROUND_MS = 8000;   // un round dura más que esto: subir 2 rounds más rápido no es una pelea real
+const sd = (x, y) => ((y - x + 384) % 256) - 128;   // diferencia de un byte con vuelta (254→255→0 es +1, +1)
 function voteSteps(list, d){
   // rounds ganados = (valor actual - valor inicial) / salto por round; se vota entre los candidatos
   const counts = {};
   list.forEach(([k, b, st]) => {
     st = st || 1;
-    const x = (d[k] - b) / st;
+    const x = sd(b, d[k]) / st;
     if (Number.isInteger(x) && x >= 0 && x <= 5) counts[x] = (counts[x] || 0) + 1;
   });
   let best = -1, bc = 0, tie = false;
