@@ -180,6 +180,7 @@
       <div class="drop" id="romBox"></div>
       <input type="file" id="romFile" hidden multiple accept=".chd,.pbp,.zip,.7z,.rar,.cue,.bin,.iso,.img,.m3u,.ecm">
       <div id="romBtns"></div>
+      <div class="li small" id="calRow" style="border:0;gap:10px"><span class="nm" id="calInfo"></span><button class="btn alt" id="bCopyCal" style="width:auto;padding:8px 12px;display:none">📋 Copiar calibración</button></div>
       <label class="li small" style="cursor:pointer;gap:10px;border:0"><input type="checkbox" id="optTime" style="width:20px;height:20px;accent-color:#ff3b3b"> <span><b>⏱️ Tiempo infinito</b> en las peleas (sin límite de tiempo)</span></label>
       <ul class="tips mut small">
         <li>Usa <b>tu propia copia</b> del juego. El archivo se queda en este dispositivo: nunca se sube a internet.</li>
@@ -423,7 +424,12 @@ async function onUser(user){
   pRef.on('value', s => { players = s.val() || {}; renderAll(); }, e => console.warn(e));
   mRef = db.ref(P_MATCHES).limitToLast(150);
   mRef.on('value', s => { matches = s.val() || {}; renderAll(); grantXp(); }, e => console.warn(e));
-  db.ref(P_MEM).on('value', s => { memCfg = s.val(); updateCalBtn(); }, () => {});
+  db.ref(P_MEM).on('value', s => {
+    const v = s.val();
+    if (v) { memCfg = v; try { localStorage.setItem('br2_mem', JSON.stringify(v)); } catch(e){} }
+    else if (memCfg) db.ref(P_MEM).set(memCfg).catch(() => {});   // Firebase la perdió: se restaura desde la copia
+    updateCalBtn();
+  }, () => {});
   renderAll();
 }
 
@@ -1106,11 +1112,17 @@ if (pendingSala) $('joinCode').value = pendingSala;
 // encontramos en qué bytes guarda el juego los rounds ganados de cada jugador, y se comparte en br2_cfg/mem.
 const P_MEM = 'br2_cfg/mem';
 const SKIP = 36900;                 // cabecera + miniatura del estado: ahí no está la memoria del juego
-let memCfg = null, lastGuestIn = 0;
+// Calibración fija dentro de la página (si Firebase no tiene una, se usa esta). Pegar aquí la de "Copiar calibración".
+const DEFAULT_MEM = null;
+let memCfg = (() => { try { return JSON.parse(localStorage.getItem('br2_mem') || 'null') || DEFAULT_MEM; } catch(e){ return DEFAULT_MEM; } })();
+let lastGuestIn = 0, sizeWarned = false;
 const sleep = ms => new Promise(ok => setTimeout(ok, ms));
 function grabState(){ try { return EJS_emulator.gameManager.getState(); } catch(e){ return null; } }
 function emuReady(){ return !!(window.EJS_emulator && EJS_emulator.gameManager && EJS_emulator.started !== false); }
 function updateCalBtn(){
+  $('calInfo').innerHTML = memCfg ? '🎯 <b>Resultado automático activado</b>' + (memCfg.by ? ' <span class="mut">(calibró ' + esc(memCfg.by) + ')</span>' : '')
+    : '🎯 <span class="mut">Resultado automático sin calibrar</span>';
+  $('bCopyCal').style.display = memCfg ? '' : 'none';
   const host = started && (!on || on.role === 'h');
   $('hudCal').style.display = host ? '' : 'none';
   $('hudCal').textContent = memCfg ? '🎯' : '🎯 Calibrar';
@@ -1185,6 +1197,12 @@ function calFinish(){
 function calCancel(){ cal = null; $('calib').classList.remove('on'); }
 $('hudCal').onclick = () => { if (memCfg && !confirm('El resultado automático ya está calibrado. ¿Calibrar de nuevo?')) return; calStart(); };
 $('calMark').onclick = calMark;
+$('bCopyCal').onclick = () => {
+  const txt = 'BR2CAL ' + JSON.stringify({n:memCfg.n, p1:memCfg.p1, p2:memCfg.p2});
+  (navigator.clipboard ? navigator.clipboard.writeText(txt) : Promise.reject()).then(() => toast('Copiada. Pégamela en el chat para dejarla fija en la página.', 5000))
+    .catch(() => prompt('Copia este texto:', txt));
+};
+setTimeout(updateCalBtn, 0);
 $('calCancel').onclick = calCancel;
 
 // --- detección en vivo (solo el anfitrión de una sala online) ---
@@ -1204,7 +1222,11 @@ function voteSteps(list, d, steps){
 setInterval(() => {
   if (!memCfg || cal || !on || on.role !== 'h' || !on.room || !on.room.g || !emuReady()) return;
   const d = grabState();
-  if (!d || d.length !== memCfg.n) return;
+  if (!d) return;
+  if (d.length !== memCfg.n) {
+    if (!sizeWarned) { sizeWarned = true; toast('El emulador se actualizó y la calibración ya no coincide: toca 🎯 para calibrar de nuevo.', 8000); }
+    return;
+  }
   const r1 = voteSteps(memCfg.p1, d, watch.steps), r2 = voteSteps(memCfg.p2, d, watch.steps);
   if (r1 === 0 && r2 === 0) { watch.fired = false; return; }
   if (watch.fired || (r1 < 2 && r2 < 2)) return;
