@@ -282,7 +282,7 @@
     <b class="sh l1" data-i="10">L1</b><b class="sh r1" data-i="11">R1</b><b class="sh st" data-i="3">START</b>
   </div>
 </div>
-<div id="hud"><span id="hudTag"></span><button class="hb" id="hudInv" style="display:none">📨 Invitar</button><button class="hb" id="hudCal" style="display:none">🎯 Calibrar</button><button class="hb" id="hudRes" style="display:none">🏁 Resultado</button><button class="hb" id="hudExit">✕ Salir</button></div>
+<div id="hud"><span id="hudRounds" class="hb" style="display:none;cursor:default"></span><span id="hudTag"></span><button class="hb" id="hudInv" style="display:none">📨 Invitar</button><button class="hb" id="hudCal" style="display:none">🎯 Calibrar</button><button class="hb" id="hudRes" style="display:none">🏁 Resultado</button><button class="hb" id="hudExit">✕ Salir</button></div>
 <div id="calib"><b>🎯 RESULTADO AUTOMÁTICO</b><div id="calStep" class="small"></div><div id="calDots" class="mut small"></div>
   <div class="row" style="margin-top:8px"><button class="hb" id="calCancel">Cancelar</button><button class="btn" id="calMark" style="padding:9px">MARCAR</button></div></div>
 <div class="modal" id="endScreen"><div class="card" style="text-align:center">
@@ -1254,7 +1254,8 @@ function voteSteps(list, d){
   return tie ? -1 : best;
 }
 setInterval(() => {
-  if (!memCfg || cal || !on || on.role !== 'h' || !on.room || !on.room.g || !emuReady()) return;
+  // corre en el anfitrión online y también al jugar en este equipo (para probar la calibración sin tocar el MMR)
+  if (!memCfg || cal || !started || (on && on.role !== 'h') || !emuReady()) { $('hudRounds').style.display = 'none'; return; }
   const d = grabState();
   if (!d) return;
   if (d.length !== memCfg.n) {
@@ -1266,6 +1267,10 @@ setInterval(() => {
   // la misma lectura 2 veces seguidas (1 s) para tomarla en serio
   if (key !== watch.last) { watch.last = key; watch.same = 1; return; }
   if (++watch.same !== 2) return;
+  // contador en vivo arriba, para ver si va siguiendo los rounds
+  const hr = $('hudRounds');
+  if (r1 >= 0 && r2 >= 0 && r1 <= 3 && r2 <= 3) { hr.style.display = ''; hr.textContent = '🎯 Izq ' + r1 + ' - ' + r2 + ' Der'; }
+  else hr.style.display = 'none';
   if (r1 < 0 || r2 < 0) { watch.armed = false; return; }
   if (r1 === 0 && r2 === 0) {                               // empezó una pelea: 0-0
     if (!watch.armed || watch.cur !== '0:0') { watch.armed = true; watch.cur = '0:0'; watch.at = now; }
@@ -1278,9 +1283,11 @@ setInterval(() => {
   watch.cur = key; watch.at = now;
   if (r1 < 2 && r2 < 2) return;                             // aún no gana nadie
   watch.armed = false;
-  if (now - lastGuestIn > 120000) return;                   // el rival no está jugando (demo / menú): no cuenta
-  const r = on.room, p1won = r1 >= 2;
-  const sc = '2-' + (p1won ? r2 : r1);
+  const p1won = r1 >= 2, sc = '2-' + (p1won ? r2 : r1);
+  const side = p1won ? 'IZQUIERDA' : 'DERECHA';
+  if (!on || !on.room || !on.room.g) { toast('🏆 Ganó el de la ' + side + ' (' + sc + ')', 7000); return; }   // jugando en este equipo: solo aviso
+  if (now - lastGuestIn > 120000) { toast('🏆 Ganó el de la ' + side + ' · no cuenta: tu rival no estaba jugando', 6000); return; }
+  const r = on.room;
   processRoomResult(r.rn || 1, r, {w: p1won ? r.h : r.g, sc, auto:true});
 }, 500);
 
@@ -1291,7 +1298,8 @@ function showEnd(r){
   const sc = won ? L.sc : String(L.sc || '').split('-').reverse().join('-');
   $('endTitle').textContent = won ? '🏆 VICTORIA' : '💀 DERROTA';
   $('endTitle').style.color = won ? 'var(--gold)' : '#ff6b6b';
-  $('endSub').innerHTML = (L.fixed ? '↔️ Resultado corregido · ' : '') + esc(me.name) + ' <b>' + esc(sc) + '</b> ' + esc(rival) + (L.auto ? ' <span class="mut">(automático)</span>' : '');
+  const side = L.w === r.h ? 'IZQUIERDA' : 'DERECHA';
+  $('endSub').innerHTML = '<div style="font-weight:800;margin-bottom:4px">Ganó el de la ' + side + '</div>' + (L.fixed ? '↔️ Resultado corregido · ' : '') + esc(me.name) + ' <b>' + esc(sc) + '</b> ' + esc(rival) + (L.auto ? ' <span class="mut">(automático)</span>' : '');
   $('endDelta').textContent = (d > 0 ? '+' : '') + d + ' MMR';
   $('endDelta').className = 'num ' + (d > 0 ? 'up' : 'down');
   $('abFlip').style.display = L.auto && !L.fixed ? '' : 'none';
