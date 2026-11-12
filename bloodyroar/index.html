@@ -1296,9 +1296,8 @@ setInterval(() => {
   if (key !== watch.last) { watch.last = key; watch.same = 1; return; }
   if (++watch.same !== 2) return;
   // contador en vivo arriba, para ver si va siguiendo los rounds
-  const hr = $('hudRounds');
-  if (r1 >= 0 && r2 >= 0 && r1 <= 3 && r2 <= 3) { hr.style.display = ''; hr.textContent = '🎯 Izq ' + r1 + ' - ' + r2 + ' Der'; }
-  else hr.style.display = 'none';
+  const hr = $('hudRounds'), f = x => (x >= 0 && x <= 3 ? x : '?');
+  hr.style.display = ''; hr.textContent = '🎯 Izq ' + f(r1) + ' - ' + f(r2) + ' Der';
   if (r1 < 0 || r2 < 0) { watch.armed = false; return; }
   if (r1 === 0 && r2 === 0) {                               // empezó una pelea: 0-0
     if (!watch.armed || watch.cur !== '0:0') { watch.armed = true; watch.cur = '0:0'; watch.at = now; }
@@ -1328,7 +1327,7 @@ function diagRec(d, r1, r2){
   const sig = v1.join(',') + '|' + v2.join(',') + '|' + (watch.armed ? 'A' : '-');
   if (sig === diag.lastSig) return;
   diag.lastSig = sig;
-  if (diag.log.length < 600) diag.log.push(Math.round((Date.now() - diag.t0) / 1000) + 's J1[' + v1.join(',') + '] J2[' + v2.join(',') + '] => ' + r1 + '-' + r2 + (watch.armed ? ' armado' : ''));
+  if (diag.log.length < 900) diag.log.push(Math.round((Date.now() - diag.t0) / 1000) + 's J1[' + v1.join(',') + '] J2[' + v2.join(',') + '] => ' + r1 + '-' + r2 + (watch.armed ? ' armado' : ''));
 }
 $('hudDiag').onclick = () => {
   if (!memCfg) return;
