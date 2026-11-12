@@ -149,7 +149,7 @@
 <div class="wrap">
   <div class="top">
     <a class="ib" href="../" title="Club Campestre">🏡</a>
-    <div class="logo">BLOODY ROAR 2<small>RANKED · MMR</small></div>
+    <div class="logo">BLOODY ROAR 2<small>RANKED · MMR · <span id="appV"></span></small></div>
     <div class="me" id="meBox"></div>
   </div>
 
@@ -282,7 +282,7 @@
     <b class="sh l1" data-i="10">L1</b><b class="sh r1" data-i="11">R1</b><b class="sh st" data-i="3">START</b>
   </div>
 </div>
-<div id="hud"><span id="hudRounds" class="hb" style="display:none;cursor:default"></span><span id="hudTag"></span><button class="hb" id="hudInv" style="display:none">📨 Invitar</button><button class="hb" id="hudCal" style="display:none">🎯 Calibrar</button><button class="hb" id="hudDiag" style="display:none" title="Copiar diagnóstico">📋</button><button class="hb" id="hudRes" style="display:none">🏁 Resultado</button><button class="hb" id="hudExit">✕ Salir</button></div>
+<div id="hud"><span class="hb" id="hudVer" style="cursor:default;opacity:.7"></span><span id="hudRounds" class="hb" style="display:none;cursor:default"></span><span id="hudTag"></span><button class="hb" id="hudInv" style="display:none">📨 Invitar</button><button class="hb" id="hudCal" style="display:none">🎯 Calibrar</button><button class="hb" id="hudDiag" style="display:none" title="Copiar diagnóstico">📋</button><button class="hb" id="hudRes" style="display:none">🏁 Resultado</button><button class="hb" id="hudExit">✕ Salir</button></div>
 <div id="calib"><b>🎯 RESULTADO AUTOMÁTICO</b><div id="calStep" class="small"></div><div id="calDots" class="mut small"></div>
   <div class="row" style="margin-top:8px"><button class="hb" id="calCancel">Cancelar</button><button class="btn" id="calMark" style="padding:9px">MARCAR</button></div></div>
 <div class="modal" id="endScreen"><div class="card" style="text-align:center">
@@ -318,6 +318,7 @@ const firebaseConfig = {
   messagingSenderId: "180444249462",
   appId: "1:180444249462:web:bdf189d171d908a0274e57"
 };
+const APP_V = 'v3.1';   // versión de la página: súbela en cada cambio
 const ACC_DOMAIN = 'clubcampestre.app';
 const P_PLAYERS = 'br2_players', P_MATCHES = 'br2_matches';
 const EJS_DATA = 'https://cdn.emulatorjs.org/stable/data/';
@@ -1332,7 +1333,7 @@ function diagRec(d, r1, r2){
 $('hudDiag').onclick = () => {
   if (!memCfg) return;
   const d = diag.last, near = k => d ? Array.from(d.slice(k - 8, k + 9)).map(v => v.toString(16).padStart(2, '0')).join(' ') : '';
-  const txt = 'BR2DIAG ' + JSON.stringify({n:memCfg.n, p1:memCfg.p1, p2:memCfg.p2,
+  const txt = 'BR2DIAG ' + JSON.stringify({ver:APP_V, n:memCfg.n, p1:memCfg.p1, p2:memCfg.p2,
     cerca:{p1:memCfg.p1.map(x => near(x[0])), p2:memCfg.p2.map(x => near(x[0]))}, log:diag.log});
   (navigator.clipboard ? navigator.clipboard.writeText(txt) : Promise.reject()).then(() => toast('Diagnóstico copiado: pégamelo en el chat', 5000))
     .catch(() => prompt('Copia este texto:', txt));
@@ -1497,6 +1498,9 @@ addEventListener('keydown', e => {
 segInit('ctlP', v => { ctlP = +v; waiting = null; renderCtl(); });
 $('ctlReset').onclick = () => { ctl = JSON.parse(JSON.stringify(CTL_DEF)); saveCtl(); waiting = null; renderCtl(); toast('Teclas restauradas'); };
 if (!matchMedia('(pointer:coarse)').matches) { $('ctlCard').style.display = ''; renderCtl(); }
+
+$('appV').textContent = APP_V; $('hudVer').textContent = APP_V;
+document.title = 'Bloody Roar 2 ' + APP_V + ' · Club Campestre';
 
 // ============ ARRANQUE ============
 document.querySelectorAll('.tab').forEach(t => t.onclick = () => show(t.dataset.s));
