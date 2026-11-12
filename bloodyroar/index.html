@@ -1175,12 +1175,16 @@ async function calMark(){
 function calFinish(){
   const [A, B, C, D] = cal.snaps, n = A.d.length;
   let p1 = [], p2 = [];
+  const st = {e1:0, e2:0, r1:0, r2:0};   // diagnóstico: cuántos cumplían cada parte
   for (let k = SKIP; k < n; k++){
     if (!(A.ok[k] && B.ok[k] && C.ok[k] && D.ok[k])) continue;
     const a = A.d[k], b = B.d[k], c = C.d[k], d = D.d[k];
-    if (d !== a) continue;                              // en la pelea nueva vuelve a como estaba
-    if (b > a && b - a <= 8 && c === b) p1.push(k);     // subió cuando ganó el J1 y no cuando ganó el J2
-    else if (b === a && c > b && c - b <= 8) p2.push(k); // al revés para el J2
+    // el contador puede SUBIR (0→1→2) o BAJAR (rounds que faltan: 2→1→0); cambia de a poco
+    const j1 = b !== a && Math.abs(b - a) <= 8 && c === b;   // cambió cuando ganó el J1 y no cuando ganó el J2
+    const j2 = b === a && c !== b && Math.abs(c - b) <= 8;   // al revés para el J2
+    if (j1) st.e1++; if (j2) st.e2++;
+    if (d !== a) continue;                                    // en la pelea siguiente vuelve a como estaba
+    if (j1) { p1.push(k); st.r1++; } else if (j2) { p2.push(k); st.r2++; }
   }
   const stepOf = {}; p1.forEach(k => stepOf[k] = B.d[k] - A.d[k]); p2.forEach(k => stepOf[k] = C.d[k] - B.d[k]);
   if (cal.prev) {
@@ -1190,9 +1194,22 @@ function calFinish(){
   }
   const base = k => A.d[k];
   console.log('[BR2 calibración]', {p1:p1.length, p2:p2.length});
+  if ((!p1.length || !p2.length) && cal.prev && st.r1 && st.r2) {
+    // esta pelea sí encontró, pero no coincidió con la anterior: empezamos de nuevo desde esta
+    p1 = []; p2 = [];
+    for (let k = SKIP; k < n; k++){
+      if (!(A.ok[k] && B.ok[k] && C.ok[k] && D.ok[k]) || D.d[k] !== A.d[k]) continue;
+      const a = A.d[k], b = B.d[k], c = C.d[k];
+      if (b !== a && Math.abs(b - a) <= 8 && c === b) p1.push(k); else if (b === a && c !== b && Math.abs(c - b) <= 8) p2.push(k);
+    }
+    cal.prev = null;
+    toast('Esta pelea no coincidió con la anterior; la tomo como nueva pelea 1.', 5000);
+  }
   if (!p1.length || !p2.length) {
     cal = null; $('calib').classList.remove('on');
-    toast('No encontré los contadores. Repite la calibración marcando justo cuando empieza cada round.', 7000);
+    const why = 'J1: ' + st.e1 + '→' + st.r1 + ' · J2: ' + st.e2 + '→' + st.r2;
+    alert('No encontré los contadores.\n\nDetalle (pásamelo en el chat si se repite): ' + why +
+      '\n\nRevisa: el Jugador 1 es el de la IZQUIERDA y debe ganar el round 1; el Jugador 2 (derecha) el round 2. Marca cuando ya se pueda pelear.');
     return;
   }
   const pack = list => list.map(k => [k, base(k), stepOf[k]]);
