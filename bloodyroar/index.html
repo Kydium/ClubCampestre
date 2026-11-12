@@ -124,6 +124,10 @@
   .modal{position:fixed;inset:0;z-index:300;background:rgba(0,0,0,.72);display:none;align-items:center;justify-content:center;padding:16px}
   .modal.on{display:flex}
   .modal .card{width:min(420px,100%);margin:0}
+  .ck{min-width:110px;padding:8px 12px;border-radius:10px;border:1px solid var(--line);background:#0b0204;font-weight:700;cursor:pointer;text-align:center}
+  .ck.wait{border-color:var(--orange);color:var(--orange);animation:blink 1s infinite}
+  .ck.none{color:var(--mut)}
+  @keyframes blink{50%{opacity:.45}}
   .code{font-family:var(--display);letter-spacing:.2em;text-transform:uppercase;text-align:center}
   .drop{border:2px dashed var(--line);border-radius:16px;padding:18px;text-align:center;margin-bottom:12px}
   .drop b{color:#fff}
@@ -166,12 +170,12 @@
     <div class="card">
       <h2>JUGAR</h2>
       <div class="drop" id="romBox"></div>
-      <input type="file" id="romFile" hidden accept=".chd,.pbp,.zip,.7z,.cue,.bin,.iso,.img,.m3u">
+      <input type="file" id="romFile" hidden multiple accept=".chd,.pbp,.zip,.7z,.rar,.cue,.bin,.iso,.img,.m3u,.ecm">
       <div id="romBtns"></div>
       <ul class="tips mut small">
         <li>Usa <b>tu propia copia</b> del juego. El archivo se queda en este dispositivo: nunca se sube a internet.</li>
-        <li>Formatos que funcionan mejor: <b>.chd</b>, <b>.pbp</b> o un <b>.zip</b> con el .bin y el .cue juntos.</li>
-        <li>2 jugadores en el mismo equipo: conecta dos mandos (o teclado + mando). En el celular aparece un mando táctil.</li>
+        <li>Elige el archivo <b>grande</b> del juego: el <b>.bin</b> (unos 400–600 MB), o el <b>.zip</b> tal cual lo descargaste. También sirven .chd, .pbp o .iso. El .cue solo no sirve.</li>
+        <li>2 jugadores en el mismo equipo: dos mandos, o el teclado con las teclas del Jugador 1 y 2 (abajo). En el celular aparece un mando táctil.</li>
         <li>Al terminar la pelea, ve a <b>Reportar</b> para sumar MMR.</li>
       </ul>
     </div>
@@ -189,9 +193,17 @@
       <ul class="tips mut small">
         <li>Al terminar cada pelea, los dos tocan <b>🏁 Resultado</b>. Si coinciden, el MMR se suma al instante.</li>
         <li>El anfitrión juega sin retraso; el invitado ve la imagen un poquito tarde. Túrnense.</li>
-        <li>Invitado: táctil en el celular, o teclado (flechas, J □, K ✕, L ○, I △, U L1, O R1, Enter Start) o un mando.</li>
+        <li>Invitado: táctil en el celular; en PC usa las teclas del <b>Jugador 1</b> de “Controles” o un mando.</li>
         <li>El anfitrión debe dejar la página abierta y en primer plano.</li>
       </ul>
+    </div>
+    <div class="card" id="ctlCard" style="display:none">
+      <h2>🎮 CONTROLES (PC)</h2>
+      <div class="seg" id="ctlP"><button data-v="0" class="on">Jugador 1</button><button data-v="1">Jugador 2</button></div>
+      <div id="ctlList" style="margin-top:8px"></div>
+      <div class="gap"></div>
+      <button class="btn alt" id="ctlReset">Restaurar teclas por defecto</button>
+      <p class="mut small" style="margin-top:10px">Toca un botón y presiona la tecla que quieras (Esc cancela). Los mandos USB/Bluetooth funcionan solos. En online, el invitado usa las teclas del Jugador 1.</p>
     </div>
   </section>
 
@@ -613,9 +625,77 @@ async function refreshRom(){
   }
   $('bPick').onclick = () => $('romFile').click();
 }
+// ----- preparar el archivo: lo dejamos en el formato que el emulador abre seguro -----
+const extOf = n => String(n || '').split('.').pop().toLowerCase();
+const baseOf = n => String(n || '').split('/').pop();
+async function zipEntries(f){
+  const tail = new DataView(await f.slice(Math.max(0, f.size - 65558)).arrayBuffer());
+  let eo = -1;
+  for (let i = tail.byteLength - 22; i >= 0; i--) if (tail.getUint32(i, true) === 0x06054b50) { eo = i; break; }
+  if (eo < 0) throw new Error('zip');
+  const n = tail.getUint16(eo + 10, true), cdSize = tail.getUint32(eo + 12, true), cdOff = tail.getUint32(eo + 16, true);
+  const cd = new DataView(await f.slice(cdOff, cdOff + cdSize).arrayBuffer());
+  const out = [];
+  for (let i = 0, p = 0; i < n && p < cd.byteLength; i++){
+    if (cd.getUint32(p, true) !== 0x02014b50) break;
+    const method = cd.getUint16(p + 10, true), csize = cd.getUint32(p + 20, true), usize = cd.getUint32(p + 24, true);
+    const nl = cd.getUint16(p + 28, true), el = cd.getUint16(p + 30, true), cl = cd.getUint16(p + 32, true), lo = cd.getUint32(p + 42, true);
+    const name = new TextDecoder().decode(new Uint8Array(cd.buffer, cd.byteOffset + p + 46, nl));
+    out.push({name, method, csize, usize, lo});
+    p += 46 + nl + el + cl;
+  }
+  return out;
+}
+async function zipExtract(f, e){
+  const h = new DataView(await f.slice(e.lo, e.lo + 30).arrayBuffer());
+  const start = e.lo + 30 + h.getUint16(26, true) + h.getUint16(28, true);
+  const raw = f.slice(start, start + e.csize);
+  if (e.method === 0) return new File([raw], baseOf(e.name));
+  if (e.method !== 8 || typeof DecompressionStream === 'undefined') throw new Error('metodo');
+  const blob = await new Response(raw.stream().pipeThrough(new DecompressionStream('deflate-raw'))).blob();
+  return new File([blob], baseOf(e.name));
+}
+const GAME_EXT = ['chd', 'pbp', 'iso', 'bin', 'img'];
+async function prepareRom(files){
+  files = Array.from(files);
+  const bad = files.find(f => ['ecm', 'ape'].includes(extOf(f.name)));
+  if (bad) throw 'El formato .' + extOf(bad.name) + ' no se puede abrir directo. Busca la versión .bin/.cue, .chd o .pbp.';
+  const zip = files.find(f => extOf(f.name) === 'zip');
+  if (zip){
+    let list;
+    try { list = (await zipEntries(zip)).filter(e => !e.name.endsWith('/') && !/(^|\/)__MACOSX\//.test(e.name)); }
+    catch(e){ return {file:zip}; }   // zip raro: que el emulador lo intente igual
+    const one = list.find(e => ['chd', 'pbp', 'iso'].includes(extOf(e.name)));
+    const bins = list.filter(e => ['bin', 'img'].includes(extOf(e.name)));
+    if (!one && !bins.length) throw 'Ese .zip no trae el juego (no tiene .bin, .chd, .pbp ni .iso).';
+    if (one || bins.length === 1){
+      toast('Descomprimiendo el juego…', 8000);
+      try { return {file: await zipExtract(zip, one || bins[0])}; } catch(e){ return {file:zip}; }
+    }
+    return {file:zip};   // varios .bin (pistas de audio): va el zip completo con su .cue
+  }
+  const packed = files.find(f => ['7z', 'rar'].includes(extOf(f.name)));
+  if (packed) return {file:packed, warn:'Si no arranca, descomprímelo y elige el .bin.'};
+  const game = files.filter(f => GAME_EXT.includes(extOf(f.name)));
+  if (!game.length) {
+    if (files.some(f => ['cue', 'm3u'].includes(extOf(f.name))))
+      throw 'Elegiste solo el .cue (es un archivo de texto pequeñito). Elige el .bin, que es el grande (unos 400–600 MB).';
+    throw 'Ese archivo no es un juego de PS1. Elige el .bin, .zip, .chd, .pbp o .iso.';
+  }
+  if (game.length > 1 && game.every(f => ['bin', 'img'].includes(extOf(f.name))))
+    throw 'Ese juego viene en varias partes: elige el .zip completo tal cual lo descargaste.';
+  const f = game.sort((a, b) => b.size - a.size)[0];
+  const warn = f.size < 20 * 1048576 ? 'Ese archivo pesa muy poco (' + (f.size / 1048576).toFixed(1) + ' MB) para ser el juego completo.' : '';
+  return {file:f, warn};
+}
 $('romFile').onchange = async e => {
-  const f = e.target.files && e.target.files[0]; e.target.value = '';
-  if (!f) return;
+  const fs = e.target.files ? Array.from(e.target.files) : []; e.target.value = '';
+  if (!fs.length) return;
+  let res;
+  try { res = await prepareRom(fs); }
+  catch(err){ $('romBox').innerHTML = '⚠️ <b>' + esc(typeof err === 'string' ? err : 'No se pudo leer el archivo') + '</b>'; return; }
+  if (res.warn) toast(res.warn, 6000);
+  const f = res.file;
   memRom = f;
   try { await IDB.put(f); toast('Listo: guardado en este dispositivo'); }
   catch(err){ console.warn(err); toast('No hubo espacio para guardarlo; sirve hasta que cierres la página', 4000); }
@@ -635,6 +715,12 @@ function startGame(blob){
   window.EJS_color = '#ff3b3b';
   window.EJS_backgroundColor = '#000';
   window.EJS_language = 'es';
+  window.EJS_defaultControls = ejsControls();
+  // si el emulador guardó controles de antes, se reemplazan por los de esta página
+  try {
+    const k = 'ejs-1-psx-Bloody Roar 2-settings', cur = JSON.parse(localStorage.getItem(k) || 'null');
+    if (cur && cur.controlSettings) { cur.controlSettings = ejsControls(); localStorage.setItem(k, JSON.stringify(cur)); }
+  } catch(e){}
   loadScript(EJS_DATA + 'loader.js').catch(() => {
     toast('No se pudo cargar el emulador (¿sin internet?)', 4000);
     $('gameBox').classList.remove('on'); started = false;
@@ -878,14 +964,17 @@ function push(i){
 }
 function setSrc(k, i, v){ if (!!src[k][i] === !!v) return; if (v) src[k][i] = 1; else delete src[k][i]; push(i); }
 function resendAll(){ for (let i = 0; i < 16; i++) { delete sent[i]; push(i); } }
-const KEYS = {ArrowUp:4, ArrowDown:5, ArrowLeft:6, ArrowRight:7, KeyW:4, KeyS:5, KeyA:6, KeyD:7,
-  KeyJ:1, KeyK:0, KeyL:8, KeyI:9, KeyU:10, KeyO:11, Enter:3, Backspace:2};
+function guestKey(e){   // tecla -> botón, según el Jugador 1 de "Controles"
+  const name = KEYNAME[e.keyCode]; if (!name) return null;
+  const m = ctl[0]; for (const i in m) if (m[i] === name) return +i;
+  return null;
+}
 // Mando estándar: ✕ ○ □ △ L1 R1 L2 R2 Select Start · cruceta
 const GP = {0:0, 1:8, 2:1, 3:9, 4:10, 5:11, 6:12, 7:13, 8:2, 9:3, 12:4, 13:5, 14:6, 15:7};
 function startInputs(){
   addEventListener('keydown', e => { if (!on || on.role !== 'g' || $('resModal').classList.contains('on')) return;
-    const i = KEYS[e.code]; if (i == null) return; e.preventDefault(); setSrc('kb', i, 1); });
-  addEventListener('keyup', e => { const i = KEYS[e.code]; if (i == null || !on) return; setSrc('kb', i, 0); });
+    const i = guestKey(e); if (i == null) return; e.preventDefault(); setSrc('kb', i, 1); });
+  addEventListener('keyup', e => { const i = guestKey(e); if (i == null || !on) return; setSrc('kb', i, 0); });
   addEventListener('blur', () => { Object.keys(src.kb).forEach(i => setSrc('kb', +i, 0)); });
   (function poll(){
     const g = navigator.getGamepads ? Array.from(navigator.getGamepads()).find(x => x && x.connected) : null;
@@ -992,6 +1081,67 @@ $('bJoin').onclick = () => joinRoom($('joinCode').value);
 $('joinCode').onkeydown = e => { if (e.key === 'Enter') joinRoom($('joinCode').value); };
 let pendingSala = (new URLSearchParams(location.search).get('sala') || '').toUpperCase();
 if (pendingSala) $('joinCode').value = pendingSala;
+
+// ============ CONTROLES (teclado en PC) ============
+// Nombres de tecla que entiende el emulador (EmulatorJS) según keyCode.
+const KEYNAME = {8:'backspace',9:'tab',13:'enter',16:'shift',17:'ctrl',18:'alt',20:'caps lock',32:'space',33:'page up',34:'page down',
+  35:'end',36:'home',37:'left arrow',38:'up arrow',39:'right arrow',40:'down arrow',45:'insert',46:'delete',
+  96:'numpad 0',97:'numpad 1',98:'numpad 2',99:'numpad 3',100:'numpad 4',101:'numpad 5',102:'numpad 6',103:'numpad 7',104:'numpad 8',105:'numpad 9',
+  106:'multiply',107:'add',109:'subtract',110:'decimal point',111:'divide',186:'semi-colon',187:'equal sign',188:'comma',189:'dash',
+  190:'period',191:'forward slash',192:'grave accent',219:'open bracket',220:'back slash',221:'close braket',222:'single quote'};
+for (let c = 48; c <= 57; c++) KEYNAME[c] = String.fromCharCode(c);
+for (let c = 65; c <= 90; c++) KEYNAME[c] = String.fromCharCode(c).toLowerCase();
+const ACTIONS = [[4,'↑ Arriba'],[5,'↓ Abajo'],[6,'← Izquierda'],[7,'→ Derecha'],[1,'□ Cuadrado'],[0,'✕ Equis'],[8,'○ Círculo'],
+  [9,'△ Triángulo'],[10,'L1'],[11,'R1'],[12,'L2'],[13,'R2'],[3,'Start'],[2,'Select']];
+const CTL_DEF = {
+  0:{4:'w',5:'s',6:'a',7:'d',1:'j',0:'k',8:'l',9:'i',10:'u',11:'o',12:'y',13:'p',3:'enter',2:'v'},
+  1:{4:'up arrow',5:'down arrow',6:'left arrow',7:'right arrow',1:'numpad 4',0:'numpad 5',8:'numpad 6',9:'numpad 8',
+     10:'numpad 7',11:'numpad 9',12:'numpad 1',13:'numpad 3',3:'numpad 0',2:'decimal point'}
+};
+const PADNAME = {0:'BUTTON_2',1:'BUTTON_4',2:'SELECT',3:'START',4:'DPAD_UP',5:'DPAD_DOWN',6:'DPAD_LEFT',7:'DPAD_RIGHT',8:'BUTTON_1',
+  9:'BUTTON_3',10:'LEFT_TOP_SHOULDER',11:'RIGHT_TOP_SHOULDER',12:'LEFT_BOTTOM_SHOULDER',13:'RIGHT_BOTTOM_SHOULDER',14:'LEFT_STICK',15:'RIGHT_STICK'};
+let ctl = (() => { try { const v = JSON.parse(localStorage.getItem('br2_ctl') || 'null'); if (v && v[0] && v[1]) return v; } catch(e){} return JSON.parse(JSON.stringify(CTL_DEF)); })();
+const saveCtl = () => { try { localStorage.setItem('br2_ctl', JSON.stringify(ctl)); } catch(e){} };
+function ejsControls(){
+  const out = {0:{}, 1:{}, 2:{}, 3:{}};
+  for (const p of [0, 1]) for (let i = 0; i < 16; i++) out[p][i] = {value: ctl[p][i] || '', value2: PADNAME[i]};
+  const sticks = ['LEFT_STICK_X:+1','LEFT_STICK_X:-1','LEFT_STICK_Y:+1','LEFT_STICK_Y:-1','RIGHT_STICK_X:+1','RIGHT_STICK_X:-1','RIGHT_STICK_Y:+1','RIGHT_STICK_Y:-1'];
+  sticks.forEach((v, k) => { out[0][16 + k] = {value:'', value2:v}; out[1][16 + k] = {value:'', value2:v}; });
+  return out;
+}
+function keyLabel(n){
+  if (!n) return '— sin tecla —';
+  const sp = {'up arrow':'↑','down arrow':'↓','left arrow':'←','right arrow':'→','space':'Espacio','enter':'Enter','shift':'Shift','ctrl':'Ctrl',
+    'alt':'Alt','tab':'Tab','backspace':'Borrar','semi-colon':'Ñ / ;','comma':',','period':'.','dash':'-','decimal point':'Num .'};
+  if (sp[n]) return sp[n];
+  if (n.startsWith('numpad ')) return 'Num ' + n.slice(7);
+  return n.length === 1 ? n.toUpperCase() : n;
+}
+let ctlP = 0, waiting = null;
+function renderCtl(){
+  $('ctlList').innerHTML = ACTIONS.map(([i, lab]) => {
+    const n = ctl[ctlP][i], w = waiting && waiting.i === i;
+    return '<div class="li"><div class="nm">' + lab + '</div><button class="ck' + (w ? ' wait' : n ? '' : ' none') + '" data-ck="' + i + '">' +
+      (w ? 'Presiona…' : esc(keyLabel(n))) + '</button></div>';
+  }).join('');
+}
+$('ctlList').addEventListener('click', e => {
+  const b = e.target.closest('[data-ck]'); if (!b) return;
+  waiting = {p:ctlP, i:+b.dataset.ck}; renderCtl();
+});
+addEventListener('keydown', e => {
+  if (!waiting) return;
+  e.preventDefault(); e.stopPropagation();
+  if (e.keyCode === 27) { waiting = null; renderCtl(); return; }
+  const name = KEYNAME[e.keyCode];
+  if (!name) { toast('Esa tecla no se puede usar'); return; }
+  // si la tecla ya estaba en otro botón (de cualquier jugador), se la quitamos
+  for (const p of [0, 1]) for (const k in ctl[p]) if (ctl[p][k] === name) ctl[p][k] = '';
+  ctl[waiting.p][waiting.i] = name; waiting = null; saveCtl(); renderCtl();
+}, true);
+segInit('ctlP', v => { ctlP = +v; waiting = null; renderCtl(); });
+$('ctlReset').onclick = () => { ctl = JSON.parse(JSON.stringify(CTL_DEF)); saveCtl(); waiting = null; renderCtl(); toast('Teclas restauradas'); };
+if (!matchMedia('(pointer:coarse)').matches) { $('ctlCard').style.display = ''; renderCtl(); }
 
 // ============ ARRANQUE ============
 document.querySelectorAll('.tab').forEach(t => t.onclick = () => show(t.dataset.s));
