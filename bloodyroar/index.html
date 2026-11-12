@@ -1217,14 +1217,15 @@ for (let c = 65; c <= 90; c++) KEYNAME[c] = String.fromCharCode(c).toLowerCase()
 const ACTIONS = [[4,'↑ Arriba'],[5,'↓ Abajo'],[6,'← Izquierda'],[7,'→ Derecha'],[1,'□ Cuadrado'],[0,'✕ Equis'],[8,'○ Círculo'],
   [9,'△ Triángulo'],[10,'L1'],[11,'R1'],[12,'L2'],[13,'R2'],[3,'Start'],[2,'Select']];
 const CTL_DEF = {
-  0:{4:'w',5:'s',6:'a',7:'d',1:'l',0:'k',8:'i',9:'j',10:'u',11:'o',12:'y',13:'p',3:'enter',2:'v'},
+  0:{4:'w',5:'s',6:'a',7:'d',1:'k',0:'l',8:'i',9:'j',10:'u',11:'o',12:'y',13:'p',3:'enter',2:'v'},
   1:{4:'up arrow',5:'down arrow',6:'left arrow',7:'right arrow',1:'numpad 4',0:'numpad 5',8:'numpad 6',9:'numpad 8',
      10:'numpad 7',11:'numpad 9',12:'numpad 1',13:'numpad 3',3:'numpad 0',2:'decimal point'}
 };
 const PADNAME = {0:'BUTTON_2',1:'BUTTON_4',2:'SELECT',3:'START',4:'DPAD_UP',5:'DPAD_DOWN',6:'DPAD_LEFT',7:'DPAD_RIGHT',8:'BUTTON_1',
   9:'BUTTON_3',10:'LEFT_TOP_SHOULDER',11:'RIGHT_TOP_SHOULDER',12:'LEFT_BOTTOM_SHOULDER',13:'RIGHT_BOTTOM_SHOULDER',14:'LEFT_STICK',15:'RIGHT_STICK'};
 let ctl = (() => { try { const v = JSON.parse(localStorage.getItem('br2_ctl') || 'null'); if (v && v[0] && v[1]) {
-  if (v[0][1] === 'j' && v[0][8] === 'l' && v[0][9] === 'i') { v[0][1] = 'l'; v[0][8] = 'i'; v[0][9] = 'j'; }   // teclas por defecto antiguas
+  const old = (x, y, z, w) => v[0][1] === x && v[0][0] === y && v[0][8] === z && v[0][9] === w;
+  if (old('j', 'k', 'l', 'i') || old('l', 'k', 'i', 'j')) { v[0][1] = 'k'; v[0][0] = 'l'; v[0][8] = 'i'; v[0][9] = 'j'; }   // teclas por defecto antiguas
   return v; } } catch(e){} return JSON.parse(JSON.stringify(CTL_DEF)); })();
 const saveCtl = () => { try { localStorage.setItem('br2_ctl', JSON.stringify(ctl)); } catch(e){} };
 function ejsControls(){
