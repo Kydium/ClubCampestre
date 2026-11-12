@@ -94,9 +94,37 @@
   #gameBox{display:none;position:fixed;inset:0;z-index:100;background:#000}
   #gameBox.on{display:block}
   #game{width:100%;height:100%}
-  #exitGame{position:fixed;z-index:101;top:calc(env(safe-area-inset-top,0px) + 8px);right:8px;border:0;border-radius:10px;
-    padding:8px 12px;background:rgba(0,0,0,.65);color:#fff;font-weight:700;display:none;cursor:pointer}
-  #gameBox.on ~ #exitGame{display:block}
+  #hud{position:fixed;z-index:150;top:calc(env(safe-area-inset-top,0px) + 6px);right:6px;display:none;gap:6px;align-items:center;flex-wrap:wrap;justify-content:flex-end;max-width:96vw}
+  #hud.on{display:flex}
+  .hb{border:0;border-radius:10px;padding:7px 11px;background:rgba(0,0,0,.7);color:#fff;font-weight:700;font-size:.9rem;cursor:pointer}
+  #hudTag{padding:6px 10px;border-radius:10px;background:rgba(0,0,0,.7);font-size:.85rem;font-weight:700}
+  #hudTag:empty{display:none}
+
+  /* invitado online */
+  #guestBox{display:none;position:fixed;inset:0;z-index:100;background:#000}
+  #guestBox.on{display:block}
+  #gv{position:absolute;inset:0;width:100%;height:100%;object-fit:contain;background:#000}
+  #gMsg{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);text-align:center;color:#fff;font-weight:700;padding:16px;width:90%}
+  #bSound{position:absolute;left:50%;top:calc(env(safe-area-inset-top,0px) + 8px);transform:translateX(-50%);display:none;z-index:3}
+  .pad{position:absolute;inset:0;pointer-events:none;display:none;z-index:2}
+  .pad.on{display:block}
+  .pad>*{pointer-events:auto;touch-action:none;user-select:none;-webkit-user-select:none;-webkit-touch-callout:none}
+  .dpad{position:absolute;left:4vmin;bottom:8vmin;width:40vmin;height:40vmin;max-width:190px;max-height:190px;border-radius:50%;
+    background:rgba(255,255,255,.07);border:2px solid rgba(255,255,255,.25)}
+  .dpad i{position:absolute;left:50%;top:50%;width:36%;height:36%;margin:-18% 0 0 -18%;border-radius:50%;background:rgba(255,255,255,.3);pointer-events:none}
+  .face{position:absolute;right:4vmin;bottom:8vmin;width:42vmin;height:42vmin;max-width:200px;max-height:200px;pointer-events:none}
+  .face b{position:absolute;width:36%;height:36%;border-radius:50%;background:rgba(255,255,255,.1);border:2px solid rgba(255,255,255,.3);
+    display:flex;align-items:center;justify-content:center;font-size:clamp(16px,5vmin,26px);pointer-events:auto;touch-action:none}
+  .face .t{left:32%;top:0;color:#5fe3a0}.face .c{right:0;top:32%;color:#ff6b6b}.face .x{left:32%;bottom:0;color:#7cc8ff}.face .s{left:0;top:32%;color:#ff8fd1}
+  .face b.dn,.sh.dn{background:rgba(255,59,59,.55)}
+  .sh{position:absolute;top:calc(env(safe-area-inset-top,0px) + 56px);padding:10px 18px;border-radius:12px;background:rgba(255,255,255,.1);
+    border:2px solid rgba(255,255,255,.3);color:#fff;font-weight:800}
+  .sh.l1{left:4vmin}.sh.r1{right:4vmin}
+  .sh.st{top:auto;bottom:3vmin;left:50%;transform:translateX(-50%);padding:6px 14px;font-size:.8rem}
+  .modal{position:fixed;inset:0;z-index:300;background:rgba(0,0,0,.72);display:none;align-items:center;justify-content:center;padding:16px}
+  .modal.on{display:flex}
+  .modal .card{width:min(420px,100%);margin:0}
+  .code{font-family:var(--display);letter-spacing:.2em;text-transform:uppercase;text-align:center}
   .drop{border:2px dashed var(--line);border-radius:16px;padding:18px;text-align:center;margin-bottom:12px}
   .drop b{color:#fff}
   ul.tips{padding-left:20px;margin-top:8px}ul.tips li{margin:4px 0}
@@ -145,6 +173,24 @@
         <li>Formatos que funcionan mejor: <b>.chd</b>, <b>.pbp</b> o un <b>.zip</b> con el .bin y el .cue juntos.</li>
         <li>2 jugadores en el mismo equipo: conecta dos mandos (o teclado + mando). En el celular aparece un mando táctil.</li>
         <li>Al terminar la pelea, ve a <b>Reportar</b> para sumar MMR.</li>
+      </ul>
+    </div>
+    <div class="card">
+      <h2>ONLINE 1 VS 1</h2>
+      <p class="mut small">El anfitrión corre el juego y su rival lo ve en vivo y juega desde su casa. Solo el anfitrión necesita el archivo.</p>
+      <div class="gap"></div>
+      <button class="btn" id="bHost">🌐 CREAR SALA (ANFITRIÓN)</button>
+      <div class="gap"></div>
+      <div class="row">
+        <input type="text" id="joinCode" class="code" placeholder="CÓDIGO" maxlength="4" autocapitalize="characters" autocomplete="off">
+        <button class="btn alt" id="bJoin" style="flex:0 0 auto;width:auto;padding:12px 18px">UNIRME</button>
+      </div>
+      <div class="err" id="onErr"></div>
+      <ul class="tips mut small">
+        <li>Al terminar cada pelea, los dos tocan <b>🏁 Resultado</b>. Si coinciden, el MMR se suma al instante.</li>
+        <li>El anfitrión juega sin retraso; el invitado ve la imagen un poquito tarde. Túrnense.</li>
+        <li>Invitado: táctil en el celular, o teclado (flechas, J □, K ✕, L ○, I △, U L1, O R1, Enter Start) o un mando.</li>
+        <li>El anfitrión debe dejar la página abierta y en primer plano.</li>
       </ul>
     </div>
   </section>
@@ -207,7 +253,26 @@
 </nav>
 
 <div id="gameBox"><div id="game"></div></div>
-<button id="exitGame">✕ Salir</button>
+<div id="guestBox">
+  <video id="gv" autoplay playsinline muted></video>
+  <div id="gMsg">Conectando con el anfitrión…</div>
+  <button class="hb" id="bSound">🔊 Activar sonido</button>
+  <div class="pad" id="pad">
+    <div class="dpad" id="dpad"><i></i></div>
+    <div class="face"><b class="t" data-i="9">△</b><b class="c" data-i="8">○</b><b class="x" data-i="0">✕</b><b class="s" data-i="1">□</b></div>
+    <b class="sh l1" data-i="10">L1</b><b class="sh r1" data-i="11">R1</b><b class="sh st" data-i="3">START</b>
+  </div>
+</div>
+<div id="hud"><span id="hudTag"></span><button class="hb" id="hudInv" style="display:none">📨 Invitar</button><button class="hb" id="hudRes" style="display:none">🏁 Resultado</button><button class="hb" id="hudExit">✕ Salir</button></div>
+<div class="modal" id="resModal"><div class="card">
+  <h2>¿QUIÉN GANÓ?</h2>
+  <div class="mut small" id="resInfo"></div>
+  <div class="seg" id="resW" style="margin-top:10px"></div>
+  <label class="f">Rounds</label>
+  <div class="seg" id="resSc"><button data-v="2-0">2 - 0</button><button data-v="2-1">2 - 1</button></div>
+  <div class="err" id="resErr"></div>
+  <div class="row" style="margin-top:6px"><button class="btn alt" id="resClose">Cerrar</button><button class="btn" id="resSend">ENVIAR</button></div>
+</div></div>
 <div id="toast"></div>
 
 <script src="../club-xp.js"></script>
@@ -313,6 +378,11 @@ async function onUser(user){
   avatar($('meAv'), me.uid, me.name);
   if (window.ClubXP) ClubXP.init({db, uid:me.uid, game:'bloodyroar'});
   $('tabs').style.display = ''; show('sPlay');
+  if (pendingSala && !on) {   // entró con un link de invitación
+    const c = pendingSala; pendingSala = '';
+    history.replaceState(null, '', location.pathname);
+    joinRoom(c);
+  }
 
   // ficha del jugador (se crea la primera vez)
   try {
@@ -371,26 +441,34 @@ async function sendReport(){
   } catch(e){ console.warn(e); $('rErr').textContent = 'No se pudo enviar (' + (e.code || e.message) + ')'; }
   $('bReport').disabled = false;
 }
+// Calcula el MMR nuevo de los dos (solo las rutas de los jugadores; la pelea la agrega quien llama)
+async function buildApply(m){
+  const [sa, sb] = await Promise.all([db.ref(P_PLAYERS + '/' + m.a).once('value'), db.ref(P_PLAYERS + '/' + m.b).once('value')]);
+  const A = Object.assign({mmr:START_MMR, w:0, l:0, pk:START_MMR}, sa.val() || {});
+  const B = Object.assign({mmr:START_MMR, w:0, l:0, pk:START_MMR}, sb.val() || {});
+  const aWon = m.w === m.a;
+  const d = aWon ? eloDelta(A, B, m.sc) : eloDelta(B, A, m.sc);
+  const da = aWon ? d.up : -d.dn, dbb = aWon ? -d.dn : d.up;
+  const na = Math.round(+A.mmr + da), nb = Math.round(+B.mmr + dbb);
+  const u = {};
+  u[P_PLAYERS + '/' + m.a + '/n'] = A.n || m.an;
+  u[P_PLAYERS + '/' + m.a + '/mmr'] = na;
+  u[P_PLAYERS + '/' + m.a + '/pk'] = Math.max(+A.pk || START_MMR, na);
+  u[P_PLAYERS + '/' + m.a + '/' + (aWon ? 'w' : 'l')] = (+A[aWon ? 'w' : 'l'] || 0) + 1;
+  u[P_PLAYERS + '/' + m.b + '/n'] = B.n || m.bn;
+  u[P_PLAYERS + '/' + m.b + '/mmr'] = nb;
+  u[P_PLAYERS + '/' + m.b + '/pk'] = Math.max(+B.pk || START_MMR, nb);
+  u[P_PLAYERS + '/' + m.b + '/' + (aWon ? 'l' : 'w')] = (+B[aWon ? 'l' : 'w'] || 0) + 1;
+  return {u, da, dbb};
+}
 async function confirmMatch(id){
   const ref = db.ref(P_MATCHES + '/' + id);
   try {
-    const lock = await ref.child('st').transaction(s => (s === 'p' ? 'c' : undefined));   // nadie más la procesa
-    if (!lock.committed) { toast('Esa pelea ya fue procesada'); return; }
+    // null = aún sin datos locales: Firebase reintenta con el valor real del servidor
+    const lock = await ref.child('st').transaction(s => (s === null ? null : s === 'p' ? 'c' : undefined));
+    if (!lock.committed || lock.snapshot.val() !== 'c') { toast('Esa pelea ya fue procesada'); return; }
     const m = (await ref.once('value')).val();
-    const [sa, sb] = await Promise.all([db.ref(P_PLAYERS + '/' + m.a).once('value'), db.ref(P_PLAYERS + '/' + m.b).once('value')]);
-    const A = Object.assign({mmr:START_MMR, w:0, l:0, pk:START_MMR, n:m.an}, sa.val() || {});
-    const B = Object.assign({mmr:START_MMR, w:0, l:0, pk:START_MMR, n:m.bn}, sb.val() || {});
-    const aWon = m.w === m.a;
-    const d = aWon ? eloDelta(A, B, m.sc) : eloDelta(B, A, m.sc);
-    const da = aWon ? d.up : -d.dn, dbb = aWon ? -d.dn : d.up;
-    const na = Math.round(+A.mmr + da), nb = Math.round(+B.mmr + dbb);
-    const u = {};
-    u[P_PLAYERS + '/' + m.a + '/mmr'] = na;
-    u[P_PLAYERS + '/' + m.a + '/pk'] = Math.max(+A.pk || START_MMR, na);
-    u[P_PLAYERS + '/' + m.a + '/' + (aWon ? 'w' : 'l')] = (+A[aWon ? 'w' : 'l'] || 0) + 1;
-    u[P_PLAYERS + '/' + m.b + '/mmr'] = nb;
-    u[P_PLAYERS + '/' + m.b + '/pk'] = Math.max(+B.pk || START_MMR, nb);
-    u[P_PLAYERS + '/' + m.b + '/' + (aWon ? 'l' : 'w')] = (+B[aWon ? 'l' : 'w'] || 0) + 1;
+    const {u, da, dbb} = await buildApply(m);
     u[P_MATCHES + '/' + id + '/st'] = 'ok';
     u[P_MATCHES + '/' + id + '/da'] = da;
     u[P_MATCHES + '/' + id + '/db'] = dbb;
@@ -519,13 +597,13 @@ const IDB = {
   put(f){ return this.run('readwrite', s => s.put(f, 'rom')); },
   del(){ return this.run('readwrite', s => s.delete('rom')); }
 };
-let savedRom = null, started = false;
+let savedRom = null, memRom = null, started = false;
 async function refreshRom(){
-  try { savedRom = await IDB.get(); } catch(e){ savedRom = null; }
+  try { savedRom = (await IDB.get()) || memRom; } catch(e){ savedRom = memRom; }
   const mb = f => (f.size / 1048576).toFixed(0) + ' MB';
   if (savedRom){
-    $('romBox').innerHTML = '💿 <b>' + esc(savedRom.name) + '</b><div class="mut small">' + mb(savedRom) + ' · guardado en este dispositivo</div>';
-    $('romBtns').innerHTML = '<button class="btn" id="bPlay">▶ JUGAR BLOODY ROAR 2</button><div class="gap"></div>' +
+    $('romBox').innerHTML = '💿 <b>' + esc(savedRom.name) + '</b><div class="mut small">' + mb(savedRom) + (savedRom === memRom && memRom ? ' · listo' : ' · guardado en este dispositivo') + '</div>';
+    $('romBtns').innerHTML = '<button class="btn" id="bPlay">▶ JUGAR EN ESTE EQUIPO</button><div class="gap"></div>' +
       '<div class="row"><button class="btn alt" id="bPick">Cambiar archivo</button><button class="btn alt" id="bForget">Borrar del equipo</button></div>';
     $('bPlay').onclick = () => startGame(savedRom);
     $('bForget').onclick = async () => { await IDB.del().catch(() => {}); refreshRom(); toast('Borrado de este dispositivo'); };
@@ -538,16 +616,16 @@ async function refreshRom(){
 $('romFile').onchange = async e => {
   const f = e.target.files && e.target.files[0]; e.target.value = '';
   if (!f) return;
-  try { await IDB.put(f); toast('Guardado en este dispositivo'); }
-  catch(err){ console.warn(err); toast('No hubo espacio para guardarlo; igual se puede jugar ahora', 4000); }
+  memRom = f;
+  try { await IDB.put(f); toast('Listo: guardado en este dispositivo'); }
+  catch(err){ console.warn(err); toast('No hubo espacio para guardarlo; sirve hasta que cierres la página', 4000); }
   await refreshRom();
-  startGame(f);
 };
 function startGame(blob){
   if (started) { location.reload(); return; }
   started = true;
   const file = blob instanceof File ? blob : new File([blob], blob.name || 'bloodyroar2.chd');
-  $('gameBox').classList.add('on');
+  $('gameBox').classList.add('on'); $('hud').classList.add('on');
   window.EJS_player = '#game';
   window.EJS_core = 'psx';
   window.EJS_gameName = 'Bloody Roar 2';
@@ -562,7 +640,358 @@ function startGame(blob){
     $('gameBox').classList.remove('on'); started = false;
   });
 }
-$('exitGame').onclick = () => location.reload();   // la forma más limpia de cerrar el emulador
+$('hudExit').onclick = () => leaveOnline();
+
+// ============ ONLINE (anfitrión transmite, invitado manda botones) ============
+// La conexión se arma con Firebase (br2_rooms/<CÓDIGO>) y el video va directo entre los dos (WebRTC).
+const P_ROOMS = 'br2_rooms';
+const ICE = [
+  {urls:['stun:stun.l.google.com:19302', 'stun:stun1.l.google.com:19302', 'stun:stun.cloudflare.com:3478']}
+  // Si alguien no logra conectarse con datos móviles, agrega aquí un servidor TURN (p. ej. el gratis de metered.ca):
+  // , {urls:'turn:SERVIDOR:80', username:'USUARIO', credential:'CLAVE'}
+];
+let on = null;   // {code, role:'h'|'g', ref, room, pc, dc, sid, peer, offs:[], cands:[]}
+const resShown = {};
+let lastShown = 0, badShown = 0, resSel = {w:'', sc:''};
+
+function genCode(){ const a = 'ABCDEFGHJKLMNPQRSTUVWXYZ'; let c = ''; for (let i = 0; i < 4; i++) c += a[Math.floor(Math.random() * a.length)]; return c; }
+const otherUid = r => on.role === 'h' ? r.g : r.h;
+const otherName = r => on.role === 'h' ? (r.gn || 'rival') : (r.hn || 'anfitrión');
+function setTag(t){ $('hudTag').textContent = t; }
+
+async function hostRoom(){
+  $('onErr').textContent = '';
+  if (!me) return;
+  if (!savedRom) { $('onErr').textContent = 'Primero carga tu copia del juego (en la tarjeta de arriba).'; return; }
+  $('bHost').disabled = true;
+  let code = null;
+  try {
+    for (let i = 0; i < 6 && !code; i++){
+      const c = genCode();
+      const r = await db.ref(P_ROOMS + '/' + c).transaction(cur => cur ? undefined : {h:me.uid, hn:me.name, rn:1, t:Date.now()});
+      if (r.committed && r.snapshot.val() && r.snapshot.val().h === me.uid) code = c;
+    }
+  } catch(e){ console.warn(e); }
+  $('bHost').disabled = false;
+  if (!code) { $('onErr').textContent = 'No se pudo crear la sala (revisa las reglas de Firebase para br2_rooms).'; return; }
+  on = {code, role:'h', ref:db.ref(P_ROOMS + '/' + code), offs:[], cands:[]};
+  on.ref.onDisconnect().remove();
+  startGame(savedRom);
+  $('hudInv').style.display = '';
+  setTag('Sala ' + code + ' · esperando rival');
+  on.ref.on('value', s => onRoom(s.val()));
+  invite();
+}
+function invite(){
+  if (!on) return;
+  const url = location.origin + location.pathname + '?sala=' + on.code;
+  const txt = '¡Pelea conmigo en Bloody Roar 2! Sala ' + on.code;
+  if (navigator.share) navigator.share({title:'Bloody Roar 2', text:txt, url}).catch(() => {});
+  else if (navigator.clipboard) navigator.clipboard.writeText(txt + ' ' + url).then(() => toast('Link copiado: mándaselo a tu rival')).catch(() => toast('Código: ' + on.code));
+  else toast('Código de sala: ' + on.code, 5000);
+}
+
+async function joinRoom(raw){
+  $('onErr').textContent = '';
+  const code = String(raw || '').trim().toUpperCase();
+  if (!/^[A-Z]{4}$/.test(code)) { $('onErr').textContent = 'El código tiene 4 letras'; return; }
+  const ref = db.ref(P_ROOMS + '/' + code);
+  let r;
+  try {
+    r = await ref.transaction(c => {
+      if (c === null) return null;                    // aún sin datos: Firebase reintenta con el valor real
+      if (c.h === me.uid) return;                     // es tu propia sala
+      if (c.g && c.g !== me.uid) return;              // ya hay alguien
+      c.g = me.uid; c.gn = me.name; return c;
+    });
+  } catch(e){ $('onErr').textContent = 'No se pudo entrar (' + (e.code || e.message) + ')'; return; }
+  const v = r.snapshot.val();
+  if (!v) { $('onErr').textContent = 'Esa sala no existe o ya se cerró'; return; }
+  if (v.h === me.uid) { $('onErr').textContent = 'Esa es tu propia sala'; return; }
+  if (v.g !== me.uid) { $('onErr').textContent = 'La sala ya está llena'; return; }
+  on = {code, role:'g', ref, offs:[], cands:[]};
+  ref.child('g').onDisconnect().remove();
+  ref.child('gn').onDisconnect().remove();
+  $('guestBox').classList.add('on'); $('hud').classList.add('on');
+  $('pad').classList.toggle('on', matchMedia('(pointer:coarse)').matches);
+  setTag('Sala ' + code + ' · vs ' + (v.hn || 'anfitrión'));
+  startInputs();
+  ref.on('value', s => onRoom(s.val()));
+}
+
+function leaveOnline(){
+  try {
+    if (on && on.role === 'h') on.ref.remove();
+    else if (on && on.role === 'g') on.ref.update({g:null, gn:null});
+  } catch(e){}
+  setTimeout(() => location.replace(location.pathname), 250);
+}
+
+function onRoom(r){
+  if (!on) return;
+  if (!r) {
+    if (on.role === 'g') { toast('El anfitrión cerró la sala', 4000); setTimeout(() => location.replace(location.pathname), 1500); }
+    return;
+  }
+  on.room = r;
+  setTimeout(() => { if (on) on.seen = true; }, 0);
+  if (on.role === 'h'){
+    if ((r.g || null) !== (on.peer || null)){
+      const had = on.peer; on.peer = r.g || null;
+      closePc(); releaseGuest();
+      if (on.peer) { setTag('Sala ' + on.code + ' · conectando con ' + (r.gn || 'rival') + '…'); startHostPc(); }
+      else { setTag('Sala ' + on.code + ' · esperando rival'); if (had) toast('Tu rival salió de la sala'); }
+    }
+  } else if (r.sid && r.sid !== on.sid){
+    on.sid = r.sid; startGuestPc(r.sid);
+  }
+  $('hudRes').style.display = r.g && r.h ? '' : 'none';
+  handleRes(r);
+}
+
+// ----- WebRTC -----
+function closePc(){
+  (on.offs || []).forEach(f => { try { f(); } catch(e){} }); on.offs = []; on.cands = [];
+  if (on.dc) { try { on.dc.close(); } catch(e){} on.dc = null; }
+  if (on.pc) { try { on.pc.close(); } catch(e){} on.pc = null; }
+}
+function listen(ref, ev, fn){ ref.on(ev, fn); on.offs.push(() => ref.off(ev, fn)); }
+function addCand(pc, c){
+  if (!c) return;
+  if (pc.remoteDescription) pc.addIceCandidate(c).catch(() => {}); else on.cands.push(c);
+}
+function flushCands(pc){ const q = on.cands; on.cands = []; q.forEach(c => pc.addIceCandidate(c).catch(() => {})); }
+function watchState(pc, who){
+  pc.onconnectionstatechange = () => {
+    const s = pc.connectionState;
+    if (on.role === 'h' && on.room) {
+      if (s === 'connected') { setTag('Sala ' + on.code + ' · vs ' + (on.room.gn || 'rival')); toast('¡' + (on.room.gn || 'Tu rival') + ' está conectado!'); }
+      if (s === 'failed') { setTag('Sala ' + on.code + ' · no se pudo conectar'); toast('No se pudo conectar con ' + who + '. Prueben los dos con wifi.', 6000); }
+    }
+    if (on.role === 'g') {
+      if (s === 'connected') $('gMsg').style.display = 'none';
+      if (s === 'failed' || s === 'disconnected') { $('gMsg').style.display = ''; $('gMsg').textContent = s === 'failed' ? 'No se pudo conectar con el anfitrión. Prueben los dos con wifi.' : 'Conexión inestable…'; }
+    }
+  };
+}
+function waitCanvas(){
+  return new Promise(ok => {
+    const t = setInterval(() => {
+      const cv = document.querySelector('#game canvas');
+      const em = window.EJS_emulator;
+      if (cv && em && em.gameManager && em.gameManager.functions && em.started !== false) { clearInterval(t); ok(cv); }
+    }, 400);
+  });
+}
+function hostAudio(){
+  try {
+    const em = window.EJS_emulator;
+    if (em && typeof em.collectScreenRecordingMediaTracks === 'function'){
+      const tmp = document.createElement('canvas'); tmp.width = tmp.height = 2;
+      const s = em.collectScreenRecordingMediaTracks(tmp, 1);
+      const a = s && s.getAudioTracks()[0];
+      if (a) return a;
+    }
+  } catch(e){ console.warn('audio', e); }
+  return null;
+}
+async function startHostPc(){
+  setTag('Sala ' + on.code + ' · conectando…');
+  const canvas = await waitCanvas();
+  if (!on || !on.peer || on.pc) return;
+  const sid = Math.random().toString(36).slice(2, 10);
+  const sref = on.ref.child('s/' + sid);
+  await on.ref.child('s').remove().catch(() => {});   // borra sesiones viejas antes de empezar
+  if (!on || !on.peer || on.pc) return;
+  const pc = new RTCPeerConnection({iceServers:ICE}); on.pc = pc;
+  const dc = pc.createDataChannel('in', {ordered:true}); on.dc = dc;
+  dc.onmessage = e => { try { const a = JSON.parse(e.data); guestInput(a[0], a[1]); } catch(_){} };
+  dc.onclose = releaseGuest;
+  const vs = canvas.captureStream(60);
+  const vt = vs.getVideoTracks()[0];
+  try { vt.contentHint = 'motion'; } catch(e){}
+  const ms = new MediaStream([vt]);
+  const at = hostAudio(); if (at) ms.addTrack(at);
+  ms.getTracks().forEach(t => pc.addTrack(t, ms));
+  watchState(pc, on.room && on.room.gn || 'tu rival');
+  pc.onicecandidate = e => { if (e.candidate) sref.child('hc').push(e.candidate.toJSON()); };
+  const offer = await pc.createOffer();
+  await pc.setLocalDescription(offer);
+  await sref.child('offer').set({type:offer.type, sdp:offer.sdp});
+  await on.ref.child('sid').set(sid);   // el invitado ve la sesión nueva y responde
+  listen(sref.child('answer'), 'value', async s => {
+    const a = s.val();
+    if (!a || pc.currentRemoteDescription) return;
+    try {
+      await pc.setRemoteDescription(a); flushCands(pc);
+      const snd = pc.getSenders().find(x => x.track && x.track.kind === 'video');
+      if (snd) { const p = snd.getParameters(); p.degradationPreference = 'maintain-framerate';
+        if (p.encodings && p.encodings[0]) p.encodings[0].maxBitrate = 3000000; snd.setParameters(p).catch(() => {}); }
+    } catch(e){ console.warn(e); }
+  });
+  listen(sref.child('gc'), 'child_added', s => addCand(pc, s.val()));
+}
+async function startGuestPc(sid){
+  closePc();
+  $('gMsg').style.display = ''; $('gMsg').textContent = 'Conectando con el anfitrión…';
+  const sref = on.ref.child('s/' + sid);
+  const pc = new RTCPeerConnection({iceServers:ICE}); on.pc = pc;
+  watchState(pc, 'el anfitrión');
+  pc.ontrack = e => {
+    try { e.receiver.playoutDelayHint = 0; e.receiver.jitterBufferTarget = 0; } catch(_){}
+    const v = $('gv'), st = e.streams[0];
+    if (v.srcObject !== st) {
+      v.srcObject = st; v.muted = false;
+      v.play().catch(() => { v.muted = true; v.play().catch(() => {}); $('bSound').style.display = ''; });
+    }
+  };
+  pc.ondatachannel = e => { on.dc = e.channel; e.channel.onopen = () => resendAll(); };
+  pc.onicecandidate = e => { if (e.candidate) sref.child('gc').push(e.candidate.toJSON()); };
+  listen(sref.child('hc'), 'child_added', s => addCand(pc, s.val()));
+  const offer = (await sref.child('offer').once('value')).val();
+  if (!offer || on.pc !== pc) return;
+  await pc.setRemoteDescription(offer); flushCands(pc);
+  const ans = await pc.createAnswer();
+  await pc.setLocalDescription(ans);
+  await sref.child('answer').set({type:ans.type, sdp:ans.sdp});
+}
+$('bSound').onclick = () => { const v = $('gv'); v.muted = false; v.play().catch(() => {}); $('bSound').style.display = 'none'; };
+
+// ----- botones del invitado -> jugador 2 del anfitrión -----
+const held = {};
+function guestInput(i, v){
+  i = i | 0; v = v ? 1 : 0;
+  if (i < 0 || i > 15) return;
+  const f = window.EJS_emulator && EJS_emulator.gameManager && EJS_emulator.gameManager.functions;
+  if (!f || !f.simulateInput) return;
+  f.simulateInput(1, i, v);
+  if (v) held[i] = 1; else delete held[i];
+}
+function releaseGuest(){ Object.keys(held).forEach(i => guestInput(+i, 0)); }
+
+const src = {kb:{}, gp:{}, tc:{}}, sent = {};
+function push(i){
+  const v = (src.kb[i] || src.gp[i] || src.tc[i]) ? 1 : 0;
+  if (sent[i] === v) return;
+  sent[i] = v;
+  if (on && on.dc && on.dc.readyState === 'open') on.dc.send(JSON.stringify([i, v]));
+}
+function setSrc(k, i, v){ if (!!src[k][i] === !!v) return; if (v) src[k][i] = 1; else delete src[k][i]; push(i); }
+function resendAll(){ for (let i = 0; i < 16; i++) { delete sent[i]; push(i); } }
+const KEYS = {ArrowUp:4, ArrowDown:5, ArrowLeft:6, ArrowRight:7, KeyW:4, KeyS:5, KeyA:6, KeyD:7,
+  KeyJ:1, KeyK:0, KeyL:8, KeyI:9, KeyU:10, KeyO:11, Enter:3, Backspace:2};
+// Mando estándar: ✕ ○ □ △ L1 R1 L2 R2 Select Start · cruceta
+const GP = {0:0, 1:8, 2:1, 3:9, 4:10, 5:11, 6:12, 7:13, 8:2, 9:3, 12:4, 13:5, 14:6, 15:7};
+function startInputs(){
+  addEventListener('keydown', e => { if (!on || on.role !== 'g' || $('resModal').classList.contains('on')) return;
+    const i = KEYS[e.code]; if (i == null) return; e.preventDefault(); setSrc('kb', i, 1); });
+  addEventListener('keyup', e => { const i = KEYS[e.code]; if (i == null || !on) return; setSrc('kb', i, 0); });
+  addEventListener('blur', () => { Object.keys(src.kb).forEach(i => setSrc('kb', +i, 0)); });
+  (function poll(){
+    const g = navigator.getGamepads ? Array.from(navigator.getGamepads()).find(x => x && x.connected) : null;
+    if (g) {
+      Object.entries(GP).forEach(([b, i]) => setSrc('gp', i, g.buttons[b] && g.buttons[b].pressed));
+      const ax = g.axes[0] || 0, ay = g.axes[1] || 0;
+      setSrc('gp', 6, ax < -0.5 || (g.buttons[14] && g.buttons[14].pressed));
+      setSrc('gp', 7, ax > 0.5 || (g.buttons[15] && g.buttons[15].pressed));
+      setSrc('gp', 4, ay < -0.5 || (g.buttons[12] && g.buttons[12].pressed));
+      setSrc('gp', 5, ay > 0.5 || (g.buttons[13] && g.buttons[13].pressed));
+    }
+    requestAnimationFrame(poll);
+  })();
+  // cruceta táctil de 8 direcciones
+  const dp = $('dpad'), knob = dp.querySelector('i');
+  let dpId = null;
+  const dpSet = e => {
+    const r = dp.getBoundingClientRect(), cx = r.left + r.width / 2, cy = r.top + r.height / 2;
+    let nx = (e.clientX - cx) / (r.width / 2), ny = (e.clientY - cy) / (r.height / 2);
+    const d = Math.hypot(nx, ny); if (d > 1) { nx /= d; ny /= d; }
+    knob.style.transform = 'translate(' + (nx * 32) + '%,' + (ny * 32) + '%)';
+    setSrc('tc', 4, ny < -0.38); setSrc('tc', 5, ny > 0.38); setSrc('tc', 6, nx < -0.38); setSrc('tc', 7, nx > 0.38);
+  };
+  const dpEnd = () => { dpId = null; knob.style.transform = ''; [4, 5, 6, 7].forEach(i => setSrc('tc', i, 0)); };
+  dp.addEventListener('pointerdown', e => { e.preventDefault(); dpId = e.pointerId; dp.setPointerCapture(e.pointerId); dpSet(e); });
+  dp.addEventListener('pointermove', e => { if (e.pointerId === dpId) dpSet(e); });
+  ['pointerup', 'pointercancel', 'lostpointercapture'].forEach(ev => dp.addEventListener(ev, e => { if (e.pointerId === dpId) dpEnd(); }));
+  document.querySelectorAll('#pad [data-i]').forEach(b => {
+    const i = +b.dataset.i;
+    const up = () => { b.classList.remove('dn'); setSrc('tc', i, 0); };
+    b.addEventListener('pointerdown', e => { e.preventDefault(); b.setPointerCapture(e.pointerId); b.classList.add('dn'); setSrc('tc', i, 1); if (navigator.vibrate) navigator.vibrate(8); });
+    ['pointerup', 'pointercancel', 'lostpointercapture'].forEach(ev => b.addEventListener(ev, up));
+  });
+  $('pad').addEventListener('contextmenu', e => e.preventDefault());
+}
+
+// ----- resultado con doble confirmación -----
+function openRes(){
+  const r = on && on.room; if (!r || !r.g) return;
+  resSel = {w:'', sc:''};
+  $('resW').innerHTML = [[r.h, r.hn], [r.g, r.gn]].map(([u, n]) =>
+    '<button data-v="' + esc(u) + '">' + (u === me.uid ? '🏆 Yo' : '🏆 ' + esc(n || '?')) + '</button>').join('');
+  segInit('resW', v => resSel.w = v);
+  $('resSc').querySelectorAll('button').forEach(b => b.classList.remove('on'));
+  $('resErr').textContent = '';
+  const rs = (r.res && r.res[r.rn || 1]) || {}, th = rs[otherUid(r)];
+  $('resInfo').textContent = th ? otherName(r) + ' ya envió su resultado. Elige lo que pasó tú también.' : 'Los dos tienen que enviar lo mismo para que cuente.';
+  $('resModal').classList.add('on');
+}
+async function sendRes(){
+  const r = on && on.room; if (!r) return;
+  if (!resSel.w) { $('resErr').textContent = '¿Quién ganó?'; return; }
+  if (!resSel.sc) { $('resErr').textContent = 'Elige los rounds'; return; }
+  try { await on.ref.child('res/' + (r.rn || 1) + '/' + me.uid).set({w:resSel.w, sc:resSel.sc}); $('resModal').classList.remove('on'); }
+  catch(e){ $('resErr').textContent = 'No se pudo enviar'; }
+}
+function handleRes(r){
+  const rn = r.rn || 1, rs = (r.res && r.res[rn]) || {};
+  const mine = rs[me.uid], ou = otherUid(r), theirs = ou && rs[ou];
+  if (r.last && r.last.rn && r.last.rn !== lastShown) {
+    if (lastShown || on.seen) {
+      const d = r.h === me.uid ? r.last.da : r.last.db;
+      toast((r.last.w === me.uid ? '🏆 ¡Ganaste! ' : '💀 Perdiste · ') + (d > 0 ? '+' : '') + d + ' MMR', 4500);
+    }
+    lastShown = r.last.rn;
+  }
+  if (r.bad && r.bad !== badShown) { if (badShown || on.seen) toast('No coinciden los resultados. Vuelvan a enviarlo.', 4000); badShown = r.bad; }
+  if (!mine && !theirs) delete resShown[rn];   // se borró (no coincidían): se puede volver a preguntar
+  if (theirs && !mine && !resShown[rn]) { resShown[rn] = true; openRes(); toast(otherName(r) + ' envió el resultado: confirma tú también'); }
+  if (mine && !theirs) setTag('Sala ' + on.code + ' · esperando que ' + otherName(r) + ' confirme');
+  if (mine && theirs) {
+    if (mine.w === theirs.w && mine.sc === theirs.sc) { if (on.role === 'h') processRoomResult(rn, r, mine); }
+    else if (on.role === 'h') { const up = {bad:Date.now()}; up['res/' + rn] = null; on.ref.update(up); }
+  }
+}
+let processing = false;
+async function processRoomResult(rn, r, res){
+  if (processing) return; processing = true;
+  try {
+    const lock = await on.ref.child('rn').transaction(c => (c === null ? null : c === rn ? rn + 1 : undefined));
+    if (!lock.committed || lock.snapshot.val() !== rn + 1) return;
+    const m = {a:r.h, an:r.hn, b:r.g, bn:r.gn, w:res.w, sc:res.sc, ca:'', cb:'', st:'ok', on:on.code, t:Date.now()};
+    const id = db.ref(P_MATCHES).push().key;
+    try {
+      const {u, da, dbb} = await buildApply(m);
+      u[P_MATCHES + '/' + id] = Object.assign({}, m, {da, db:dbb, ct:firebase.database.ServerValue.TIMESTAMP});
+      await db.ref().update(u);
+      const up = {last:{rn, w:res.w, sc:res.sc, da, db:dbb}}; up['res/' + rn] = null;
+      await on.ref.update(up);
+      setTag('Sala ' + on.code + ' · vs ' + (r.gn || 'rival'));
+    } catch(e){
+      console.warn(e); toast('No se pudo guardar el resultado (' + (e.code || e.message) + ')', 5000);
+      on.ref.child('rn').set(rn).catch(() => {});
+    }
+  } finally { processing = false; }
+}
+$('hudRes').onclick = openRes;
+$('hudInv').onclick = invite;
+$('resClose').onclick = () => $('resModal').classList.remove('on');
+$('resSend').onclick = sendRes;
+segInit('resSc', v => resSel.sc = v);
+$('bHost').onclick = hostRoom;
+$('bJoin').onclick = () => joinRoom($('joinCode').value);
+$('joinCode').onkeydown = e => { if (e.key === 'Enter') joinRoom($('joinCode').value); };
+let pendingSala = (new URLSearchParams(location.search).get('sala') || '').toUpperCase();
+if (pendingSala) $('joinCode').value = pendingSala;
 
 // ============ ARRANQUE ============
 document.querySelectorAll('.tab').forEach(t => t.onclick = () => show(t.dataset.s));
