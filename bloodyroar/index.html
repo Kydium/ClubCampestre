@@ -429,7 +429,7 @@ async function onUser(user){
   mRef = db.ref(P_MATCHES).limitToLast(150);
   mRef.on('value', s => { matches = s.val() || {}; renderAll(); grantXp(); }, e => console.warn(e));
   db.ref(P_MEM).on('value', s => {
-    const v = s.val();
+    const v = okCfg(s.val());
     if (v) { memCfg = v; try { localStorage.setItem('br2_mem', JSON.stringify(v)); } catch(e){} }
     else if (memCfg) db.ref(P_MEM).set(memCfg).catch(() => {});   // Firebase la perdió: se restaura desde la copia
     updateCalBtn();
@@ -1118,9 +1118,12 @@ if (pendingSala) $('joinCode').value = pendingSala;
 // encontramos en qué bytes guarda el juego los rounds ganados de cada jugador, y se comparte en br2_cfg/mem.
 const P_MEM = 'br2_cfg/mem';
 const SKIP = 36900;                 // cabecera + miniatura del estado: ahí no está la memoria del juego
+const RAM_END = SKIP + 0x200000 + 16;   // después vienen video y sonido: ahí tampoco
+const CAL_V = 3;                    // versión de la calibración (las anteriores se descartan)
 // Calibración fija dentro de la página (si Firebase no tiene una, se usa esta). Pegar aquí la de "Copiar calibración".
 const DEFAULT_MEM = null;
-let memCfg = (() => { try { return JSON.parse(localStorage.getItem('br2_mem') || 'null') || DEFAULT_MEM; } catch(e){ return DEFAULT_MEM; } })();
+const okCfg = c => (c && c.v >= CAL_V) ? c : null;
+let memCfg = (() => { try { return okCfg(JSON.parse(localStorage.getItem('br2_mem') || 'null')) || DEFAULT_MEM; } catch(e){ return DEFAULT_MEM; } })();
 let lastGuestIn = 0, sizeWarned = false;
 const sleep = ms => new Promise(ok => setTimeout(ok, ms));
 function grabState(){ try { return EJS_emulator.gameManager.getState(); } catch(e){ return null; } }
@@ -1144,6 +1147,24 @@ const CAL_STEPS = [
   // se hace 2 veces (2 peleas) para que quede exacto
 ];
 let cal = null;   // {i, snaps:[{d, ok}], prev:{p1,p2}|null, fight:1|2}
+// vigilancia continua entre marcas: un contador real se queda quieto todo el round y cambia UNA vez (en el KO)
+function monStart(d){
+  const n = d.length;
+  cal.mon = {prev:d.slice(), chg:new Uint8Array(n), bad:new Uint8Array(n), samples:0};
+}
+setInterval(() => {
+  if (!cal || !cal.mon || !$('calib').classList.contains('on')) return;
+  const d = grabState(); if (!d || d.length !== cal.mon.prev.length) return;
+  const m = cal.mon, end = Math.min(RAM_END, d.length);
+  for (let k = SKIP; k < end; k++) if (d[k] !== m.prev[k]) { if (m.chg[k] < 250) m.chg[k]++; m.prev[k] = d[k]; }
+  m.samples++;
+}, 500);
+function monCut(strict){
+  // al marcar: en los rounds 1 y 2 un contador cambia como mucho 1 vez; lo que se movió más, se descarta
+  const m = cal.mon; if (!m) return;
+  if (strict) for (let k = SKIP; k < m.chg.length; k++) if (m.chg[k] > 1) m.bad[k] = 1;
+  m.chg.fill(0);
+}
 function calShow(){
   $('calStep').innerHTML = '<b>Pelea ' + cal.fight + (cal.fight <= 2 ? ' de 2' : '') + '</b> · paso ' + (cal.i + 1) + '/4<br>' + CAL_STEPS[cal.i];
   $('calDots').textContent = 'Tranquilo: toca MARCAR cuando ya se pueda pelear (no en la pantalla de "Round").';
@@ -1155,6 +1176,7 @@ function calStart(){
   cal = {i:0, snaps:[], prev:keep, fight: keep ? (cal.fight || 2) : 1};
   // la siguiente pelea empieza justo donde marcaste el último paso: ese ya cuenta como su paso 1
   if (keep && last) { cal.snaps = [last]; cal.i = 1; }
+  cal.mon = null; if (cal.i >= 1) monStart(last.d);
   $('calib').classList.add('on'); calShow();
 }
 async function stableSnap(){
@@ -1170,15 +1192,19 @@ async function calMark(){
   if (!sn) { toast('No se pudo leer la memoria del juego'); calShow(); return; }
   if (cal.snaps.length && sn.d.length !== cal.snaps[0].d.length) { toast('El estado cambió de tamaño; empieza de nuevo'); calCancel(); return; }
   cal.snaps.push(sn); cal.i++;
+  if (cal.i === 1) monStart(sn.d);            // primera marca: empieza a vigilar
+  else monCut(cal.i <= 3);                    // marcas 2 y 3 cierran los rounds 1 y 2 (estrictos); la 4 incluye la selección
   if (cal.i < 4) { calShow(); return; }
   calFinish();
 }
 function calFinish(){
   const [A, B, C, D] = cal.snaps, n = A.d.length;
   let p1 = [], p2 = [];
-  const st = {e1:0, e2:0, r1:0, r2:0};   // diagnóstico: cuántos cumplían cada parte
-  for (let k = SKIP; k < n; k++){
+  const st = {e1:0, e2:0, r1:0, r2:0, mov:0};   // diagnóstico: cuántos cumplían cada parte
+  const bad = cal.mon ? cal.mon.bad : null, end = Math.min(RAM_END, n);
+  for (let k = SKIP; k < end; k++){
     if (!(A.ok[k] && B.ok[k] && C.ok[k] && D.ok[k])) continue;
+    if (bad && bad[k]) { st.mov++; continue; }            // se movió durante la pelea: no es un contador
     const a = A.d[k], b = B.d[k], c = C.d[k], d = D.d[k];
     // el contador puede SUBIR (0→1→2) o BAJAR (rounds que faltan: 2→1→0); cambia de a poco
     const j1 = b !== a && Math.abs(b - a) <= 8 && c === b;   // cambió cuando ganó el J1 y no cuando ganó el J2
@@ -1198,8 +1224,8 @@ function calFinish(){
   if ((!p1.length || !p2.length) && cal.prev && st.r1 && st.r2) {
     // esta pelea sí encontró, pero no coincidió con la anterior: empezamos de nuevo desde esta
     p1 = []; p2 = [];
-    for (let k = SKIP; k < n; k++){
-      if (!(A.ok[k] && B.ok[k] && C.ok[k] && D.ok[k]) || D.d[k] !== A.d[k]) continue;
+    for (let k = SKIP; k < end; k++){
+      if (!(A.ok[k] && B.ok[k] && C.ok[k] && D.ok[k]) || D.d[k] !== A.d[k] || (bad && bad[k])) continue;
       const a = A.d[k], b = B.d[k], c = C.d[k];
       if (b !== a && Math.abs(b - a) <= 8 && c === b) p1.push(k); else if (b === a && c !== b && Math.abs(c - b) <= 8) p2.push(k);
     }
@@ -1207,8 +1233,8 @@ function calFinish(){
     toast('Esta pelea no coincidió con la anterior; la tomo como nueva pelea 1.', 5000);
   }
   if (!p1.length || !p2.length) {
+    const why = 'J1: ' + st.e1 + '→' + st.r1 + ' · J2: ' + st.e2 + '→' + st.r2 + ' · descartados: ' + st.mov + ' · lecturas: ' + (cal.mon ? cal.mon.samples : 0);
     cal = null; $('calib').classList.remove('on');
-    const why = 'J1: ' + st.e1 + '→' + st.r1 + ' · J2: ' + st.e2 + '→' + st.r2;
     alert('No encontré los contadores.\n\nDetalle (pásamelo en el chat si se repite): ' + why +
       '\n\nRevisa: el Jugador 1 es el de la IZQUIERDA y debe ganar el round 1; el Jugador 2 (derecha) el round 2. Marca cuando ya se pueda pelear.');
     return;
@@ -1222,7 +1248,7 @@ function calFinish(){
     setTimeout(calStart, 400);
     return;
   }
-  const cfg = {n, v:2, p1:pack(p1), p2:pack(p2), by:me ? me.name : '?', t:Date.now()};
+  const cfg = {n, v:CAL_V, p1:pack(p1), p2:pack(p2), by:me ? me.name : '?', t:Date.now()};
   cal = null; $('calib').classList.remove('on');
   db.ref(P_MEM).set(cfg).then(() => toast('🎯 ¡Listo! El resultado online ahora se detecta solo.', 6000))
     .catch(e => toast('No se pudo guardar la calibración (' + (e.code || e.message) + ')', 6000));
