@@ -102,10 +102,7 @@
   #calib{position:fixed;z-index:160;left:8px;top:calc(env(safe-area-inset-top,0px) + 50px);width:min(330px,92vw);display:none;
     background:rgba(20,5,9,.94);border:1px solid var(--red);border-radius:14px;padding:12px;box-shadow:0 0 20px rgba(255,59,59,.4)}
   #calib.on{display:block}
-  #autoBar{position:fixed;z-index:170;left:50%;bottom:calc(env(safe-area-inset-bottom,0px) + 18px);transform:translateX(-50%);display:none;
-    align-items:center;gap:8px;padding:8px 10px;border-radius:14px;background:rgba(26,7,12,.96);border:1px solid var(--red);font-weight:700;
-    box-shadow:0 0 18px rgba(255,59,59,.45);max-width:94vw;flex-wrap:wrap;justify-content:center}
-  #autoBar.on{display:flex}
+  #endScreen{z-index:310}
   #calStep{margin:8px 0 4px;line-height:1.35}
 
   /* invitado online */
@@ -288,7 +285,14 @@
 <div id="hud"><span id="hudTag"></span><button class="hb" id="hudInv" style="display:none">📨 Invitar</button><button class="hb" id="hudCal" style="display:none">🎯 Calibrar</button><button class="hb" id="hudRes" style="display:none">🏁 Resultado</button><button class="hb" id="hudExit">✕ Salir</button></div>
 <div id="calib"><b>🎯 RESULTADO AUTOMÁTICO</b><div id="calStep" class="small"></div><div id="calDots" class="mut small"></div>
   <div class="row" style="margin-top:8px"><button class="hb" id="calCancel">Cancelar</button><button class="btn" id="calMark" style="padding:9px">MARCAR</button></div></div>
-<div id="autoBar"><span id="abTxt"></span><button class="hb" id="abFlip">↔️ Al revés</button><button class="hb" id="abOk">✓</button></div>
+<div class="modal" id="endScreen"><div class="card" style="text-align:center">
+  <div id="endTitle" style="font-family:var(--display);font-weight:900;font-size:2rem;letter-spacing:.06em"></div>
+  <div id="endSub" style="margin:8px 0 12px"></div>
+  <div id="endDelta" class="num" style="font-family:var(--display);font-weight:900;font-size:2.4rem"></div>
+  <div id="endMmr" style="margin:6px 0 14px"></div>
+  <button class="btn alt" id="abFlip" style="margin-bottom:10px">↔️ El ganador salió al revés</button>
+  <div class="row"><button class="btn" id="endAgain">⚔️ REVANCHA</button><button class="btn alt" id="endExit">✕ SALIR</button></div>
+</div></div>
 <div class="modal" id="resModal"><div class="card">
   <h2>¿QUIÉN GANÓ?</h2>
   <div class="mut small" id="resInfo"></div>
@@ -537,7 +541,7 @@ function grantXp(){
 }
 
 // ============ PINTAR ============
-function renderAll(){ if (!me) return; renderMe(); renderReport(); renderRank(); renderHist(); }
+function renderAll(){ if (!me) return; renderMe(); renderReport(); renderRank(); renderHist(); if ($('endScreen').classList.contains('on')) renderEndMmr(); }
 function renderMe(){
   const p = player(me.uid), r = rankOf(+p.mmr || START_MMR), g = (+p.w || 0) + (+p.l || 0);
   const wr = g ? Math.round((+p.w || 0) / g * 100) : 0;
@@ -740,7 +744,7 @@ function startGame(blob){
   // si el emulador guardó controles de antes, se reemplazan por los de esta página
   try {
     const k = 'ejs-1-psx-Bloody Roar 2-settings', cur = JSON.parse(localStorage.getItem(k) || 'null');
-    if (cur && cur.controlSettings) { cur.controlSettings = ejsControls(); localStorage.setItem(k, JSON.stringify(cur)); }
+    if (cur) { cur.controlSettings = ejsControls(); localStorage.setItem(k, JSON.stringify(cur)); }
   } catch(e){}
   loadScript(EJS_DATA + 'loader.js').catch(() => {
     toast('No se pudo cargar el emulador (¿sin internet?)', 4000);
@@ -1060,11 +1064,13 @@ function handleRes(r){
     if (lastShown || on.seen) {
       const d = r.h === me.uid ? r.last.da : r.last.db;
       const txt = (r.last.fixed ? '↔️ Corregido: ' : '') + (r.last.w === me.uid ? '🏆 ¡Ganaste! ' : '💀 Perdiste · ') + (d > 0 ? '+' : '') + d + ' MMR';
-      if (r.last.auto && !r.last.fixed) showAutoBar(txt); else { hideAutoBar(); toast(txt, 4500); }
+      showEnd(r);
     }
     lastShown = sig;
   }
   if (on.role === 'h' && r.flip && r.last && r.flip.rn === r.last.rn && !r.last.fixed) flipLast(r);
+  if (againSeen === null) againSeen = r.again || 0;
+  if ((r.again || 0) !== againSeen) { againSeen = r.again || 0; if ($('endScreen').classList.contains('on')) { closeEnd(true); toast('⚔️ ¡Revancha!'); } }
   if (r.bad && r.bad !== badShown) { if (badShown || on.seen) toast('No coinciden los resultados. Vuelvan a enviarlo.', 4000); badShown = r.bad; }
   if (!mine && !theirs) delete resShown[rn];   // se borró (no coincidían): se puede volver a preguntar
   if (theirs && !mine && !resShown[rn]) { resShown[rn] = true; openRes(); toast(otherName(r) + ' envió el resultado: confirma tú también'); }
@@ -1134,16 +1140,18 @@ const CAL_STEPS = [
   'Deja que gane el round el <b>Jugador 1</b> (izquierda). Cuando empiece el <b>ROUND 2</b>, toca MARCAR.',
   'Ahora que gane el round el <b>Jugador 2</b> (derecha). Cuando empiece el <b>ROUND 3</b>, toca MARCAR.',
   'Termina esa pelea como sea. Cuando empiece el <b>ROUND 1 de una pelea nueva</b> (revancha), toca MARCAR.'
+  // se hace 2 veces (2 peleas) para que quede exacto
 ];
-let cal = null;   // {i, snaps:[{d, ok}], prev:{p1,p2}|null}
+let cal = null;   // {i, snaps:[{d, ok}], prev:{p1,p2}|null, fight:1|2}
 function calShow(){
-  $('calStep').innerHTML = (cal.i + 1) + '/4 · ' + CAL_STEPS[cal.i];
+  $('calStep').innerHTML = '<b>Pelea ' + cal.fight + ' de 2</b> · paso ' + (cal.i + 1) + '/4<br>' + CAL_STEPS[cal.i];
   $('calDots').textContent = 'Tranquilo: toca MARCAR cuando ya se pueda pelear (no en la pantalla de "Round").';
   $('calMark').disabled = false; $('calMark').textContent = 'MARCAR';
 }
 function calStart(){
   if (!emuReady()) { toast('Primero que arranque el juego'); return; }
-  cal = {i:0, snaps:[], prev: cal && cal.keep ? cal.keep : null};
+  const keep = cal && cal.keep ? cal.keep : null;
+  cal = {i:0, snaps:[], prev:keep, fight: keep ? 2 : 1};
   $('calib').classList.add('on'); calShow();
 }
 async function stableSnap(){
@@ -1172,7 +1180,12 @@ function calFinish(){
     if (b > a && b - a <= 8 && c === b) p1.push(k);     // subió cuando ganó el J1 y no cuando ganó el J2
     else if (b === a && c > b && c - b <= 8) p2.push(k); // al revés para el J2
   }
-  if (cal.prev) { p1 = p1.filter(k => cal.prev.p1.includes(k)); p2 = p2.filter(k => cal.prev.p2.includes(k)); }
+  const stepOf = {}; p1.forEach(k => stepOf[k] = B.d[k] - A.d[k]); p2.forEach(k => stepOf[k] = C.d[k] - B.d[k]);
+  if (cal.prev) {
+    // 2ª pelea: solo quedan los que se comportaron igual (mismo valor inicial y mismo salto) en las dos
+    p1 = p1.filter(k => cal.prev.p1.some(x => x[0] === k && x[1] === A.d[k] && x[2] === stepOf[k]));
+    p2 = p2.filter(k => cal.prev.p2.some(x => x[0] === k && x[1] === A.d[k] && x[2] === stepOf[k]));
+  }
   const base = k => A.d[k];
   console.log('[BR2 calibración]', {p1:p1.length, p2:p2.length});
   if (!p1.length || !p2.length) {
@@ -1180,15 +1193,16 @@ function calFinish(){
     toast('No encontré los contadores. Repite la calibración marcando justo cuando empieza cada round.', 7000);
     return;
   }
-  if (p1.length > 12 || p2.length > 12) {
-    // demasiadas coincidencias: otra pelea más para afinar (se cruza con esta)
-    const keep = {p1, p2};
+  const pack = list => list.map(k => [k, base(k), stepOf[k]]);
+  if (!cal.prev || p1.length > 6 || p2.length > 6) {
+    // calibración completa: siempre 2 peleas (y más si aún quedan muchas opciones)
+    const keep = {p1:pack(p1), p2:pack(p2)}, wasPrev = !!cal.prev;
     cal = {keep}; $('calib').classList.remove('on');
-    toast('Casi listo: encontré ' + p1.length + ' y ' + p2.length + ' posibles. Juega otra pelea y calibra otra vez para afinar.', 8000);
+    toast(wasPrev ? 'Bien. Quedan ' + p1.length + ' y ' + p2.length + ' opciones: una pelea más para afinar.' : '✅ Pelea 1 lista. Ahora la pelea 2 (los mismos pasos) para confirmar.', 6000);
     setTimeout(calStart, 400);
     return;
   }
-  const cfg = {n, p1:p1.map(k => [k, base(k)]), p2:p2.map(k => [k, base(k)]), by:me ? me.name : '?', t:Date.now()};
+  const cfg = {n, v:2, p1:pack(p1), p2:pack(p2), by:me ? me.name : '?', t:Date.now()};
   cal = null; $('calib').classList.remove('on');
   db.ref(P_MEM).set(cfg).then(() => toast('🎯 ¡Listo! El resultado online ahora se detecta solo.', 6000))
     .catch(e => toast('No se pudo guardar la calibración (' + (e.code || e.message) + ')', 6000));
@@ -1206,18 +1220,19 @@ setTimeout(updateCalBtn, 0);
 $('calCancel').onclick = calCancel;
 
 // --- detección en vivo (solo el anfitrión de una sala online) ---
-const watch = {steps:{}, prev:{}, fired:false};
-function voteSteps(list, d, steps){
+const watch = {last:'', same:0, armed:false, cur:'0:0', at:0};
+let MIN_ROUND_MS = 8000;   // un round dura más que esto: subir 2 rounds más rápido no es una pelea real
+function voteSteps(list, d){
+  // rounds ganados = (valor actual - valor inicial) / salto por round; se vota entre los candidatos
   const counts = {};
-  list.forEach(([k, b]) => {
-    const v = d[k], pv = watch.prev[k];
-    if (v === b) steps[k] = 0;                               // volvió a 0 (pelea nueva)
-    else if (pv !== undefined && v !== pv) steps[k] = (steps[k] || 0) + 1;  // subió un round
-    watch.prev[k] = v;
-    const s = steps[k] || 0; counts[s] = (counts[s] || 0) + 1;
+  list.forEach(([k, b, st]) => {
+    st = st || 1;
+    const x = (d[k] - b) / st;
+    if (Number.isInteger(x) && x >= 0 && x <= 5) counts[x] = (counts[x] || 0) + 1;
   });
-  let best = 0, bc = -1; for (const s in counts) if (counts[s] > bc) { bc = counts[s]; best = +s; }
-  return best;
+  let best = -1, bc = 0, tie = false;
+  for (const s in counts) { if (counts[s] > bc) { bc = counts[s]; best = +s; tie = false; } else if (counts[s] === bc) tie = true; }
+  return tie ? -1 : best;
 }
 setInterval(() => {
   if (!memCfg || cal || !on || on.role !== 'h' || !on.room || !on.room.g || !emuReady()) return;
@@ -1227,30 +1242,65 @@ setInterval(() => {
     if (!sizeWarned) { sizeWarned = true; toast('El emulador se actualizó y la calibración ya no coincide: toca 🎯 para calibrar de nuevo.', 8000); }
     return;
   }
-  const r1 = voteSteps(memCfg.p1, d, watch.steps), r2 = voteSteps(memCfg.p2, d, watch.steps);
-  if (r1 === 0 && r2 === 0) { watch.fired = false; return; }
-  if (watch.fired || (r1 < 2 && r2 < 2)) return;
-  watch.fired = true;
-  if (Date.now() - lastGuestIn > 120000) return;            // el rival no está jugando (demo / menú): no cuenta
+  const r1 = voteSteps(memCfg.p1, d), r2 = voteSteps(memCfg.p2, d);
+  const key = r1 + ':' + r2, now = Date.now();
+  // la misma lectura 2 veces seguidas (1 s) para tomarla en serio
+  if (key !== watch.last) { watch.last = key; watch.same = 1; return; }
+  if (++watch.same !== 2) return;
+  if (r1 < 0 || r2 < 0) { watch.armed = false; return; }
+  if (r1 === 0 && r2 === 0) {                               // empezó una pelea: 0-0
+    if (!watch.armed || watch.cur !== '0:0') { watch.armed = true; watch.cur = '0:0'; watch.at = now; }
+    return;
+  }
+  if (!watch.armed) return;                                 // no vimos el 0-0: puede ser el menú / selección
+  const [c1, c2] = watch.cur.split(':').map(Number);
+  const oneUp = (r1 === c1 + 1 && r2 === c2) || (r2 === c2 + 1 && r1 === c1);
+  if (!oneUp || now - watch.at < MIN_ROUND_MS) { watch.armed = false; return; }   // salto raro o demasiado rápido: no es una pelea
+  watch.cur = key; watch.at = now;
+  if (r1 < 2 && r2 < 2) return;                             // aún no gana nadie
+  watch.armed = false;
+  if (now - lastGuestIn > 120000) return;                   // el rival no está jugando (demo / menú): no cuenta
   const r = on.room, p1won = r1 >= 2;
-  const sc = '2-' + Math.min(1, p1won ? r2 : r1);
+  const sc = '2-' + (p1won ? r2 : r1);
   processRoomResult(r.rn || 1, r, {w: p1won ? r.h : r.g, sc, auto:true});
 }, 500);
 
-// ----- "Al revés": corrige el último resultado automático y deja la calibración bien para siempre -----
-let barT = null;
-function showAutoBar(txt){
-  $('abTxt').textContent = txt; $('autoBar').classList.add('on');
-  clearTimeout(barT); barT = setTimeout(hideAutoBar, 20000);
+// ----- pantalla de fin de pelea: se pausa el juego y se muestra el MMR -----
+function showEnd(r){
+  const L = r.last, won = L.w === me.uid, d = r.h === me.uid ? L.da : L.db;
+  const rival = me.uid === r.h ? (r.gn || 'rival') : (r.hn || 'anfitrión');
+  const sc = won ? L.sc : String(L.sc || '').split('-').reverse().join('-');
+  $('endTitle').textContent = won ? '🏆 VICTORIA' : '💀 DERROTA';
+  $('endTitle').style.color = won ? 'var(--gold)' : '#ff6b6b';
+  $('endSub').innerHTML = (L.fixed ? '↔️ Resultado corregido · ' : '') + esc(me.name) + ' <b>' + esc(sc) + '</b> ' + esc(rival) + (L.auto ? ' <span class="mut">(automático)</span>' : '');
+  $('endDelta').textContent = (d > 0 ? '+' : '') + d + ' MMR';
+  $('endDelta').className = 'num ' + (d > 0 ? 'up' : 'down');
+  $('abFlip').style.display = L.auto && !L.fixed ? '' : 'none';
+  renderEndMmr();
+  $('endScreen').classList.add('on');
+  if (on.role === 'h') { try { EJS_emulator.pause(); } catch(e){} }
 }
-function hideAutoBar(){ $('autoBar').classList.remove('on'); }
+function renderEndMmr(){
+  if (!me || !$('endScreen')) return;
+  const p = player(me.uid), rk = rankOf(+p.mmr || START_MMR);
+  $('endMmr').innerHTML = 'Tu MMR: <b>' + Math.round(+p.mmr || START_MMR) + '</b> · <span style="color:' + rk.c + '">' + rk.i + ' ' + rk.n + '</span>';
+}
+function closeEnd(resume){
+  $('endScreen').classList.remove('on');
+  if (resume && on && on.role === 'h') { try { EJS_emulator.play(); } catch(e){} }
+}
+$('endAgain').onclick = () => { closeEnd(true); if (on) on.ref.child('again').set(Date.now()).catch(() => {}); };
+$('endExit').onclick = () => leaveOnline();
+let againSeen = null;
+function hideAutoBar(){}
+
+// ----- "Al revés": corrige el último resultado automático y deja la calibración bien para siempre -----
 $('abFlip').onclick = () => {
   const r = on && on.room; if (!r || !r.last) return;
-  hideAutoBar();
+  $('abFlip').style.display = 'none';
   on.ref.child('flip').set({rn:r.last.rn, by:me.uid}).catch(() => toast('No se pudo corregir'));
   toast('Corrigiendo…');
 };
-$('abOk').onclick = hideAutoBar;
 let flipping = false;
 async function flipLast(r){
   if (flipping) return; flipping = true;
@@ -1329,11 +1379,15 @@ let ctl = (() => { try { const v = JSON.parse(localStorage.getItem('br2_ctl') ||
   if (old('j', 'k', 'l', 'i') || old('l', 'k', 'i', 'j')) { v[0][1] = 'k'; v[0][0] = 'l'; v[0][8] = 'i'; v[0][9] = 'j'; }   // teclas por defecto antiguas
   return v; } } catch(e){} return JSON.parse(JSON.stringify(CTL_DEF)); })();
 const saveCtl = () => { try { localStorage.setItem('br2_ctl', JSON.stringify(ctl)); } catch(e){} };
+const NAME2CODE = {}; for (const c in KEYNAME) NAME2CODE[KEYNAME[c]] = +c;
 function ejsControls(){
+  // el emulador compara con keyCode numérico (los controles guardados no se vuelven a convertir)
   const out = {0:{}, 1:{}, 2:{}, 3:{}};
-  for (const p of [0, 1]) for (let i = 0; i < 16; i++) out[p][i] = {value: ctl[p][i] || '', value2: PADNAME[i]};
+  for (const p of [0, 1]) for (let i = 0; i < 16; i++) {
+    const n = ctl[p][i]; out[p][i] = {value: n && NAME2CODE[n] != null ? NAME2CODE[n] : -1, value2: PADNAME[i]};
+  }
   const sticks = ['LEFT_STICK_X:+1','LEFT_STICK_X:-1','LEFT_STICK_Y:+1','LEFT_STICK_Y:-1','RIGHT_STICK_X:+1','RIGHT_STICK_X:-1','RIGHT_STICK_Y:+1','RIGHT_STICK_Y:-1'];
-  sticks.forEach((v, k) => { out[0][16 + k] = {value:'', value2:v}; out[1][16 + k] = {value:'', value2:v}; });
+  sticks.forEach((v, k) => { out[0][16 + k] = {value:-1, value2:v}; out[1][16 + k] = {value:-1, value2:v}; });
   return out;
 }
 function keyLabel(n){
