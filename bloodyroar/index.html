@@ -99,6 +99,10 @@
   .hb{border:0;border-radius:10px;padding:7px 11px;background:rgba(0,0,0,.7);color:#fff;font-weight:700;font-size:.9rem;cursor:pointer}
   #hudTag{padding:6px 10px;border-radius:10px;background:rgba(0,0,0,.7);font-size:.85rem;font-weight:700}
   #hudTag:empty{display:none}
+  #calib{position:fixed;z-index:160;left:8px;top:calc(env(safe-area-inset-top,0px) + 50px);width:min(330px,92vw);display:none;
+    background:rgba(20,5,9,.94);border:1px solid var(--red);border-radius:14px;padding:12px;box-shadow:0 0 20px rgba(255,59,59,.4)}
+  #calib.on{display:block}
+  #calStep{margin:8px 0 4px;line-height:1.35}
 
   /* invitado online */
   #guestBox{display:none;position:fixed;inset:0;z-index:100;background:#000}
@@ -191,7 +195,7 @@
       </div>
       <div class="err" id="onErr"></div>
       <ul class="tips mut small">
-        <li>Al terminar cada pelea, los dos tocan <b>🏁 Resultado</b>. Si coinciden, el MMR se suma al instante.</li>
+        <li><b>Resultado automático:</b> el anfitrión toca <b>🎯 Calibrar</b> una sola vez (se juega una pelea) y desde ahí el ganador se detecta solo. Si algo falla, queda el botón <b>🏁 Resultado</b>.</li>
         <li>El anfitrión juega sin retraso; el invitado ve la imagen un poquito tarde. Túrnense.</li>
         <li>Invitado: táctil en el celular; en PC usa las teclas del <b>Jugador 1</b> de “Controles” o un mando.</li>
         <li>El anfitrión debe dejar la página abierta y en primer plano.</li>
@@ -275,7 +279,9 @@
     <b class="sh l1" data-i="10">L1</b><b class="sh r1" data-i="11">R1</b><b class="sh st" data-i="3">START</b>
   </div>
 </div>
-<div id="hud"><span id="hudTag"></span><button class="hb" id="hudInv" style="display:none">📨 Invitar</button><button class="hb" id="hudRes" style="display:none">🏁 Resultado</button><button class="hb" id="hudExit">✕ Salir</button></div>
+<div id="hud"><span id="hudTag"></span><button class="hb" id="hudInv" style="display:none">📨 Invitar</button><button class="hb" id="hudCal" style="display:none">🎯 Calibrar</button><button class="hb" id="hudRes" style="display:none">🏁 Resultado</button><button class="hb" id="hudExit">✕ Salir</button></div>
+<div id="calib"><b>🎯 RESULTADO AUTOMÁTICO</b><div id="calStep" class="small"></div><div id="calDots" class="mut small"></div>
+  <div class="row" style="margin-top:8px"><button class="hb" id="calCancel">Cancelar</button><button class="btn" id="calMark" style="padding:9px">MARCAR</button></div></div>
 <div class="modal" id="resModal"><div class="card">
   <h2>¿QUIÉN GANÓ?</h2>
   <div class="mut small" id="resInfo"></div>
@@ -411,6 +417,7 @@ async function onUser(user){
   pRef.on('value', s => { players = s.val() || {}; renderAll(); }, e => console.warn(e));
   mRef = db.ref(P_MATCHES).limitToLast(150);
   mRef.on('value', s => { matches = s.val() || {}; renderAll(); grantXp(); }, e => console.warn(e));
+  db.ref(P_MEM).on('value', s => { memCfg = s.val(); updateCalBtn(); }, () => {});
   renderAll();
 }
 
@@ -706,6 +713,7 @@ function startGame(blob){
   started = true;
   const file = blob instanceof File ? blob : new File([blob], blob.name || 'bloodyroar2.chd');
   $('gameBox').classList.add('on'); $('hud').classList.add('on');
+  setTimeout(updateCalBtn, 0);
   window.EJS_player = '#game';
   window.EJS_core = 'psx';
   window.EJS_gameName = 'Bloody Roar 2';
@@ -951,7 +959,7 @@ function guestInput(i, v){
   const f = window.EJS_emulator && EJS_emulator.gameManager && EJS_emulator.gameManager.functions;
   if (!f || !f.simulateInput) return;
   f.simulateInput(1, i, v);
-  if (v) held[i] = 1; else delete held[i];
+  if (v) { held[i] = 1; lastGuestIn = Date.now(); } else delete held[i];
 }
 function releaseGuest(){ Object.keys(held).forEach(i => guestInput(+i, 0)); }
 
@@ -1057,6 +1065,7 @@ async function processRoomResult(rn, r, res){
     const lock = await on.ref.child('rn').transaction(c => (c === null ? null : c === rn ? rn + 1 : undefined));
     if (!lock.committed || lock.snapshot.val() !== rn + 1) return;
     const m = {a:r.h, an:r.hn, b:r.g, bn:r.gn, w:res.w, sc:res.sc, ca:'', cb:'', st:'ok', on:on.code, t:Date.now()};
+    if (res.auto) m.auto = true;
     const id = db.ref(P_MATCHES).push().key;
     try {
       const {u, da, dbb} = await buildApply(m);
@@ -1082,6 +1091,120 @@ $('joinCode').onkeydown = e => { if (e.key === 'Enter') joinRoom($('joinCode').v
 let pendingSala = (new URLSearchParams(location.search).get('sala') || '').toUpperCase();
 if (pendingSala) $('joinCode').value = pendingSala;
 
+// ============ RESULTADO AUTOMÁTICO (lee la memoria del juego) ============
+// El emulador puede sacar una "foto" completa del estado (getState). Con una calibración de una sola vez
+// encontramos en qué bytes guarda el juego los rounds ganados de cada jugador, y se comparte en br2_cfg/mem.
+const P_MEM = 'br2_cfg/mem';
+const SKIP = 36900;                 // cabecera + miniatura del estado: ahí no está la memoria del juego
+let memCfg = null, lastGuestIn = 0;
+const sleep = ms => new Promise(ok => setTimeout(ok, ms));
+function grabState(){ try { return EJS_emulator.gameManager.getState(); } catch(e){ return null; } }
+function emuReady(){ return !!(window.EJS_emulator && EJS_emulator.gameManager && EJS_emulator.started !== false); }
+function updateCalBtn(){
+  const host = started && (!on || on.role === 'h');
+  $('hudCal').style.display = host ? '' : 'none';
+  $('hudCal').textContent = memCfg ? '🎯' : '🎯 Calibrar';
+  $('hudCal').title = memCfg ? 'Resultado automático activado (tocar para recalibrar)' : 'Calibrar resultado automático';
+}
+// --- calibración: 4 marcas en una pelea ---
+const CAL_STEPS = [
+  'Entra a una pelea (Versus 1P vs 2P, o Arcade contra la CPU). Cuando empiece el <b>ROUND 1</b>, toca MARCAR.',
+  'Deja que gane el round el <b>Jugador 1</b> (izquierda). Cuando empiece el <b>ROUND 2</b>, toca MARCAR.',
+  'Ahora que gane el round el <b>Jugador 2</b> (derecha). Cuando empiece el <b>ROUND 3</b>, toca MARCAR.',
+  'Termina esa pelea como sea. Cuando empiece el <b>ROUND 1 de una pelea nueva</b> (revancha), toca MARCAR.'
+];
+let cal = null;   // {i, snaps:[{d, ok}], prev:{p1,p2}|null}
+function calShow(){
+  $('calStep').innerHTML = (cal.i + 1) + '/4 · ' + CAL_STEPS[cal.i];
+  $('calDots').textContent = 'Tranquilo: toca MARCAR cuando ya se pueda pelear (no en la pantalla de "Round").';
+  $('calMark').disabled = false; $('calMark').textContent = 'MARCAR';
+}
+function calStart(){
+  if (!emuReady()) { toast('Primero que arranque el juego'); return; }
+  cal = {i:0, snaps:[], prev: cal && cal.keep ? cal.keep : null};
+  $('calib').classList.add('on'); calShow();
+}
+async function stableSnap(){
+  const a = grabState(); await sleep(300); const b = grabState(); await sleep(300); const c = grabState();
+  if (!a || !b || !c || a.length !== b.length || b.length !== c.length) return null;
+  const ok = new Uint8Array(c.length);
+  for (let k = SKIP; k < c.length; k++) ok[k] = (a[k] === c[k] && b[k] === c[k]) ? 1 : 0;
+  return {d:c, ok};
+}
+async function calMark(){
+  $('calMark').disabled = true; $('calMark').textContent = 'Leyendo…';
+  const sn = await stableSnap();
+  if (!sn) { toast('No se pudo leer la memoria del juego'); calShow(); return; }
+  if (cal.snaps.length && sn.d.length !== cal.snaps[0].d.length) { toast('El estado cambió de tamaño; empieza de nuevo'); calCancel(); return; }
+  cal.snaps.push(sn); cal.i++;
+  if (cal.i < 4) { calShow(); return; }
+  calFinish();
+}
+function calFinish(){
+  const [A, B, C, D] = cal.snaps, n = A.d.length;
+  let p1 = [], p2 = [];
+  for (let k = SKIP; k < n; k++){
+    if (!(A.ok[k] && B.ok[k] && C.ok[k] && D.ok[k])) continue;
+    const a = A.d[k], b = B.d[k], c = C.d[k], d = D.d[k];
+    if (d !== a) continue;                              // en la pelea nueva vuelve a como estaba
+    if (b > a && b - a <= 8 && c === b) p1.push(k);     // subió cuando ganó el J1 y no cuando ganó el J2
+    else if (b === a && c > b && c - b <= 8) p2.push(k); // al revés para el J2
+  }
+  if (cal.prev) { p1 = p1.filter(k => cal.prev.p1.includes(k)); p2 = p2.filter(k => cal.prev.p2.includes(k)); }
+  const base = k => A.d[k];
+  console.log('[BR2 calibración]', {p1:p1.length, p2:p2.length});
+  if (!p1.length || !p2.length) {
+    cal = null; $('calib').classList.remove('on');
+    toast('No encontré los contadores. Repite la calibración marcando justo cuando empieza cada round.', 7000);
+    return;
+  }
+  if (p1.length > 12 || p2.length > 12) {
+    // demasiadas coincidencias: otra pelea más para afinar (se cruza con esta)
+    const keep = {p1, p2};
+    cal = {keep}; $('calib').classList.remove('on');
+    toast('Casi listo: encontré ' + p1.length + ' y ' + p2.length + ' posibles. Juega otra pelea y calibra otra vez para afinar.', 8000);
+    setTimeout(calStart, 400);
+    return;
+  }
+  const cfg = {n, p1:p1.map(k => [k, base(k)]), p2:p2.map(k => [k, base(k)]), by:me ? me.name : '?', t:Date.now()};
+  cal = null; $('calib').classList.remove('on');
+  db.ref(P_MEM).set(cfg).then(() => toast('🎯 ¡Listo! El resultado online ahora se detecta solo.', 6000))
+    .catch(e => toast('No se pudo guardar la calibración (' + (e.code || e.message) + ')', 6000));
+  memCfg = cfg; updateCalBtn();
+}
+function calCancel(){ cal = null; $('calib').classList.remove('on'); }
+$('hudCal').onclick = () => { if (memCfg && !confirm('El resultado automático ya está calibrado. ¿Calibrar de nuevo?')) return; calStart(); };
+$('calMark').onclick = calMark;
+$('calCancel').onclick = calCancel;
+
+// --- detección en vivo (solo el anfitrión de una sala online) ---
+const watch = {steps1:{}, steps2:{}, prev:{}, fired:false};
+function voteSteps(list, d, steps){
+  const counts = {};
+  list.forEach(([k, b]) => {
+    const v = d[k], pv = watch.prev[k];
+    if (v === b) steps[k] = 0;                               // volvió a 0 (pelea nueva)
+    else if (pv !== undefined && v !== pv) steps[k] = (steps[k] || 0) + 1;  // subió un round
+    watch.prev[k] = v;
+    const s = steps[k] || 0; counts[s] = (counts[s] || 0) + 1;
+  });
+  let best = 0, bc = -1; for (const s in counts) if (counts[s] > bc) { bc = counts[s]; best = +s; }
+  return best;
+}
+setInterval(() => {
+  if (!memCfg || cal || !on || on.role !== 'h' || !on.room || !on.room.g || !emuReady()) return;
+  const d = grabState();
+  if (!d || d.length !== memCfg.n) return;
+  const r1 = voteSteps(memCfg.p1, d, watch.steps1), r2 = voteSteps(memCfg.p2, d, watch.steps2);
+  if (r1 === 0 && r2 === 0) { watch.fired = false; return; }
+  if (watch.fired || (r1 < 2 && r2 < 2)) return;
+  watch.fired = true;
+  if (Date.now() - lastGuestIn > 120000) return;            // el rival no está jugando (demo / menú): no cuenta
+  const r = on.room, p1won = r1 >= 2;
+  const sc = '2-' + Math.min(1, p1won ? r2 : r1);
+  processRoomResult(r.rn || 1, r, {w: p1won ? r.h : r.g, sc, auto:true});
+}, 500);
+
 // ============ CONTROLES (teclado en PC) ============
 // Nombres de tecla que entiende el emulador (EmulatorJS) según keyCode.
 const KEYNAME = {8:'backspace',9:'tab',13:'enter',16:'shift',17:'ctrl',18:'alt',20:'caps lock',32:'space',33:'page up',34:'page down',
@@ -1094,13 +1217,15 @@ for (let c = 65; c <= 90; c++) KEYNAME[c] = String.fromCharCode(c).toLowerCase()
 const ACTIONS = [[4,'↑ Arriba'],[5,'↓ Abajo'],[6,'← Izquierda'],[7,'→ Derecha'],[1,'□ Cuadrado'],[0,'✕ Equis'],[8,'○ Círculo'],
   [9,'△ Triángulo'],[10,'L1'],[11,'R1'],[12,'L2'],[13,'R2'],[3,'Start'],[2,'Select']];
 const CTL_DEF = {
-  0:{4:'w',5:'s',6:'a',7:'d',1:'j',0:'k',8:'l',9:'i',10:'u',11:'o',12:'y',13:'p',3:'enter',2:'v'},
+  0:{4:'w',5:'s',6:'a',7:'d',1:'l',0:'k',8:'i',9:'j',10:'u',11:'o',12:'y',13:'p',3:'enter',2:'v'},
   1:{4:'up arrow',5:'down arrow',6:'left arrow',7:'right arrow',1:'numpad 4',0:'numpad 5',8:'numpad 6',9:'numpad 8',
      10:'numpad 7',11:'numpad 9',12:'numpad 1',13:'numpad 3',3:'numpad 0',2:'decimal point'}
 };
 const PADNAME = {0:'BUTTON_2',1:'BUTTON_4',2:'SELECT',3:'START',4:'DPAD_UP',5:'DPAD_DOWN',6:'DPAD_LEFT',7:'DPAD_RIGHT',8:'BUTTON_1',
   9:'BUTTON_3',10:'LEFT_TOP_SHOULDER',11:'RIGHT_TOP_SHOULDER',12:'LEFT_BOTTOM_SHOULDER',13:'RIGHT_BOTTOM_SHOULDER',14:'LEFT_STICK',15:'RIGHT_STICK'};
-let ctl = (() => { try { const v = JSON.parse(localStorage.getItem('br2_ctl') || 'null'); if (v && v[0] && v[1]) return v; } catch(e){} return JSON.parse(JSON.stringify(CTL_DEF)); })();
+let ctl = (() => { try { const v = JSON.parse(localStorage.getItem('br2_ctl') || 'null'); if (v && v[0] && v[1]) {
+  if (v[0][1] === 'j' && v[0][8] === 'l' && v[0][9] === 'i') { v[0][1] = 'l'; v[0][8] = 'i'; v[0][9] = 'j'; }   // teclas por defecto antiguas
+  return v; } } catch(e){} return JSON.parse(JSON.stringify(CTL_DEF)); })();
 const saveCtl = () => { try { localStorage.setItem('br2_ctl', JSON.stringify(ctl)); } catch(e){} };
 function ejsControls(){
   const out = {0:{}, 1:{}, 2:{}, 3:{}};
