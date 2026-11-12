@@ -321,7 +321,7 @@ const firebaseConfig = {
   messagingSenderId: "180444249462",
   appId: "1:180444249462:web:bdf189d171d908a0274e57"
 };
-const APP_V = 'v3.7';   // versión de la página: súbela en cada cambio
+const APP_V = 'v3.8';   // versión de la página: súbela en cada cambio
 const ACC_DOMAIN = 'clubcampestre.app';
 const P_PLAYERS = 'br2_players', P_MATCHES = 'br2_matches';
 const EJS_DATA = 'https://cdn.emulatorjs.org/stable/data/';
@@ -1363,12 +1363,12 @@ function learnRound(p1won){
   L.on = false; L.n++;
   if (p1won) { L.wins[0]++; L.losses[1]++; } else { L.wins[1]++; L.losses[0]++; }
   // ¿ya está? cada jugador tiene que haber ganado y perdido al menos un round
-  if (!L.wins[0] || !L.losses[0] || !L.wins[1] || !L.losses[1] || L.n < 2) return;
+  if (L.wins[0] < 2 || L.losses[0] < 2 || L.wins[1] < 2 || L.losses[1] < 2 || L.n < 6) return;
   const pick = pl => {
     let out = [];
     for (const mode of [0, 1]) {
       const h = pl * 2 + mode;
-      for (let i = 0; i < HP_N; i++) if (L.ok[h][i] >= L.n - 1 && L.bad[h][i] <= 1 && (mode === 0 || L.top[pl][i])) out.push([SKIP + 2 * i, mode, mode ? L.top[pl][i] : 0, L.bad[h][i]]);
+      for (let i = 0; i < HP_N; i++) if (L.ok[h][i] === L.n && L.bad[h][i] === 0 && (mode === 0 || L.top[pl][i])) out.push([SKIP + 2 * i, mode, mode ? L.top[pl][i] : 0, 0]);
     }
     // primero los que nunca fallaron
     out.sort((a, b) => a[3] - b[3]);
@@ -1383,13 +1383,23 @@ function learnRound(p1won){
   h2 = h2.filter(x => k1.has(key(x)) && !a1.has(x[0]));
   console.log('[BR2 vida]', {rounds:L.n, j1:h1.length, j2:h2.length});
   if (!h1.length || !h2.length || h1.length > 8 || h2.length > 8) return;   // aún no: sigue aprendiendo
-  const hp = {p1:h1, p2:h2};
+  const hp = {v:HP_V, p1:h1, p2:h2}; hpHit = hpMiss = 0;
   memCfg.hp = hp;
   db.ref(P_MEM + '/hp').set(hp).catch(() => {});
   try { localStorage.setItem('br2_mem', JSON.stringify(memCfg)); } catch(e){}
   toast('❤️ Aprendí dónde está la vida: desde ahora el punto se cuenta en el KO', 6000);
 }
-const hpReady = () => !!(memCfg && memCfg.hp && memCfg.hp.p1 && memCfg.hp.p1.length && memCfg.hp.p2 && memCfg.hp.p2.length);
+const HP_V = 2;   // versión de la vida aprendida (las anteriores se descartan y se vuelve a aprender)
+const hpReady = () => !!(memCfg && memCfg.hp && memCfg.hp.v === HP_V && memCfg.hp.p1 && memCfg.hp.p1.length && memCfg.hp.p2 && memCfg.hp.p2.length);
+let hpHit = 0, hpMiss = 0;
+function forgetHp(why){
+  memCfg.hp = null; hpHit = hpMiss = 0;
+  learn.n = 0; learn.wins = [0, 0]; learn.losses = [0, 0]; learn.on = false;
+  learn.ok.forEach(a => a.fill(0)); learn.bad.forEach(a => a.fill(0)); learn.top.forEach(a => a.fill(0));
+  db.ref(P_MEM + '/hp').remove().catch(() => {});
+  try { localStorage.setItem('br2_mem', JSON.stringify(memCfg)); } catch(e){}
+  if (why) toast(why, 6000);
+}
 function koState(d){
   // 1 = cayó la izquierda, 2 = cayó la derecha, 3 = los dos, 0 = nadie
   const dead = list => {
@@ -1435,14 +1445,14 @@ function detectTick(){
   // --- KO (si ya sabemos dónde está la vida): el punto se cuenta en el momento ---
   if (watch.armed && hpOk) {
     const ko = koState(d);
-    if (ko !== watch.koKey) { watch.koKey = ko; watch.koSame = 1; }
-    else if (++watch.koSame === 2) {
+    if (ko !== watch.koKey) { watch.koKey = ko; watch.koSame = 1; } else watch.koSame++;
+    if (watch.koSame >= 2) {                                           // misma lectura 2 veces seguidas
       if (ko === 0) watch.roundOver = false;                          // los dos con vida: round en curso
-      else if (!watch.roundOver) {
+      else if (!watch.roundOver) {                                     // (al empezar cada round queda bloqueado hasta ver a los dos con vida)
         watch.roundOver = true;
         const [c1, c2] = watch.cur.split(':').map(Number);
         watch.k1 = Math.max(watch.k1, c1); watch.k2 = Math.max(watch.k2, c2);
-        if (ko === 2) watch.k1++; else if (ko === 1) watch.k2++;
+        if (ko === 2) { watch.k1++; watch.koSide = 1; } else if (ko === 1) { watch.k2++; watch.koSide = 2; }
         showRounds();
         if (watch.k1 >= 2 || watch.k2 >= 2) { const p1won = watch.k1 >= 2; return fightOver(p1won, '2-' + (p1won ? watch.k2 : watch.k1)); }
       }
@@ -1465,7 +1475,7 @@ function detectTick(){
       else if (c1 === 1 && c2 === 1) toast('No vi quién ganó el último round (aún estoy aprendiendo dónde está la vida).', 6000);
     }
     if (!watch.armed || watch.cur !== '0:0') {
-      Object.assign(watch, {armed:true, cur:'0:0', at:now, k1:0, k2:0, roundOver:false, koKey:-1, koSame:0});
+      Object.assign(watch, {armed:true, cur:'0:0', at:now, k1:0, k2:0, roundOver:true, koKey:-1, koSame:0, koSide:0});
       learn.on = false; learn.at = now + 4000;      // el round 1 se empieza a mirar cuando ya se llenó la barra
     }
     showRounds();
@@ -1477,8 +1487,15 @@ function detectTick(){
   const oneUp = (r1 === c1 + 1 && r2 === c2) || (r2 === c2 + 1 && r1 === c1);
   if (!oneUp || now - watch.at < MIN_ROUND_MS) { watch.armed = false; showRounds(); return; }   // salto raro: no es una pelea
   watch.cur = key; watch.at = now;
-  if (!hpOk) { learnRound(r1 === c1 + 1); learn.at = now; }   // aprende la vida con el round que acaba de terminar
-  watch.k1 = Math.max(watch.k1, r1); watch.k2 = Math.max(watch.k2, r2);
+  const p1wonRound = r1 === c1 + 1;
+  if (!hpOk) { learnRound(p1wonRound); learn.at = now; }      // aprende la vida con el round que acaba de terminar
+  else {
+    // el juego confirmó quién ganó el round: ¿coincide con lo que vi en el KO?
+    if (watch.koSide === (p1wonRound ? 1 : 2)) hpHit++;
+    else { hpMiss++; if (hpMiss >= 2 && hpMiss * 3 > hpHit) forgetHp('La "vida" que aprendí no era correcta: la vuelvo a aprender.'); }
+  }
+  watch.k1 = r1; watch.k2 = r2;                               // el contador del juego manda: corrige si el KO se equivocó
+  watch.koSide = 0; watch.roundOver = true;                   // nuevo round: espera ver a los dos con vida
   showRounds();
   if (!hpOk && (r1 >= 2 || r2 >= 2)) { const p1won = r1 >= 2; fightOver(p1won, '2-' + (p1won ? r2 : r1)); }
 }
@@ -1499,7 +1516,7 @@ function diagRec(d, r1, r2){
 $('hudDiag').onclick = () => {
   if (!memCfg) return;
   const d = diag.last, near = k => d ? Array.from(d.slice(k - 8, k + 9)).map(v => v.toString(16).padStart(2, '0')).join(' ') : '';
-  const txt = 'BR2DIAG ' + JSON.stringify({ver:APP_V, hp:memCfg.hp || null, aprendiendo:{rounds:learn.n, ganados:learn.wins, perdidos:learn.losses}, n:memCfg.n, p1:memCfg.p1, p2:memCfg.p2,
+  const txt = 'BR2DIAG ' + JSON.stringify({ver:APP_V, hp:memCfg.hp || null, hpCheck:{bien:hpHit, mal:hpMiss}, aprendiendo:{rounds:learn.n, ganados:learn.wins, perdidos:learn.losses}, n:memCfg.n, p1:memCfg.p1, p2:memCfg.p2,
     cerca:{p1:memCfg.p1.map(x => near(x[0])), p2:memCfg.p2.map(x => near(x[0]))}, log:diag.log});
   (navigator.clipboard ? navigator.clipboard.writeText(txt) : Promise.reject()).then(() => toast('Diagnóstico copiado: pégamelo en el chat', 5000))
     .catch(() => prompt('Copia este texto:', txt));
