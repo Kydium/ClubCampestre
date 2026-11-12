@@ -102,6 +102,10 @@
   #calib{position:fixed;z-index:160;left:8px;top:calc(env(safe-area-inset-top,0px) + 50px);width:min(330px,92vw);display:none;
     background:rgba(20,5,9,.94);border:1px solid var(--red);border-radius:14px;padding:12px;box-shadow:0 0 20px rgba(255,59,59,.4)}
   #calib.on{display:block}
+  #autoBar{position:fixed;z-index:170;left:50%;bottom:calc(env(safe-area-inset-bottom,0px) + 18px);transform:translateX(-50%);display:none;
+    align-items:center;gap:8px;padding:8px 10px;border-radius:14px;background:rgba(26,7,12,.96);border:1px solid var(--red);font-weight:700;
+    box-shadow:0 0 18px rgba(255,59,59,.45);max-width:94vw;flex-wrap:wrap;justify-content:center}
+  #autoBar.on{display:flex}
   #calStep{margin:8px 0 4px;line-height:1.35}
 
   /* invitado online */
@@ -176,6 +180,7 @@
       <div class="drop" id="romBox"></div>
       <input type="file" id="romFile" hidden multiple accept=".chd,.pbp,.zip,.7z,.rar,.cue,.bin,.iso,.img,.m3u,.ecm">
       <div id="romBtns"></div>
+      <label class="li small" style="cursor:pointer;gap:10px;border:0"><input type="checkbox" id="optTime" style="width:20px;height:20px;accent-color:#ff3b3b"> <span><b>⏱️ Tiempo infinito</b> en las peleas (sin límite de tiempo)</span></label>
       <ul class="tips mut small">
         <li>Usa <b>tu propia copia</b> del juego. El archivo se queda en este dispositivo: nunca se sube a internet.</li>
         <li>Elige el archivo <b>grande</b> del juego: el <b>.bin</b> (unos 400–600 MB), o el <b>.zip</b> tal cual lo descargaste. También sirven .chd, .pbp o .iso. El .cue solo no sirve.</li>
@@ -282,6 +287,7 @@
 <div id="hud"><span id="hudTag"></span><button class="hb" id="hudInv" style="display:none">📨 Invitar</button><button class="hb" id="hudCal" style="display:none">🎯 Calibrar</button><button class="hb" id="hudRes" style="display:none">🏁 Resultado</button><button class="hb" id="hudExit">✕ Salir</button></div>
 <div id="calib"><b>🎯 RESULTADO AUTOMÁTICO</b><div id="calStep" class="small"></div><div id="calDots" class="mut small"></div>
   <div class="row" style="margin-top:8px"><button class="hb" id="calCancel">Cancelar</button><button class="btn" id="calMark" style="padding:9px">MARCAR</button></div></div>
+<div id="autoBar"><span id="abTxt"></span><button class="hb" id="abFlip">↔️ Al revés</button><button class="hb" id="abOk">✓</button></div>
 <div class="modal" id="resModal"><div class="card">
   <h2>¿QUIÉN GANÓ?</h2>
   <div class="mut small" id="resInfo"></div>
@@ -724,6 +730,7 @@ function startGame(blob){
   window.EJS_backgroundColor = '#000';
   window.EJS_language = 'es';
   window.EJS_defaultControls = ejsControls();
+  window.EJS_cheats = [['Tiempo infinito', CHEAT_TIME]];
   // si el emulador guardó controles de antes, se reemplazan por los de esta página
   try {
     const k = 'ejs-1-psx-Bloody Roar 2-settings', cur = JSON.parse(localStorage.getItem(k) || 'null');
@@ -746,7 +753,7 @@ const ICE = [
 ];
 let on = null;   // {code, role:'h'|'g', ref, room, pc, dc, sid, peer, offs:[], cands:[]}
 const resShown = {};
-let lastShown = 0, badShown = 0, resSel = {w:'', sc:''};
+let lastShown = '', badShown = 0, resSel = {w:'', sc:''};
 
 function genCode(){ const a = 'ABCDEFGHJKLMNPQRSTUVWXYZ'; let c = ''; for (let i = 0; i < 4; i++) c += a[Math.floor(Math.random() * a.length)]; return c; }
 const otherUid = r => on.role === 'h' ? r.g : r.h;
@@ -1042,13 +1049,16 @@ async function sendRes(){
 function handleRes(r){
   const rn = r.rn || 1, rs = (r.res && r.res[rn]) || {};
   const mine = rs[me.uid], ou = otherUid(r), theirs = ou && rs[ou];
-  if (r.last && r.last.rn && r.last.rn !== lastShown) {
+  const sig = r.last && r.last.rn ? r.last.rn + (r.last.fixed ? 'f' : '') : 0;
+  if (sig && sig !== lastShown) {
     if (lastShown || on.seen) {
       const d = r.h === me.uid ? r.last.da : r.last.db;
-      toast((r.last.w === me.uid ? '🏆 ¡Ganaste! ' : '💀 Perdiste · ') + (d > 0 ? '+' : '') + d + ' MMR', 4500);
+      const txt = (r.last.fixed ? '↔️ Corregido: ' : '') + (r.last.w === me.uid ? '🏆 ¡Ganaste! ' : '💀 Perdiste · ') + (d > 0 ? '+' : '') + d + ' MMR';
+      if (r.last.auto && !r.last.fixed) showAutoBar(txt); else { hideAutoBar(); toast(txt, 4500); }
     }
-    lastShown = r.last.rn;
+    lastShown = sig;
   }
+  if (on.role === 'h' && r.flip && r.last && r.flip.rn === r.last.rn && !r.last.fixed) flipLast(r);
   if (r.bad && r.bad !== badShown) { if (badShown || on.seen) toast('No coinciden los resultados. Vuelvan a enviarlo.', 4000); badShown = r.bad; }
   if (!mine && !theirs) delete resShown[rn];   // se borró (no coincidían): se puede volver a preguntar
   if (theirs && !mine && !resShown[rn]) { resShown[rn] = true; openRes(); toast(otherName(r) + ' envió el resultado: confirma tú también'); }
@@ -1071,7 +1081,7 @@ async function processRoomResult(rn, r, res){
       const {u, da, dbb} = await buildApply(m);
       u[P_MATCHES + '/' + id] = Object.assign({}, m, {da, db:dbb, ct:firebase.database.ServerValue.TIMESTAMP});
       await db.ref().update(u);
-      const up = {last:{rn, w:res.w, sc:res.sc, da, db:dbb}}; up['res/' + rn] = null;
+      const up = {last:{rn, w:res.w, sc:res.sc, da, db:dbb, id, auto:!!res.auto}}; up['res/' + rn] = null;
       await on.ref.update(up);
       setTag('Sala ' + on.code + ' · vs ' + (r.gn || 'rival'));
     } catch(e){
@@ -1178,7 +1188,7 @@ $('calMark').onclick = calMark;
 $('calCancel').onclick = calCancel;
 
 // --- detección en vivo (solo el anfitrión de una sala online) ---
-const watch = {steps1:{}, steps2:{}, prev:{}, fired:false};
+const watch = {steps:{}, prev:{}, fired:false};
 function voteSteps(list, d, steps){
   const counts = {};
   list.forEach(([k, b]) => {
@@ -1195,7 +1205,7 @@ setInterval(() => {
   if (!memCfg || cal || !on || on.role !== 'h' || !on.room || !on.room.g || !emuReady()) return;
   const d = grabState();
   if (!d || d.length !== memCfg.n) return;
-  const r1 = voteSteps(memCfg.p1, d, watch.steps1), r2 = voteSteps(memCfg.p2, d, watch.steps2);
+  const r1 = voteSteps(memCfg.p1, d, watch.steps), r2 = voteSteps(memCfg.p2, d, watch.steps);
   if (r1 === 0 && r2 === 0) { watch.fired = false; return; }
   if (watch.fired || (r1 < 2 && r2 < 2)) return;
   watch.fired = true;
@@ -1204,6 +1214,75 @@ setInterval(() => {
   const sc = '2-' + Math.min(1, p1won ? r2 : r1);
   processRoomResult(r.rn || 1, r, {w: p1won ? r.h : r.g, sc, auto:true});
 }, 500);
+
+// ----- "Al revés": corrige el último resultado automático y deja la calibración bien para siempre -----
+let barT = null;
+function showAutoBar(txt){
+  $('abTxt').textContent = txt; $('autoBar').classList.add('on');
+  clearTimeout(barT); barT = setTimeout(hideAutoBar, 20000);
+}
+function hideAutoBar(){ $('autoBar').classList.remove('on'); }
+$('abFlip').onclick = () => {
+  const r = on && on.room; if (!r || !r.last) return;
+  hideAutoBar();
+  on.ref.child('flip').set({rn:r.last.rn, by:me.uid}).catch(() => toast('No se pudo corregir'));
+  toast('Corrigiendo…');
+};
+$('abOk').onclick = hideAutoBar;
+let flipping = false;
+async function flipLast(r){
+  if (flipping) return; flipping = true;
+  try {
+    const L = r.last;
+    const lock = await on.ref.child('fixlock/' + L.rn).transaction(c => c ? undefined : true);
+    if (!lock.committed) return;
+    const ms = (await db.ref(P_MATCHES + '/' + L.id).once('value')).val();
+    if (!ms) return;
+    const [sa, sb] = await Promise.all([db.ref(P_PLAYERS + '/' + ms.a).once('value'), db.ref(P_PLAYERS + '/' + ms.b).once('value')]);
+    const A = Object.assign({mmr:START_MMR, w:0, l:0, pk:START_MMR}, sa.val() || {});
+    const B = Object.assign({mmr:START_MMR, w:0, l:0, pk:START_MMR}, sb.val() || {});
+    const aWonOld = ms.w === ms.a;
+    // deshacer lo que se aplicó
+    A.mmr -= (+ms.da || 0); B.mmr -= (+ms.db || 0);
+    if (aWonOld) { A.w = Math.max(0, A.w - 1); B.l = Math.max(0, B.l - 1); } else { A.l = Math.max(0, A.l - 1); B.w = Math.max(0, B.w - 1); }
+    // aplicar al revés
+    const aWon = !aWonOld;
+    const d = aWon ? eloDelta(A, B, ms.sc) : eloDelta(B, A, ms.sc);
+    const da = aWon ? d.up : -d.dn, dbb = aWon ? -d.dn : d.up;
+    const na = Math.round(A.mmr + da), nb = Math.round(B.mmr + dbb);
+    const u = {};
+    u[P_PLAYERS + '/' + ms.a + '/mmr'] = na; u[P_PLAYERS + '/' + ms.b + '/mmr'] = nb;
+    u[P_PLAYERS + '/' + ms.a + '/w'] = A.w + (aWon ? 1 : 0); u[P_PLAYERS + '/' + ms.a + '/l'] = A.l + (aWon ? 0 : 1);
+    u[P_PLAYERS + '/' + ms.b + '/w'] = B.w + (aWon ? 0 : 1); u[P_PLAYERS + '/' + ms.b + '/l'] = B.l + (aWon ? 1 : 0);
+    u[P_PLAYERS + '/' + ms.a + '/pk'] = Math.max(+A.pk || START_MMR, na); u[P_PLAYERS + '/' + ms.b + '/pk'] = Math.max(+B.pk || START_MMR, nb);
+    const nw = aWon ? ms.a : ms.b;
+    u[P_MATCHES + '/' + L.id + '/w'] = nw; u[P_MATCHES + '/' + L.id + '/da'] = da; u[P_MATCHES + '/' + L.id + '/db'] = dbb;
+    u[P_MATCHES + '/' + L.id + '/fixed'] = true;
+    await db.ref().update(u);
+    await on.ref.update({last:Object.assign({}, L, {w:nw, da, db:dbb, fixed:true}), flip:null});
+    // si fue automático, la calibración tenía los jugadores cruzados: se invierte para siempre
+    if (L.auto && memCfg) { await db.ref(P_MEM).update({p1:memCfg.p2, p2:memCfg.p1}); }
+  } catch(e){ console.warn(e); toast('No se pudo corregir (' + (e.code || e.message) + ')'); on.ref.child('fixlock/' + r.last.rn).remove().catch(() => {}); }
+  finally { flipping = false; }
+}
+
+// ----- tiempo infinito en las peleas (código GameShark de la versión USA) -----
+const CHEAT_TIME = '80151356 2400';
+let timeApplied = false;
+function wantInfTime(){ try { return localStorage.getItem('br2_inftime') !== '0'; } catch(e){ return true; } }
+function applyInfTime(){
+  const em = window.EJS_emulator;
+  if (!em || !em.gameManager || !em.gameManager.functions || !em.gameManager.functions.setCheat) return false;
+  const on_ = wantInfTime();
+  try {
+    if (Array.isArray(em.cheats)) { const c = em.cheats.find(x => x.code === CHEAT_TIME); if (c) c.checked = on_; }
+    em.gameManager.functions.setCheat(90, on_ ? 1 : 0, CHEAT_TIME);
+    return true;
+  } catch(e){ console.warn('cheat', e); return false; }
+}
+setInterval(() => { if (started && !timeApplied && emuReady() && window.EJS_emulator.started) timeApplied = applyInfTime(); }, 1000);
+$('optTime').checked = wantInfTime();
+$('optTime').onchange = e => { try { localStorage.setItem('br2_inftime', e.target.checked ? '1' : '0'); } catch(_){} if (started) applyInfTime(); };
 
 // ============ CONTROLES (teclado en PC) ============
 // Nombres de tecla que entiende el emulador (EmulatorJS) según keyCode.
