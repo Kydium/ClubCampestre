@@ -1,14 +1,14 @@
 // Service worker de Club Campestre.
 // Guarda el menú y los juegos en el dispositivo para que abran al instante.
 // Cuando cambies un archivo, sube el número de VERSION: así todos los dispositivos descargan lo nuevo.
-const VERSION = 'cc-v8';
+const VERSION = 'cc-v9';
 const EXT = 'cc-ext-v1';   // Firebase SDK y tipografías (no cambian)
 
 // Menú
 const SHELL = ['./', 'index.html', 'manifest.json', 'auth.js', 'firebase-config.js', 'club-xp.js', 'club-avatar.js',
   'icons/icon-192.png', 'icons/icon-512.png'];
 // Juegos (cada uno es <carpeta>/index.html). Si alguno no existe, se ignora.
-const GAMES = ['bingo/', 'wolvesville/', 'monopoly/', 'worms/', 'Puno/'];
+const GAMES = ['bingo/', 'wolvesville/', 'monopoly/', 'worms/', 'Puno/', 'bloodyroar/'];
 
 self.addEventListener('install', e => {
   e.waitUntil((async () => {

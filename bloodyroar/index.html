@@ -1,0 +1,591 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Bloody Roar 2 · Club Campestre</title>
+<meta name="theme-color" content="#0d0306">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<link rel="manifest" href="../manifest.json">
+<link rel="icon" type="image/png" href="../icons/icon-192.png">
+<link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@700;900&family=Rajdhani:wght@500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:#0d0306; --panel:#1a070c; --panel2:#24090f; --line:rgba(255,80,80,.22);
+    --text:#fff; --soft:#f1d6d6; --mut:#b98f8f;
+    --red:#ff3b3b; --orange:#ff8a1f; --gold:#ffd54a; --green:#39ff88; --cyan:#19e6ff;
+    --display:"Orbitron","Segoe UI",system-ui,sans-serif;
+    --body:"Rajdhani","Segoe UI",system-ui,sans-serif;
+  }
+  *{box-sizing:border-box;margin:0}
+  html{background:var(--bg)}
+  body{min-height:100vh;color:var(--text);font-family:var(--body);font-size:1.1rem;
+    padding:calc(env(safe-area-inset-top,0px) + 10px) 14px calc(env(safe-area-inset-bottom,0px) + 90px);
+    background:radial-gradient(ellipse at 50% -10%,rgba(255,59,59,.28),transparent 60%),
+      repeating-linear-gradient(135deg,rgba(255,59,59,.05) 0 2px,transparent 2px 22px),var(--bg)}
+  button,select,input{font:inherit;color:inherit}
+  .wrap{max-width:640px;margin:0 auto}
+  .top{display:flex;align-items:center;gap:10px;margin-bottom:14px}
+  .ib{width:42px;height:42px;border-radius:12px;display:flex;align-items:center;justify-content:center;
+    background:var(--panel);border:1px solid var(--line);text-decoration:none;font-size:20px}
+  .me{margin-left:auto;display:flex;align-items:center;gap:8px;font-weight:700}
+  .logo{font-family:var(--display);font-weight:900;font-size:clamp(1.25rem,6vw,1.9rem);letter-spacing:.04em;line-height:1;
+    text-shadow:0 0 8px var(--red),0 0 22px rgba(255,59,59,.6)}
+  .logo small{display:block;font-size:.55em;color:var(--orange);text-shadow:none;letter-spacing:.2em;margin-top:4px}
+
+  .tabs{position:fixed;left:0;right:0;bottom:0;z-index:50;display:flex;justify-content:center;gap:4px;
+    padding:8px 8px calc(env(safe-area-inset-bottom,0px) + 8px);background:rgba(13,3,6,.94);border-top:1px solid var(--line);backdrop-filter:blur(8px)}
+  .tab{flex:1;max-width:150px;border:0;background:none;padding:6px 2px;border-radius:12px;color:var(--mut);font-weight:700;
+    font-size:.85rem;display:flex;flex-direction:column;align-items:center;gap:2px;position:relative;cursor:pointer}
+  .tab span{font-size:1.35rem;line-height:1}
+  .tab.on{color:#fff;background:rgba(255,59,59,.16)}
+  .tab .bdg{position:absolute;top:2px;right:calc(50% - 22px);min-width:18px;height:18px;border-radius:9px;background:var(--red);
+    color:#fff;font-size:.72rem;display:none;align-items:center;justify-content:center;padding:0 5px}
+  .tab .bdg.on{display:flex}
+
+  .screen{display:none}.screen.on{display:block}
+  .card{background:linear-gradient(180deg,var(--panel2),var(--panel));border:1px solid var(--line);border-radius:18px;padding:16px;margin-bottom:14px}
+  .card h2{font-family:var(--display);font-size:1rem;letter-spacing:.06em;margin-bottom:10px;color:var(--orange)}
+  .mut{color:var(--mut)}.small{font-size:.92rem}
+  .btn{display:flex;align-items:center;justify-content:center;gap:8px;width:100%;border:0;border-radius:14px;padding:13px 14px;
+    font-family:var(--display);font-weight:900;letter-spacing:.05em;font-size:.95rem;cursor:pointer;
+    background:linear-gradient(180deg,#ff5252,#c81e1e);box-shadow:0 0 18px rgba(255,59,59,.45);color:#fff}
+  .btn:disabled{opacity:.45;cursor:default}
+  .btn.alt{background:var(--panel2);border:1px solid var(--line);box-shadow:none}
+  .btn.ok{background:linear-gradient(180deg,#3fe28a,#16a35a);box-shadow:0 0 14px rgba(57,255,136,.35)}
+  .row{display:flex;gap:10px}.row>*{flex:1}
+  .gap{height:10px}
+  label.f{display:block;font-weight:700;color:var(--soft);margin:12px 0 6px;font-size:.95rem}
+  select,input[type=text],input[type=password]{width:100%;padding:12px;border-radius:12px;background:#0b0204;border:1px solid var(--line);outline:none}
+  select:focus,input:focus{border-color:var(--red)}
+  .seg{display:flex;gap:8px}
+  .seg button{flex:1;padding:12px 6px;border-radius:12px;border:1px solid var(--line);background:#0b0204;font-weight:700;cursor:pointer}
+  .seg button.on{background:rgba(255,59,59,.22);border-color:var(--red);color:#fff;box-shadow:0 0 10px rgba(255,59,59,.35)}
+  .seg.win button.on[data-v="w"]{background:rgba(57,255,136,.18);border-color:var(--green);box-shadow:0 0 10px rgba(57,255,136,.35)}
+  .err{color:#ff8080;min-height:1.2em;margin-top:8px;font-weight:600}
+
+  /* MMR */
+  .mmr{display:flex;align-items:center;gap:14px}
+  .rk{width:66px;height:66px;flex:0 0 auto;border-radius:16px;display:flex;align-items:center;justify-content:center;font-size:2rem;
+    background:radial-gradient(circle at 35% 30%,#3a1016,#100205);box-shadow:0 0 0 2px var(--rc,#888),0 0 18px var(--rc,#888)}
+  .mmr .num{font-family:var(--display);font-weight:900;font-size:1.9rem;line-height:1}
+  .mmr .rn{font-weight:700;color:var(--rc,#ccc);letter-spacing:.05em}
+  .stats{display:flex;gap:8px;margin-top:12px}
+  .stats div{flex:1;text-align:center;background:#0b0204;border:1px solid var(--line);border-radius:12px;padding:8px 4px}
+  .stats b{display:block;font-family:var(--display);font-size:1.1rem}
+  .stats small{color:var(--mut);font-size:.8rem}
+
+  /* listas */
+  .li{display:flex;align-items:center;gap:10px;padding:10px 0;border-bottom:1px solid rgba(255,80,80,.1)}
+  .li:last-child{border-bottom:0}
+  .li .pos{width:26px;text-align:center;font-family:var(--display);font-weight:900;color:var(--mut)}
+  .li .pos.p1{color:var(--gold)}.li .pos.p2{color:#d7e0ea}.li .pos.p3{color:#e0915a}
+  .li .nm{flex:1;min-width:0;font-weight:700;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .li .nm small{display:block;font-weight:600;color:var(--mut);font-size:.82rem}
+  .li .val{font-family:var(--display);font-weight:900;text-align:right}
+  .li.mine{background:rgba(255,59,59,.08);border-radius:10px;padding-left:6px;padding-right:6px}
+  .up{color:var(--green)}.down{color:#ff6b6b}
+  .av{width:36px;height:36px;border-radius:50%;flex:0 0 auto;display:inline-flex;align-items:center;justify-content:center;font-weight:800}
+  .pend{background:#0b0204;border:1px solid var(--line);border-radius:14px;padding:12px;margin-top:10px}
+  .pend .row{margin-top:10px}
+
+  /* emulador */
+  #gameBox{display:none;position:fixed;inset:0;z-index:100;background:#000}
+  #gameBox.on{display:block}
+  #game{width:100%;height:100%}
+  #exitGame{position:fixed;z-index:101;top:calc(env(safe-area-inset-top,0px) + 8px);right:8px;border:0;border-radius:10px;
+    padding:8px 12px;background:rgba(0,0,0,.65);color:#fff;font-weight:700;display:none;cursor:pointer}
+  #gameBox.on ~ #exitGame{display:block}
+  .drop{border:2px dashed var(--line);border-radius:16px;padding:18px;text-align:center;margin-bottom:12px}
+  .drop b{color:#fff}
+  ul.tips{padding-left:20px;margin-top:8px}ul.tips li{margin:4px 0}
+
+  #toast{position:fixed;left:50%;bottom:calc(env(safe-area-inset-bottom,0px) + 90px);transform:translate(-50%,40px);opacity:0;
+    background:#2a0a10;border:1px solid var(--red);padding:10px 16px;border-radius:12px;font-weight:700;z-index:200;
+    transition:.25s;pointer-events:none;max-width:90vw;text-align:center}
+  #toast.on{opacity:1;transform:translate(-50%,0)}
+  .empty{text-align:center;color:var(--mut);padding:14px 0}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="top">
+    <a class="ib" href="../" title="Club Campestre">🏡</a>
+    <div class="logo">BLOODY ROAR 2<small>RANKED · MMR</small></div>
+    <div class="me" id="meBox"></div>
+  </div>
+
+  <!-- LOGIN -->
+  <section class="screen" id="sLogin">
+    <div class="card">
+      <h2>ENTRA CON TU CUENTA</h2>
+      <p class="mut small">La misma de Club Campestre. Tu MMR queda guardado en tu cuenta.</p>
+      <label class="f" for="lgUser">Usuario</label>
+      <input type="text" id="lgUser" autocomplete="username" autocapitalize="none">
+      <label class="f" for="lgPass">Contraseña</label>
+      <input type="password" id="lgPass" autocomplete="current-password">
+      <div class="err" id="lgErr"></div>
+      <div class="gap"></div>
+      <button class="btn" id="bLogin">ENTRAR</button>
+      <p class="mut small" style="margin-top:12px;text-align:center">¿No tienes cuenta? <a href="../" style="color:var(--orange)">Créala en Club Campestre</a></p>
+    </div>
+  </section>
+
+  <!-- JUGAR -->
+  <section class="screen" id="sPlay">
+    <div class="card" id="myCard"></div>
+    <div class="card">
+      <h2>JUGAR</h2>
+      <div class="drop" id="romBox"></div>
+      <input type="file" id="romFile" hidden accept=".chd,.pbp,.zip,.7z,.cue,.bin,.iso,.img,.m3u">
+      <div id="romBtns"></div>
+      <ul class="tips mut small">
+        <li>Usa <b>tu propia copia</b> del juego. El archivo se queda en este dispositivo: nunca se sube a internet.</li>
+        <li>Formatos que funcionan mejor: <b>.chd</b>, <b>.pbp</b> o un <b>.zip</b> con el .bin y el .cue juntos.</li>
+        <li>2 jugadores en el mismo equipo: conecta dos mandos (o teclado + mando). En el celular aparece un mando táctil.</li>
+        <li>Al terminar la pelea, ve a <b>Reportar</b> para sumar MMR.</li>
+      </ul>
+    </div>
+  </section>
+
+  <!-- REPORTAR -->
+  <section class="screen" id="sReport">
+    <div class="card" id="pendCard" style="display:none">
+      <h2>POR CONFIRMAR</h2>
+      <div id="pendList"></div>
+    </div>
+    <div class="card">
+      <h2>REPORTAR PELEA</h2>
+      <label class="f" for="rRival">Rival</label>
+      <select id="rRival"></select>
+      <label class="f">Resultado</label>
+      <div class="seg win" id="rRes"><button data-v="w">🏆 Gané</button><button data-v="l">💀 Perdí</button></div>
+      <label class="f">Rounds</label>
+      <div class="seg" id="rSc"><button data-v="2-0">2 - 0</button><button data-v="2-1">2 - 1</button></div>
+      <div class="row">
+        <div><label class="f" for="rCa">Mi personaje</label><select id="rCa"></select></div>
+        <div><label class="f" for="rCb">Su personaje</label><select id="rCb"></select></div>
+      </div>
+      <div class="err" id="rErr"></div>
+      <div class="gap"></div>
+      <button class="btn" id="bReport">ENVIAR RESULTADO</button>
+      <p class="mut small" style="margin-top:10px">Tu rival tiene que confirmarlo desde su cuenta. Si lo rechaza, no cuenta.</p>
+    </div>
+    <div class="card" id="waitCard" style="display:none">
+      <h2>ESPERANDO A TU RIVAL</h2>
+      <div id="waitList"></div>
+    </div>
+  </section>
+
+  <!-- RANKING -->
+  <section class="screen" id="sRank">
+    <div class="card">
+      <h2>RANKING</h2>
+      <div id="rankList"></div>
+    </div>
+    <div class="card">
+      <h2>RANGOS</h2>
+      <div id="rankInfo"></div>
+    </div>
+  </section>
+
+  <!-- HISTORIAL -->
+  <section class="screen" id="sHist">
+    <div class="card">
+      <h2>ÚLTIMAS PELEAS</h2>
+      <div id="histList"></div>
+    </div>
+  </section>
+</div>
+
+<nav class="tabs" id="tabs" style="display:none">
+  <button class="tab on" data-s="sPlay"><span>🎮</span>Jugar</button>
+  <button class="tab" data-s="sReport"><span>📝</span>Reportar<i class="bdg" id="bdg"></i></button>
+  <button class="tab" data-s="sRank"><span>🏆</span>Ranking</button>
+  <button class="tab" data-s="sHist"><span>📜</span>Historial</button>
+</nav>
+
+<div id="gameBox"><div id="game"></div></div>
+<button id="exitGame">✕ Salir</button>
+<div id="toast"></div>
+
+<script src="../club-xp.js"></script>
+<script src="../club-avatar.js"></script>
+<script>
+'use strict';
+// ============ CONFIG ============
+const firebaseConfig = {
+  apiKey: "AIzaSyBfrs6B-j22O67pnUb5DYq5CevrIg0dtEs",
+  authDomain: "project-349e4491-0828-4f64-bb5.firebaseapp.com",
+  databaseURL: "https://project-349e4491-0828-4f64-bb5-default-rtdb.firebaseio.com",
+  projectId: "project-349e4491-0828-4f64-bb5",
+  storageBucket: "project-349e4491-0828-4f64-bb5.firebasestorage.app",
+  messagingSenderId: "180444249462",
+  appId: "1:180444249462:web:bdf189d171d908a0274e57"
+};
+const ACC_DOMAIN = 'clubcampestre.app';
+const P_PLAYERS = 'br2_players', P_MATCHES = 'br2_matches';
+const EJS_DATA = 'https://cdn.emulatorjs.org/stable/data/';
+const START_MMR = 1000;
+const XP_WIN = 150, XP_LOSS = 70;
+const CHARS = ['Yugo','Alice','Uriko','Long','Bakuryu','Busuzima','Gado','Jenny','Shina','Stun','Shenlong','Uranus'];
+const RANKS = [
+  {min:-1e9, n:'Bronce',   i:'🥉', c:'#c47a3d'},
+  {min:900,  n:'Plata',    i:'🥈', c:'#cfd8e3'},
+  {min:1050, n:'Oro',      i:'🥇', c:'#ffd54a'},
+  {min:1200, n:'Platino',  i:'💠', c:'#5fe3d0'},
+  {min:1350, n:'Diamante', i:'💎', c:'#7cc8ff'},
+  {min:1500, n:'Bestia',   i:'🐺', c:'#ff3b3b'}
+];
+
+// ============ UTILIDADES ============
+const $ = id => document.getElementById(id);
+const esc = s => String(s == null ? '' : s).replace(/[&<>"']/g, m => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]));
+function toast(t, ms){ const e = $('toast'); e.textContent = t; e.classList.add('on'); clearTimeout(toast.t); toast.t = setTimeout(() => e.classList.remove('on'), ms || 2600); }
+const rankOf = m => RANKS.reduce((r, x) => (m >= x.min ? x : r), RANKS[0]);
+function ago(t){
+  const s = Math.max(0, (Date.now() - (+t || 0)) / 1000);
+  if (s < 60) return 'ahora'; if (s < 3600) return Math.floor(s / 60) + ' min';
+  if (s < 86400) return Math.floor(s / 3600) + ' h'; return Math.floor(s / 86400) + ' d';
+}
+function loadScript(u){
+  return new Promise((ok, ko) => {
+    const s = document.createElement('script'); s.src = u; s.async = true;
+    s.onload = ok; s.onerror = () => ko(new Error(u)); document.head.appendChild(s);
+  });
+}
+async function loadFirebase(){
+  for (const b of ['https://cdn.jsdelivr.net/npm/firebase@9.23.0/', 'https://www.gstatic.com/firebasejs/9.23.0/']){
+    try {
+      if (!window.firebase) await loadScript(b + 'firebase-app-compat.js');
+      if (!firebase.auth) await loadScript(b + 'firebase-auth-compat.js');
+      if (!firebase.database) await loadScript(b + 'firebase-database-compat.js');
+      if (firebase.auth && firebase.database) return true;
+    } catch(e){ console.warn(e); }
+  }
+  return false;
+}
+function show(id){
+  document.querySelectorAll('.screen').forEach(s => s.classList.toggle('on', s.id === id));
+  document.querySelectorAll('.tab').forEach(t => t.classList.toggle('on', t.dataset.s === id));
+}
+function avatar(el, uid, name){
+  el.style.background = 'hsl(' + hue(name) + ',55%,35%)'; el.textContent = (String(name || '?')[0] || '?').toUpperCase();
+  if (avReady && uid) { try { ClubAvatar.render(uid, el, {name, size: el.offsetWidth || 36}); } catch(e){} }
+}
+function hue(s){ let h = 0; for (const ch of String(s || '?')) h = (h * 31 + ch.charCodeAt(0)) % 360; return h; }
+
+// ============ ESTADO ============
+let db = null, fauth = null, me = null, avReady = false;
+let players = {}, matches = {};
+let pRef = null, mRef = null;
+
+// ============ CUENTA ============
+function authErr(e){
+  const c = (e && e.code) || '';
+  if (/user-not-found|invalid-credential|wrong-password|invalid-login|invalid-email/.test(c)) return 'Usuario o contraseña incorrectos';
+  if (/too-many/.test(c)) return 'Demasiados intentos, espera un momento';
+  if (/network/.test(c)) return 'Sin conexión a internet';
+  return 'No se pudo entrar (' + (c || 'error') + ')';
+}
+async function doLogin(){
+  const u = ($('lgUser').value || '').trim().toLowerCase(), p = $('lgPass').value || '';
+  if (!/^[a-z0-9_]{3,16}$/.test(u)) { $('lgErr').textContent = 'El usuario tiene de 3 a 16 letras, números o _'; return; }
+  if (!p) { $('lgErr').textContent = 'Escribe tu contraseña'; return; }
+  $('lgErr').textContent = ''; $('bLogin').disabled = true;
+  try { await fauth.signInWithEmailAndPassword(u + '@' + ACC_DOMAIN, p); $('lgPass').value = ''; }
+  catch(e){ $('lgErr').textContent = authErr(e); }
+  $('bLogin').disabled = false;
+}
+
+async function onUser(user){
+  if (pRef) { pRef.off(); mRef.off(); pRef = mRef = null; }
+  if (!user){
+    me = null; $('tabs').style.display = 'none'; $('meBox').innerHTML = '';
+    if (window.ClubXP) ClubXP.reset();
+    show('sLogin'); return;
+  }
+  me = {uid:user.uid, name:String(user.displayName || (user.email || '').split('@')[0] || 'jugador').slice(0, 16)};
+  try { localStorage.setItem('cc_uid', me.uid); } catch(e){}
+  $('meBox').innerHTML = '<span class="mut small">' + esc(me.name) + '</span><span class="av" id="meAv"></span>';
+  if (window.ClubAvatar && !avReady) { try { ClubAvatar.init({db}); avReady = true; } catch(e){} }
+  avatar($('meAv'), me.uid, me.name);
+  if (window.ClubXP) ClubXP.init({db, uid:me.uid, game:'bloodyroar'});
+  $('tabs').style.display = ''; show('sPlay');
+
+  // ficha del jugador (se crea la primera vez)
+  try {
+    await db.ref(P_PLAYERS + '/' + me.uid).transaction(cur => {
+      if (!cur) return {n:me.name, mmr:START_MMR, w:0, l:0, pk:START_MMR, t:Date.now()};
+      if (cur.n !== me.name) { cur.n = me.name; return cur; }
+      return;   // sin cambios
+    });
+  } catch(e){
+    console.warn(e);
+    toast('Firebase no dejó guardar tu ficha (revisa las reglas de la base de datos)', 5000);
+  }
+  pRef = db.ref(P_PLAYERS);
+  pRef.on('value', s => { players = s.val() || {}; renderAll(); }, e => console.warn(e));
+  mRef = db.ref(P_MATCHES).limitToLast(150);
+  mRef.on('value', s => { matches = s.val() || {}; renderAll(); grantXp(); }, e => console.warn(e));
+  renderAll();
+}
+
+// ============ MMR (Elo) ============
+function kOf(p){ return ((+p.w || 0) + (+p.l || 0)) < 10 ? 40 : 24; }   // las primeras 10 peleas mueven más
+function eloDelta(win, lose, score){
+  const ew = 1 / (1 + Math.pow(10, ((+lose.mmr || START_MMR) - (+win.mmr || START_MMR)) / 400));
+  const mult = score === '2-0' ? 1.15 : 1;                               // ganar sin perder round da un poco más
+  const up = Math.max(1, Math.round(kOf(win) * (1 - ew) * mult));
+  const dn = Math.max(1, Math.round(kOf(lose) * (1 - ew) * mult));
+  return {up, dn};
+}
+function player(uid){ return players[uid] || {n:'?', mmr:START_MMR, w:0, l:0, pk:START_MMR}; }
+
+// ============ REPORTE ============
+let selRes = '', selSc = '';
+function segInit(id, cb){
+  $(id).querySelectorAll('button').forEach(b => b.onclick = () => {
+    $(id).querySelectorAll('button').forEach(x => x.classList.toggle('on', x === b)); cb(b.dataset.v);
+  });
+}
+async function sendReport(){
+  const rival = $('rRival').value;
+  $('rErr').textContent = '';
+  if (!rival) { $('rErr').textContent = 'Elige a tu rival'; return; }
+  if (!selRes) { $('rErr').textContent = '¿Ganaste o perdiste?'; return; }
+  if (!selSc) { $('rErr').textContent = 'Elige cómo quedaron los rounds'; return; }
+  const dup = Object.values(matches).some(m => m.st === 'p' && m.a === me.uid && m.b === rival);
+  if (dup) { $('rErr').textContent = 'Ya tienes una pelea con esa persona esperando confirmación'; return; }
+  $('bReport').disabled = true;
+  try {
+    await db.ref(P_MATCHES).push({
+      a:me.uid, an:me.name, b:rival, bn:player(rival).n,
+      w: selRes === 'w' ? me.uid : rival, sc:selSc,
+      ca:$('rCa').value || '', cb:$('rCb').value || '',
+      st:'p', t:firebase.database.ServerValue.TIMESTAMP
+    });
+    toast('Enviado. ' + player(rival).n + ' tiene que confirmarlo');
+    selRes = selSc = ''; document.querySelectorAll('#rRes button,#rSc button').forEach(b => b.classList.remove('on'));
+  } catch(e){ console.warn(e); $('rErr').textContent = 'No se pudo enviar (' + (e.code || e.message) + ')'; }
+  $('bReport').disabled = false;
+}
+async function confirmMatch(id){
+  const ref = db.ref(P_MATCHES + '/' + id);
+  try {
+    const lock = await ref.child('st').transaction(s => (s === 'p' ? 'c' : undefined));   // nadie más la procesa
+    if (!lock.committed) { toast('Esa pelea ya fue procesada'); return; }
+    const m = (await ref.once('value')).val();
+    const [sa, sb] = await Promise.all([db.ref(P_PLAYERS + '/' + m.a).once('value'), db.ref(P_PLAYERS + '/' + m.b).once('value')]);
+    const A = Object.assign({mmr:START_MMR, w:0, l:0, pk:START_MMR, n:m.an}, sa.val() || {});
+    const B = Object.assign({mmr:START_MMR, w:0, l:0, pk:START_MMR, n:m.bn}, sb.val() || {});
+    const aWon = m.w === m.a;
+    const d = aWon ? eloDelta(A, B, m.sc) : eloDelta(B, A, m.sc);
+    const da = aWon ? d.up : -d.dn, dbb = aWon ? -d.dn : d.up;
+    const na = Math.round(+A.mmr + da), nb = Math.round(+B.mmr + dbb);
+    const u = {};
+    u[P_PLAYERS + '/' + m.a + '/mmr'] = na;
+    u[P_PLAYERS + '/' + m.a + '/pk'] = Math.max(+A.pk || START_MMR, na);
+    u[P_PLAYERS + '/' + m.a + '/' + (aWon ? 'w' : 'l')] = (+A[aWon ? 'w' : 'l'] || 0) + 1;
+    u[P_PLAYERS + '/' + m.b + '/mmr'] = nb;
+    u[P_PLAYERS + '/' + m.b + '/pk'] = Math.max(+B.pk || START_MMR, nb);
+    u[P_PLAYERS + '/' + m.b + '/' + (aWon ? 'l' : 'w')] = (+B[aWon ? 'l' : 'w'] || 0) + 1;
+    u[P_MATCHES + '/' + id + '/st'] = 'ok';
+    u[P_MATCHES + '/' + id + '/da'] = da;
+    u[P_MATCHES + '/' + id + '/db'] = dbb;
+    u[P_MATCHES + '/' + id + '/ct'] = firebase.database.ServerValue.TIMESTAMP;
+    await db.ref().update(u);   // todo junto: o se guarda completo o no se guarda nada
+    const mine = m.b === me.uid ? dbb : da;
+    toast('Confirmada · ' + (mine > 0 ? '+' : '') + mine + ' MMR');
+  } catch(e){
+    console.warn(e);
+    try { await ref.child('st').set('p'); } catch(_){}
+    toast('No se pudo confirmar (' + (e.code || e.message) + ')');
+  }
+}
+async function rejectMatch(id){
+  try { await db.ref(P_MATCHES + '/' + id).update({st:'x'}); toast('Rechazada'); } catch(e){ toast('No se pudo rechazar'); }
+}
+async function cancelMatch(id){
+  try { await db.ref(P_MATCHES + '/' + id).remove(); toast('Cancelada'); } catch(e){ toast('No se pudo cancelar'); }
+}
+
+// XP compartida: cada uno cobra la suya al ver su pelea confirmada (marca xa / xb para no repetir)
+const xpBusy = {};
+function grantXp(){
+  if (!me || !window.ClubXP) return;
+  Object.entries(matches).forEach(([id, m]) => {
+    if (m.st !== 'ok') return;
+    const side = m.a === me.uid ? 'xa' : m.b === me.uid ? 'xb' : '';
+    if (!side || m[side] || xpBusy[id]) return;
+    xpBusy[id] = true;
+    const gain = m.w === me.uid ? XP_WIN : XP_LOSS;
+    ClubXP.add(gain, 'bloodyroar', {key:id})
+      .then(() => db.ref(P_MATCHES + '/' + id + '/' + side).set(true))
+      .catch(() => {}).finally(() => { delete xpBusy[id]; });
+  });
+}
+
+// ============ PINTAR ============
+function renderAll(){ if (!me) return; renderMe(); renderReport(); renderRank(); renderHist(); }
+function renderMe(){
+  const p = player(me.uid), r = rankOf(+p.mmr || START_MMR), g = (+p.w || 0) + (+p.l || 0);
+  const wr = g ? Math.round((+p.w || 0) / g * 100) : 0;
+  const sorted = Object.keys(players).filter(k => ((+players[k].w || 0) + (+players[k].l || 0)) > 0)
+    .sort((a, b) => (+players[b].mmr || 0) - (+players[a].mmr || 0));
+  const pos = sorted.indexOf(me.uid);
+  $('myCard').innerHTML =
+    '<h2>TU MMR</h2><div class="mmr" style="--rc:' + r.c + '"><div class="rk">' + r.i + '</div><div>' +
+    '<div class="num">' + Math.round(+p.mmr || START_MMR) + '</div><div class="rn">' + r.n.toUpperCase() +
+    (pos >= 0 ? ' · #' + (pos + 1) : '') + '</div></div></div>' +
+    '<div class="stats"><div><b>' + (+p.w || 0) + '</b><small>Victorias</small></div><div><b>' + (+p.l || 0) +
+    '</b><small>Derrotas</small></div><div><b>' + wr + '%</b><small>Winrate</small></div><div><b>' +
+    Math.round(+p.pk || START_MMR) + '</b><small>Récord</small></div></div>' +
+    (g < 10 ? '<p class="mut small" style="margin-top:10px">Calibración: ' + g + '/10 peleas (en estas ganas y pierdes más MMR).</p>' : '');
+}
+function renderReport(){
+  // rivales
+  const sel = $('rRival'), cur = sel.value;
+  const opts = Object.keys(players).filter(k => k !== me.uid).sort((a, b) => String(players[a].n).localeCompare(String(players[b].n)));
+  sel.innerHTML = '<option value="">' + (opts.length ? 'Elige a tu rival…' : 'Aún no hay más jugadores: que abran esta página') + '</option>' +
+    opts.map(k => '<option value="' + esc(k) + '">' + esc(players[k].n) + ' · ' + Math.round(+players[k].mmr || START_MMR) + '</option>').join('');
+  if (opts.includes(cur)) sel.value = cur;
+  ['rCa', 'rCb'].forEach(id => {
+    const s = $(id); if (s.options.length) return;
+    s.innerHTML = '<option value="">—</option>' + CHARS.map(c => '<option>' + c + '</option>').join('');
+  });
+
+  const list = Object.entries(matches);
+  const pend = list.filter(([, m]) => m.st === 'p' && m.b === me.uid).sort((x, y) => (y[1].t || 0) - (x[1].t || 0));
+  const wait = list.filter(([, m]) => m.st === 'p' && m.a === me.uid);
+  $('bdg').textContent = pend.length; $('bdg').classList.toggle('on', pend.length > 0);
+  $('pendCard').style.display = pend.length ? '' : 'none';
+  $('pendList').innerHTML = pend.map(([id, m]) => {
+    const iWon = m.w === me.uid;
+    const sc = iWon ? m.sc : m.sc.split('-').reverse().join('-');
+    return '<div class="pend"><b>' + esc(m.an) + '</b> dice que ' + (iWon ? '<span class="up">ganaste tú</span>' : '<span class="down">te ganó</span>') +
+      ' <b>' + esc(sc) + '</b>' + (m.ca || m.cb ? '<div class="mut small">' + esc(m.cb || '?') + ' (tú) vs ' + esc(m.ca || '?') + '</div>' : '') +
+      '<div class="mut small">hace ' + ago(m.t) + '</div>' +
+      '<div class="row"><button class="btn ok" data-ok="' + esc(id) + '">✓ CONFIRMAR</button><button class="btn alt" data-no="' + esc(id) + '">✕ RECHAZAR</button></div></div>';
+  }).join('');
+  $('waitCard').style.display = wait.length ? '' : 'none';
+  $('waitList').innerHTML = wait.map(([id, m]) =>
+    '<div class="li"><div class="nm">vs ' + esc(m.bn) + '<small>' + (m.w === me.uid ? 'Ganaste ' : 'Perdiste ') + esc(m.sc) + ' · hace ' + ago(m.t) + '</small></div>' +
+    '<button class="btn alt" style="width:auto;padding:8px 12px" data-cancel="' + esc(id) + '">Cancelar</button></div>').join('');
+  // rechazadas recientes que reporté yo
+  const rej = list.filter(([, m]) => m.st === 'x' && m.a === me.uid && Date.now() - (m.t || 0) < 86400000);
+  if (rej.length) $('waitCard').style.display = '', $('waitList').innerHTML += rej.map(([id, m]) =>
+    '<div class="li"><div class="nm">vs ' + esc(m.bn) + '<small class="down">Rechazada por tu rival</small></div>' +
+    '<button class="btn alt" style="width:auto;padding:8px 12px" data-cancel="' + esc(id) + '">Quitar</button></div>').join('');
+}
+function renderRank(){
+  const ids = Object.keys(players).sort((a, b) => (+players[b].mmr || 0) - (+players[a].mmr || 0));
+  const act = ids.filter(k => ((+players[k].w || 0) + (+players[k].l || 0)) > 0);
+  const html = act.map((k, i) => {
+    const p = players[k], r = rankOf(+p.mmr || START_MMR);
+    return '<div class="li' + (k === me.uid ? ' mine' : '') + '"><div class="pos' + (i < 3 ? ' p' + (i + 1) : '') + '">' + (i + 1) + '</div>' +
+      '<span class="av" data-av="' + esc(k) + '" data-n="' + esc(p.n) + '"></span>' +
+      '<div class="nm">' + esc(p.n) + '<small style="color:' + r.c + '">' + r.i + ' ' + r.n + ' · ' + (+p.w || 0) + 'V ' + (+p.l || 0) + 'D</small></div>' +
+      '<div class="val">' + Math.round(+p.mmr || START_MMR) + '</div></div>';
+  }).join('');
+  $('rankList').innerHTML = html || '<div class="empty">Nadie ha peleado todavía. ¡Sé el primero!</div>';
+  $('rankList').querySelectorAll('[data-av]').forEach(el => avatar(el, el.dataset.av, el.dataset.n));
+  if (!$('rankInfo').innerHTML) $('rankInfo').innerHTML = RANKS.map((r, i) =>
+    '<div class="li"><div class="pos">' + r.i + '</div><div class="nm" style="color:' + r.c + '">' + r.n + '</div><div class="val mut small">' +
+    (i === 0 ? '&lt; ' + RANKS[1].min : r.min + (RANKS[i + 1] ? ' – ' + (RANKS[i + 1].min - 1) : '+')) + '</div></div>').join('') +
+    '<p class="mut small" style="margin-top:8px">Todos empiezan en ' + START_MMR + '. Ganarle a alguien con más MMR te da más puntos.</p>';
+}
+function renderHist(){
+  const done = Object.entries(matches).filter(([, m]) => m.st === 'ok').sort((x, y) => (y[1].ct || y[1].t || 0) - (x[1].ct || x[1].t || 0)).slice(0, 60);
+  $('histList').innerHTML = done.map(([, m]) => {
+    const wA = m.w === m.a, mineSide = m.a === me.uid ? 'a' : m.b === me.uid ? 'b' : '';
+    const d = mineSide === 'a' ? m.da : mineSide === 'b' ? m.db : null;
+    const left = '<b' + (wA ? ' class="up"' : '') + '>' + esc(m.an) + '</b>', right = '<b' + (!wA ? ' class="up"' : '') + '>' + esc(m.bn) + '</b>';
+    const sc = wA ? m.sc : m.sc.split('-').reverse().join('-');
+    return '<div class="li' + (mineSide ? ' mine' : '') + '"><div class="nm">' + left + ' ' + esc(sc) + ' ' + right +
+      '<small>' + (m.ca || m.cb ? esc(m.ca || '?') + ' vs ' + esc(m.cb || '?') + ' · ' : '') + 'hace ' + ago(m.ct || m.t) + '</small></div>' +
+      (d != null ? '<div class="val ' + (d > 0 ? 'up' : 'down') + '">' + (d > 0 ? '+' : '') + d + '</div>' :
+        '<div class="val mut small">' + (wA ? '+' + m.da : '+' + m.db) + '</div>') + '</div>';
+  }).join('') || '<div class="empty">Todavía no hay peleas confirmadas.</div>';
+}
+
+// ============ EMULADOR ============
+// La copia del juego se guarda SOLO en este dispositivo (IndexedDB), nunca en internet.
+const IDB = {
+  open(){ return new Promise((ok, ko) => { const r = indexedDB.open('br2_rom', 1); r.onupgradeneeded = () => r.result.createObjectStore('f'); r.onsuccess = () => ok(r.result); r.onerror = () => ko(r.error); }); },
+  async run(mode, fn){ const d = await this.open(); return new Promise((ok, ko) => { const tx = d.transaction('f', mode); const r = fn(tx.objectStore('f')); tx.oncomplete = () => ok(r && r.result); tx.onerror = () => ko(tx.error); tx.onabort = () => ko(tx.error); }); },
+  get(){ return this.run('readonly', s => s.get('rom')); },
+  put(f){ return this.run('readwrite', s => s.put(f, 'rom')); },
+  del(){ return this.run('readwrite', s => s.delete('rom')); }
+};
+let savedRom = null, started = false;
+async function refreshRom(){
+  try { savedRom = await IDB.get(); } catch(e){ savedRom = null; }
+  const mb = f => (f.size / 1048576).toFixed(0) + ' MB';
+  if (savedRom){
+    $('romBox').innerHTML = '💿 <b>' + esc(savedRom.name) + '</b><div class="mut small">' + mb(savedRom) + ' · guardado en este dispositivo</div>';
+    $('romBtns').innerHTML = '<button class="btn" id="bPlay">▶ JUGAR BLOODY ROAR 2</button><div class="gap"></div>' +
+      '<div class="row"><button class="btn alt" id="bPick">Cambiar archivo</button><button class="btn alt" id="bForget">Borrar del equipo</button></div>';
+    $('bPlay').onclick = () => startGame(savedRom);
+    $('bForget').onclick = async () => { await IDB.del().catch(() => {}); refreshRom(); toast('Borrado de este dispositivo'); };
+  } else {
+    $('romBox').innerHTML = '💿 <b>Carga tu copia de Bloody Roar 2</b><div class="mut small">Solo la primera vez: después queda guardada en este dispositivo</div>';
+    $('romBtns').innerHTML = '<button class="btn" id="bPick">ELEGIR ARCHIVO DEL JUEGO</button>';
+  }
+  $('bPick').onclick = () => $('romFile').click();
+}
+$('romFile').onchange = async e => {
+  const f = e.target.files && e.target.files[0]; e.target.value = '';
+  if (!f) return;
+  try { await IDB.put(f); toast('Guardado en este dispositivo'); }
+  catch(err){ console.warn(err); toast('No hubo espacio para guardarlo; igual se puede jugar ahora', 4000); }
+  await refreshRom();
+  startGame(f);
+};
+function startGame(blob){
+  if (started) { location.reload(); return; }
+  started = true;
+  const file = blob instanceof File ? blob : new File([blob], blob.name || 'bloodyroar2.chd');
+  $('gameBox').classList.add('on');
+  window.EJS_player = '#game';
+  window.EJS_core = 'psx';
+  window.EJS_gameName = 'Bloody Roar 2';
+  window.EJS_gameUrl = file;
+  window.EJS_pathtodata = EJS_DATA;
+  window.EJS_startOnLoaded = true;
+  window.EJS_color = '#ff3b3b';
+  window.EJS_backgroundColor = '#000';
+  window.EJS_language = 'es';
+  loadScript(EJS_DATA + 'loader.js').catch(() => {
+    toast('No se pudo cargar el emulador (¿sin internet?)', 4000);
+    $('gameBox').classList.remove('on'); started = false;
+  });
+}
+$('exitGame').onclick = () => location.reload();   // la forma más limpia de cerrar el emulador
+
+// ============ ARRANQUE ============
+document.querySelectorAll('.tab').forEach(t => t.onclick = () => show(t.dataset.s));
+segInit('rRes', v => selRes = v);
+segInit('rSc', v => selSc = v);
+$('bReport').onclick = sendReport;
+$('bLogin').onclick = doLogin;
+$('lgPass').onkeydown = e => { if (e.key === 'Enter') doLogin(); };
+document.addEventListener('click', e => {
+  const b = e.target.closest('button'); if (!b) return;
+  if (b.dataset.ok) { b.disabled = true; confirmMatch(b.dataset.ok); }
+  else if (b.dataset.no) rejectMatch(b.dataset.no);
+  else if (b.dataset.cancel) cancelMatch(b.dataset.cancel);
+});
+setInterval(() => { if (me) { renderReport(); renderHist(); } }, 60000);   // refresca los "hace X min"
+
+(async () => {
+  refreshRom();
+  if (!await loadFirebase()) { show('sLogin'); $('lgErr').textContent = 'No se pudo conectar con Firebase. Revisa tu internet.'; return; }
+  firebase.initializeApp(firebaseConfig);
+  db = firebase.database(); fauth = firebase.auth();
+  fauth.onAuthStateChanged(onUser);
+})();
+</script>
+</body>
+</html>
