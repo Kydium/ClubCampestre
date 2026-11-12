@@ -99,6 +99,8 @@
   .hb{border:0;border-radius:10px;padding:7px 11px;background:rgba(0,0,0,.7);color:#fff;font-weight:700;font-size:.9rem;cursor:pointer}
   #hudTag{padding:6px 10px;border-radius:10px;background:rgba(0,0,0,.7);font-size:.85rem;font-weight:700}
   #hudTag:empty{display:none}
+  #hudRounds.flash{animation:pt .9s ease-out}
+  @keyframes pt{0%{background:#ff3b3b;transform:scale(1.35)}100%{background:rgba(0,0,0,.7);transform:scale(1)}}
   #calib{position:fixed;z-index:160;left:8px;top:calc(env(safe-area-inset-top,0px) + 50px);width:min(330px,92vw);display:none;
     background:rgba(20,5,9,.94);border:1px solid var(--red);border-radius:14px;padding:12px;box-shadow:0 0 20px rgba(255,59,59,.4)}
   #calib.on{display:block}
@@ -319,7 +321,7 @@ const firebaseConfig = {
   messagingSenderId: "180444249462",
   appId: "1:180444249462:web:bdf189d171d908a0274e57"
 };
-const APP_V = 'v3.6';   // versión de la página: súbela en cada cambio
+const APP_V = 'v3.7';   // versión de la página: súbela en cada cambio
 const ACC_DOMAIN = 'clubcampestre.app';
 const P_PLAYERS = 'br2_players', P_MATCHES = 'br2_matches';
 const EJS_DATA = 'https://cdn.emulatorjs.org/stable/data/';
@@ -1405,14 +1407,17 @@ function fightOver(p1won, sc){
   const r = on.room;
   processRoomResult(r.rn || 1, r, {w: p1won ? r.h : r.g, sc, auto:true});
 }
+let lastShownRounds = '';
 function showRounds(){
   const hr = $('hudRounds'); hr.style.display = '';
+  const before = hr.textContent;
   const hpOk = hpReady();
   if (!watch.armed) { hr.textContent = '🎯 Izq ? - ? Der'; return; }
   const [c1, c2] = watch.cur.split(':').map(Number);
   hr.textContent = (hpOk ? '❤️' : '🎯') + ' Izq ' + Math.max(c1, watch.k1) + ' - ' + Math.max(c2, watch.k2) + ' Der';
+  if (before && hr.textContent !== before && /[1-9]/.test(hr.textContent)) { hr.classList.remove('flash'); void hr.offsetWidth; hr.classList.add('flash'); }
 }
-setInterval(() => {
+function detectTick(){
   // corre en el anfitrión online y también al jugar en este equipo (para probar sin tocar el MMR)
   if (!memCfg || cal || !started || (on && on.role !== 'h') || !emuReady()) { $('hudRounds').style.display = 'none'; return; }
   const d = grabState();
@@ -1476,7 +1481,9 @@ setInterval(() => {
   watch.k1 = Math.max(watch.k1, r1); watch.k2 = Math.max(watch.k2, r2);
   showRounds();
   if (!hpOk && (r1 >= 2 || r2 >= 2)) { const p1won = r1 >= 2; fightOver(p1won, '2-' + (p1won ? r2 : r1)); }
-}, 500);
+}
+// con la vida aprendida se mira 4 veces por segundo (el punto aparece ~0.5 s después del KO)
+(function detectLoop(){ try { detectTick(); } catch(e){ console.warn(e); } setTimeout(detectLoop, hpReady() ? 250 : 500); })();
 
 // ----- diagnóstico: guarda cómo se mueven los bytes calibrados durante la partida -----
 const diag = {t0:0, log:[], lastSig:'', last:null};
