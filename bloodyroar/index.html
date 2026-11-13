@@ -321,7 +321,7 @@ const firebaseConfig = {
   messagingSenderId: "180444249462",
   appId: "1:180444249462:web:bdf189d171d908a0274e57"
 };
-const APP_V = 'v4.3';   // versión de la página: súbela en cada cambio
+const APP_V = 'v4.4';   // versión de la página: súbela en cada cambio
 const ACC_DOMAIN = 'clubcampestre.app';
 const P_PLAYERS = 'br2_players', P_MATCHES = 'br2_matches';
 const EJS_DATA = 'https://cdn.emulatorjs.org/stable/data/';
@@ -1223,24 +1223,23 @@ async function calMark(){
 function calScan(S, seq, bad, end){
   // devuelve {p1:[[k, base, paso]], p2:[...]} con lo que siguió el marcador esperado en las 5 marcas
   const p1 = [], p2 = [], st = {mov:0};
+  // Cada cantidad de puntos (0, 1, 2) tiene que tener SU propio valor, siempre el mismo
+  // (sirve para contadores 0→1→2, cuentas regresivas, o "luces" como 0→1→3).
   const fits = (k, col) => {
-    const v0 = S[0].d[k];
-    if (S[CAL_N - 1].d[k] !== v0) return 0;                 // en la pelea siguiente vuelve a como estaba
-    let step = 0;
-    for (let j = 1; j < CAL_N - 1; j++) {
-      const e = seq[j][col], dv = sd(v0, S[j].d[k]);
-      if (e === 0) { if (dv !== 0) return 0; continue; }
-      if (!step) { if (dv % e) return 0; step = dv / e; if (!step || Math.abs(step) > 8) return 0; }
-      if (dv !== step * e) return 0;
+    const map = [];
+    for (let j = 0; j < CAL_N; j++) {
+      const w = j === CAL_N - 1 ? 0 : seq[j][col], v = S[j].d[k];
+      if (map[w] === undefined) { if (map.includes(v)) return null; map[w] = v; }
+      else if (map[w] !== v) return null;
     }
-    return step;
+    return map.length >= 2 ? map : null;
   };
   for (let k = SKIP; k < end; k++){
     let ok = true; for (const x of S) if (!x.ok[k]) { ok = false; break; }
     if (!ok) continue;
     if (bad && bad[k]) { st.mov++; continue; }
-    const s1 = fits(k, 0); if (s1) { p1.push([k, S[0].d[k], s1]); continue; }
-    const s2 = fits(k, 1); if (s2) p2.push([k, S[0].d[k], s2]);
+    const m1 = fits(k, 0); if (m1) { p1.push([k, m1[0], 0, m1]); continue; }
+    const m2 = fits(k, 1); if (m2) p2.push([k, m2[0], 0, m2]);
   }
   return {p1, p2, st};
 }
@@ -1251,7 +1250,17 @@ function calFinish(){
   const found = {p1:p1.length, p2:p2.length};
   if (cal.prev) {
     // 2ª pelea en adelante: solo quedan los que se comportaron igual (mismo valor inicial y mismo salto)
-    const same = (list, prev) => list.filter(x => prev.some(y => y[0] === x[0] && y[1] === x[1] && y[2] === x[2]));
+    // misma dirección y mismos valores para los puntos que se vieron en las dos peleas; se juntan los valores
+    const same = (list, prev) => list.map(x => {
+      const y = prev.find(z => z[0] === x[0]); if (!y || !y[3] || !x[3]) return null;
+      const m = []; for (let w = 0; w < 3; w++) {
+        const a = x[3][w], b = y[3][w];
+        if (a !== undefined && b !== undefined && a !== b) return null;
+        m[w] = a !== undefined ? a : b;
+      }
+      if (m.some(v => v === undefined) && m.length < 3) {}
+      return [x[0], m[0], 0, m];
+    }).filter(Boolean);
     const q1 = same(p1, cal.prev.p1), q2 = same(p2, cal.prev.p2);
     if (q1.length && q2.length) { p1 = q1; p2 = q2; }
     else if (p1.length && p2.length) { cal.prev = null; toast('Esta pelea no coincidió con la anterior; la tomo como nueva pelea 1.', 5000); }
@@ -1264,6 +1273,8 @@ function calFinish(){
       '\n\nRevisa que gane cada round el lado que pide el panel y que marques apenas aparece el punto.');
     return;
   }
+  const full = l => l.filter(x => x[3] && x[3].length === 3 && x[3].every(v => v !== undefined));
+  if (cal.prev) { const f1 = full(p1), f2 = full(p2); if (f1.length && f2.length) { p1 = f1; p2 = f2; } }
   const prevN = cal.prev ? cal.prev.p1.length + cal.prev.p2.length : Infinity;
   const needMore = !cal.prev || ((p1.length > 40 || p2.length > 40) && p1.length + p2.length < prevN && (cal.fight || 1) < 4);
   if (needMore) {
@@ -1310,9 +1321,10 @@ const sd = (x, y) => ((y - x + 384) % 256) - 128;   // diferencia de un byte con
 function voteSteps(list, d){
   // rounds ganados = (valor actual - valor inicial) / salto por round; se vota entre los candidatos
   const counts = {};
-  list.forEach(([k, b, st]) => {
-    st = st || 1;
-    const x = sd(b, d[k]) / st;
+  list.forEach(([k, b, st, map]) => {
+    let x;
+    if (map) x = map.indexOf(d[k]);                    // valores propios para 0, 1 y 2 puntos
+    else { st = st || 1; x = sd(b, d[k]) / st; }
     if (Number.isInteger(x) && x >= 0 && x <= 5) counts[x] = (counts[x] || 0) + 1;
   });
   let best = -1, bc = 0, tie = false;
