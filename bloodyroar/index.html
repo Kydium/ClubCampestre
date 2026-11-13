@@ -321,7 +321,7 @@ const firebaseConfig = {
   messagingSenderId: "180444249462",
   appId: "1:180444249462:web:bdf189d171d908a0274e57"
 };
-const APP_V = 'v4.9';   // versión de la página: súbela en cada cambio
+const APP_V = 'v5.0';   // versión de la página: súbela en cada cambio
 const ACC_DOMAIN = 'clubcampestre.app';
 const P_PLAYERS = 'br2_players', P_MATCHES = 'br2_matches';
 const EJS_DATA = 'https://cdn.emulatorjs.org/stable/data/';
@@ -1347,6 +1347,7 @@ const learn = {on:false, from:0,
   top8:[new Uint8Array(RAM_N), new Uint8Array(RAM_N)],
   wins:[0, 0], losses:[0, 0], n:0};
 function learnSample(d){
+  return;   // apagado en v5.0 (el resultado sale del contador de rounds + peleas perdidas)
   const L = learn;
   if (!L.from || Date.now() < L.from) return;           // solo durante el round 2 (ya empezado)
   const fresh = !L.on, end = Math.min(d.length - 1, SKIP + RAM_N);
@@ -1384,6 +1385,7 @@ function judge(ok, bad, top, mn, mx, st, mp, zf, n, lose, w){
   }
 }
 function learnRound(p1won){
+  return;   // apagado en v5.0
   const L = learn;
   if (!L.on || hpReady()) { L.on = false; return; }
   const lose = p1won ? 1 : 0;
@@ -1450,7 +1452,7 @@ function learnLoad(){
 }
 const HP_V = 6;   // versión de la vida aprendida (las anteriores se descartan y se vuelve a aprender)
 const koReady = () => !!(memCfg && memCfg.ko && ((memCfg.ko.w && memCfg.ko.w.length) || (memCfg.ko.f1 && memCfg.ko.f1.length && memCfg.ko.f2 && memCfg.ko.f2.length)));
-const hpReady = () => koReady() || !!(memCfg && memCfg.hp && memCfg.hp.v === HP_V && memCfg.hp.p1 && memCfg.hp.p1.length && memCfg.hp.p2 && memCfg.hp.p2.length);
+const hpReady = () => false && koReady() || !!(memCfg && memCfg.hp && memCfg.hp.v === HP_V && memCfg.hp.p1 && memCfg.hp.p1.length && memCfg.hp.p2 && memCfg.hp.p2.length);
 let hpHit = 0, hpMiss = 0;
 function forgetHp(why){
   const L = learn;
