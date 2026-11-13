@@ -290,7 +290,7 @@
     <b class="sh l1" data-i="10">L1</b><b class="sh r1" data-i="11">R1</b><b class="sh st" data-i="3">START</b>
   </div>
 </div>
-<div id="hud"><span class="hb" id="hudVer" style="cursor:default;opacity:.7"></span><span id="hudRounds" class="hb" style="display:none;cursor:default"></span><span id="hudTag"></span><button class="hb" id="hudInv" style="display:none">📨 Invitar</button><button class="hb" id="hudCal" style="display:none">🎯 Calibrar</button><button class="hb" id="hudDiag" style="display:none" title="Copiar diagnóstico">📋</button><button class="hb" id="hudRes" style="display:none">🏁 Resultado</button><button class="hb" id="hudExit">✕ Salir</button></div>
+<div id="hud"><span class="hb" id="hudVer" style="cursor:default;opacity:.7"></span><span id="hudRounds" class="hb" style="display:none;cursor:default"></span><span id="hudTag"></span><button class="hb" id="hudVs" title="VSync">VSync: no</button><button class="hb" id="hudInv" style="display:none">📨 Invitar</button><button class="hb" id="hudCal" style="display:none">🎯 Calibrar</button><button class="hb" id="hudDiag" style="display:none" title="Copiar diagnóstico">📋</button><button class="hb" id="hudRes" style="display:none">🏁 Resultado</button><button class="hb" id="hudExit">✕ Salir</button></div>
 <div id="calib"><b>🎯 RESULTADO AUTOMÁTICO</b><div id="calStep" class="small"></div><div id="calDots" class="mut small"></div>
   <button class="hb" id="calDone" style="display:none;margin-top:6px;width:100%">✓ Terminar ya con lo encontrado</button>
   <div class="row" style="margin-top:8px"><button class="hb" id="calCancel">Cancelar</button><button class="btn" id="calMark" style="padding:9px">MARCAR</button></div></div>
@@ -327,7 +327,7 @@ const firebaseConfig = {
   messagingSenderId: "180444249462",
   appId: "1:180444249462:web:bdf189d171d908a0274e57"
 };
-const APP_V = 'NP-0.3';   // versión de la página: súbela en cada cambio
+const APP_V = 'NP-0.4';   // versión de la página: súbela en cada cambio
 const ACC_DOMAIN = 'clubcampestre.app';
 const P_PLAYERS = 'br2_players', P_MATCHES = 'br2_matches';
 const EJS_DATA = 'https://cdn.emulatorjs.org/stable/data/';
@@ -1008,6 +1008,7 @@ const NP = {
     this.on = true; this.syncing = false; this.waitSince = 0; this.syncCount = (this.syncCount || 0) + 1;
     setTag('Sala ' + on.code + ' · netplay · retraso ' + D);
     emuPause(false);
+    if (NP.vsync !== undefined) setVsync(NP.vsync);
   },
   msg(data){
     if (data instanceof ArrayBuffer) {                                  // pedazo de la foto de la partida
@@ -1050,9 +1051,21 @@ const NP = {
     }
   },
   stop(){ this.on = false; emuPause(false); },
+  // ---- enganche exacto: el emulador pregunta "¿corro el siguiente cuadro?" justo antes de cada uno ----
+  // (funciona igual con VSync activado o desactivado; si falta el botón del rival, se responde "todavía no")
+  pre(){
+    this.hookAt = performance.now();
+    if (!this.on) return true;
+    const ok = this.step();
+    return ok;
+  },
   // ---- cada cuadro ----
   tick(){
     if (!this.on || !window.EJS_emulator) return;
+    if (performance.now() - (this.hookAt || 0) < 300) return;          // el enganche exacto está funcionando: él se encarga
+    if (this.step()) emuPause(false); else emuPause(true);
+  },
+  step(){
     const gm = EJS_emulator.gameManager;
     const done = gm.getFrameNum() - this.base;                          // cuadros ya corridos desde el arranque
     if (done > this.n) {
@@ -1062,7 +1075,7 @@ const NP = {
       // control de sincronía cada 10 s: huella de la memoria del juego en el mismo cuadro
       if (this.n % 600 === 0 && this.n > 0) {
         try { const h = quickHash(); this.lastHash[this.n] = h; this.send({t:'hash', f:this.n, h});
-          const r = this.lastHash[this.n + '_r']; if (r !== undefined && r !== h && on.role === 'h') { this.on = false; this.hostSync('desync'); return; } } catch(e){}
+          const r = this.lastHash[this.n + '_r']; if (r !== undefined && r !== h && on.role === 'h') { this.on = false; this.hostSync('desync'); return false; } } catch(e){}
       }
     }
     const next = this.n + 1;
@@ -1075,22 +1088,43 @@ const NP = {
     }
     const L = this.local[next], R = this.remote[next];
     if (L === undefined || R === undefined) {                          // falta el del rival: se espera
-      emuPause(true);
       if (!this.waitSince) { this.waitSince = performance.now(); this.stats.wait++; }
       else if (performance.now() - this.waitSince > 1500) setTag('Sala ' + on.code + ' · esperando a tu rival…');
-      return;
+      return false;
     }
     if (this.waitSince) { this.stats.waitMs = (this.stats.waitMs || 0) + performance.now() - this.waitSince; this.waitSince = 0; }
     const p0 = this.me() === 0 ? L : R, p1 = this.me() === 0 ? R : L;
     applyBits(0, p0); applyBits(1, p1);
     delete this.local[next - 30]; delete this.remote[next - 30];
-    emuPause(false);
+    return true;
   }
 };
+// se instala el enganche en el emulador (Module.preMainLoop corre antes de cada cuadro)
+(function hookFrames(){
+  const t = setInterval(() => {
+    const M = window.EJS_emulator && EJS_emulator.gameManager && EJS_emulator.gameManager.Module;
+    if (!M || M.__np) return;
+    M.__np = true; clearInterval(t);
+    const prev = M.preMainLoop;
+    M.preMainLoop = function(){
+      if (prev && prev.apply(this, arguments) === false) return false;
+      try { return NP.pre() !== false; } catch(e){ console.warn(e); return true; }
+    };
+  }, 200);
+})();
 function npFail(why){
   setTag('Sala ' + (on && on.code) + ' · error de sincronización');
   alert('No se pudo sincronizar el netplay.\n\nDetalle (pásamelo en el chat): ' + why);
 }
+function setVsync(v){
+  NP.vsync = v;
+  try { EJS_emulator.gameManager.functions.setVSync(v ? 1 : 0); } catch(e){}
+  $('hudVs').textContent = 'VSync: ' + (v ? 'sí' : 'no');
+}
+$('hudVs').onclick = () => setVsync(!NP.vsync);
+(function vsyncDefault(){
+  const t = setInterval(() => { if (window.EJS_emulator && EJS_emulator.gameManager && EJS_emulator.gameManager.functions && EJS_emulator.started !== false) { clearInterval(t); setTimeout(() => setVsync(false), 1500); } }, 500);
+})();
 function applyBits(player, bits){
   const prev = NP.applied[player]; if (prev === bits) return;
   const f = EJS_emulator.gameManager.functions;
