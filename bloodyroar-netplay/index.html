@@ -335,7 +335,7 @@ const firebaseConfig = {
   messagingSenderId: "180444249462",
   appId: "1:180444249462:web:bdf189d171d908a0274e57"
 };
-const APP_V = 'NP-0.8';   // versión de la página: súbela en cada cambio
+const APP_V = 'NP-0.9';   // versión de la página: súbela en cada cambio
 const ACC_DOMAIN = 'clubcampestre.app';
 const P_PLAYERS = 'br2_players', P_MATCHES = 'br2_matches';
 const EJS_DATA = 'https://cdn.emulatorjs.org/stable/data/';
@@ -1216,7 +1216,13 @@ $('hudLt').onclick = () => {
 setInterval(showDl, 1000);
 function setVsync(v){
   NP.vsync = v;
-  try { EJS_emulator.gameManager.functions.setVSync(v ? 1 : 0); } catch(e){}
+  // por el mismo camino que el menú del emulador (así cambia de verdad, queda guardado y el menú lo muestra igual)
+  const val = v ? 'enabled' : 'disabled', em = window.EJS_emulator;
+  try {
+    if (em && typeof em.changeSettingOption === 'function') em.changeSettingOption('vsync', val);
+    else if (em && typeof em.menuOptionChanged === 'function') em.menuOptionChanged('vsync', val);
+    else em.gameManager.setVSync(v);
+  } catch(e){ try { em.gameManager.setVSync(v); } catch(_){} }
   $('hudVs').textContent = 'VSync: ' + (v ? 'sí' : 'no');
 }
 $('hudVs').onclick = () => setVsync(!NP.vsync);
