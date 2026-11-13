@@ -327,7 +327,7 @@ const firebaseConfig = {
   messagingSenderId: "180444249462",
   appId: "1:180444249462:web:bdf189d171d908a0274e57"
 };
-const APP_V = 'NP-0.1';   // versión de la página: súbela en cada cambio
+const APP_V = 'NP-0.2';   // versión de la página: súbela en cada cambio
 const ACC_DOMAIN = 'clubcampestre.app';
 const P_PLAYERS = 'br2_players', P_MATCHES = 'br2_matches';
 const EJS_DATA = 'https://cdn.emulatorjs.org/stable/data/';
@@ -987,11 +987,19 @@ const NP = {
         this.dc.send(st.slice(i, i + 16000));
       }
       this.pendingState = st; this.pendingD = D;                          // se carga cuando el invitado confirme
-    } catch(e){ console.warn('sync', e); this.syncing = false; }
+      setTag('Sala ' + on.code + ' · esperando que tu rival cargue la partida…');
+      clearTimeout(this.wd);
+      this.wd = setTimeout(() => {                                        // si en 25 s no confirma, se reintenta
+        if (!this.pendingState) return;
+        this.pendingState = null; this.syncing = false; emuPause(false);
+        toast('El rival no confirmó la sincronización: reintentando…', 3000);
+        this.hostSync('reintento');
+      }, 25000);
+    } catch(e){ console.warn('sync', e); this.syncing = false; emuPause(false); npFail('anfitrión: ' + (e && e.message || e)); }
   },
   async loadAndStart(st, D){
     emuPause(true);
-    try { EJS_emulator.gameManager.loadState(st); } catch(e){ console.warn(e); }
+    EJS_emulator.gameManager.loadState(st);
     await sleep(120);
     this.D = D; this.base = EJS_emulator.gameManager.getFrameNum(); this.n = 0;
     this.local = {}; this.remote = {}; this.applied = [0, 0]; this.lastHash = {};
@@ -1005,9 +1013,15 @@ const NP = {
     if (data instanceof ArrayBuffer) {                                  // pedazo de la foto de la partida
       if (!this.rx) return;
       this.rx.buf.set(new Uint8Array(data), this.rx.got); this.rx.got += data.byteLength;
+      setTag('Sala ' + on.code + ' · sincronizando ' + Math.floor(this.rx.got * 100 / this.rx.size) + '%');
       if (this.rx.got >= this.rx.size) {
         const rx = this.rx; this.rx = null;
-        (async () => { await waitEmu(); await this.loadAndStart(rx.buf, rx.D); this.send({t:'ok'}); })();
+        (async () => {
+          setTag('Sala ' + on.code + ' · esperando que arranque tu juego…');
+          await waitEmu();
+          try { await this.loadAndStart(rx.buf, rx.D); this.send({t:'ok'}); }
+          catch(e){ npFail('invitado: ' + (e && e.message || e)); this.send({t:'fail', why:String(e && e.message || e)}); }
+        })();
       }
       return;
     }
@@ -1016,13 +1030,16 @@ const NP = {
     else if (m.t === 'ping') this.send({t:'pong'});
     else if (m.t === 'pong') { this.rtt = performance.now() - this.pingT; setTimeout(() => this.ping(), 2000); }
     else if (m.t === 'sh') {                                             // el anfitrión empieza a mandar la foto
-      this.on = false; emuPause(true);
-      setTag('Sala ' + on.code + ' · sincronizando…');
+      this.on = false;                                                   // (no se pausa aquí: el juego del invitado puede estar arrancando)
+      setTag('Sala ' + on.code + ' · sincronizando 0%');
       this.rx = {size:m.size, got:0, buf:new Uint8Array(m.size), D:m.D};
       if (m.why === 'desync') toast('Se desincronizó: re-sincronizando…', 2500);
     }
+    else if (m.t === 'fail') npFail('rival: ' + m.why);
     else if (m.t === 'ok' && on.role === 'h' && this.pendingState) {     // el invitado ya cargó: el anfitrión carga la misma
-      const st = this.pendingState; this.pendingState = null; this.loadAndStart(st, this.pendingD);
+      clearTimeout(this.wd);
+      const st = this.pendingState; this.pendingState = null;
+      this.loadAndStart(st, this.pendingD).catch(e => npFail('anfitrión al cargar: ' + (e && e.message || e)));
       this.send({t:'go'});
     }
     else if (m.t === 'hash') {
@@ -1068,6 +1085,10 @@ const NP = {
     emuPause(false);
   }
 };
+function npFail(why){
+  setTag('Sala ' + (on && on.code) + ' · error de sincronización');
+  alert('No se pudo sincronizar el netplay.\n\nDetalle (pásamelo en el chat): ' + why);
+}
 function applyBits(player, bits){
   const prev = NP.applied[player]; if (prev === bits) return;
   const f = EJS_emulator.gameManager.functions;
@@ -1080,7 +1101,14 @@ function emuPause(v){ if (npPaused === v) return; npPaused = v; try { EJS_emulat
 function hashRam(st){ let h = 2166136261; const end = Math.min(st.length, SKIP + 0x200000); for (let i = SKIP; i < end; i++) { h ^= st[i]; h = Math.imul(h, 16777619); } return h >>> 0; }   // huella de toda la memoria del juego
 async function waitEmu(){
   // que el emulador exista y el juego ya esté corriendo (no solo cargando)
-  while (!(window.EJS_emulator && EJS_emulator.gameManager && EJS_emulator.gameManager.functions && EJS_emulator.gameManager.getFrameNum() > 30)) await sleep(200);
+  for (;;) {
+    const gm = window.EJS_emulator && EJS_emulator.gameManager;
+    if (gm && gm.functions) {
+      let f; try { f = gm.getFrameNum(); } catch(e){ throw new Error('el emulador no da el número de cuadro (' + e.message + ')'); }
+      if (f > 30) return;
+    }
+    await sleep(200);
+  }
 }
 // los botones de ESTE jugador (teclado, mando o táctil) se interceptan: no van directo al juego
 (function hookInputs(){
