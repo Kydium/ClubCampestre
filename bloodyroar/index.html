@@ -321,7 +321,7 @@ const firebaseConfig = {
   messagingSenderId: "180444249462",
   appId: "1:180444249462:web:bdf189d171d908a0274e57"
 };
-const APP_V = 'v5.0';   // versión de la página: súbela en cada cambio
+const APP_V = 'v5.1';   // versión de la página: súbela en cada cambio
 const ACC_DOMAIN = 'clubcampestre.app';
 const P_PLAYERS = 'br2_players', P_MATCHES = 'br2_matches';
 const EJS_DATA = 'https://cdn.emulatorjs.org/stable/data/';
@@ -1502,7 +1502,9 @@ function fightOver(p1won, sc){
   reportResult(p1won, sc);
 }
 let lastShownRounds = '';
+const scr = {v:null, cv:null, ctx:null, last:'', same:0, armed:false, cur:[0, 0], reported:false, seen:'', invalidSince:0};
 function showRounds(){
+  if (scr.armed) return scrHud();
   const hr = $('hudRounds'); hr.style.display = '';
   const before = hr.textContent;
   const hpOk = hpReady();
@@ -1582,7 +1584,7 @@ function detectTick(){
     }
     if (!watch.armed || watch.cur !== '0:0') {
       // la pelea anterior queda "pendiente": si nadie la informó, se resuelve con las peleas perdidas
-      watch.pending = watch.lastCur ? {cur:watch.lastCur, reported:!!watch.reported || (watch.lastCur[0] + watch.lastCur[1] === 0), at:watch.liveAt || 0} : null;
+      watch.pending = watch.lastCur ? {cur:watch.lastCur, reported:!!watch.reported || scr.reported || (watch.lastCur[0] + watch.lastCur[1] === 0), at:watch.liveAt || 0} : null;
       Object.assign(watch, {armed:true, cur:'0:0', at:now, k1:0, k2:0, roundOver:true, koKey:-1, koSame:0, koSide:0, reported:false});
       learn.on = false; learn.from = 0;                         // pelea nueva: aún no se aprende (round 1)
     }
@@ -1614,6 +1616,76 @@ function detectTick(){
 // con la vida aprendida se mira 4 veces por segundo (el punto aparece ~0.5 s después del KO)
 (function detectLoop(){ try { detectTick(); } catch(e){ console.warn(e); } setTimeout(detectLoop, 250); })();
 
+// ============ DETECCIÓN POR PANTALLA (las luces de round ganado) ============
+// Debajo de cada barra de vida hay 2 luces: azules apagadas, ROJAS cuando ese lado gana un round.
+// Se encienden en el mismo KO (también el del round final), así que se miran directamente en la imagen.
+// Posiciones medidas sobre la imagen del juego (4:3), como fracción del ancho / alto.
+const LIGHTS = {y:0.1788, l:[0.3752, 0.4142], r:[0.5920, 0.6310], rad:0.006};
+function scrSetup(){
+  if (scr.v) return true;
+  const c = document.querySelector('#game canvas'); if (!c || !c.captureStream) return false;
+  try {
+    const v = document.createElement('video'); v.muted = true; v.playsInline = true;
+    v.srcObject = c.captureStream(20); v.play().catch(() => {});
+    scr.v = v; scr.cv = document.createElement('canvas'); scr.cv.width = 640; scr.cv.height = 360;
+    scr.ctx = scr.cv.getContext('2d', {willReadFrequently:true});
+    return true;
+  } catch(e){ console.warn('pantalla', e); return false; }
+}
+function scrRead(){
+  // devuelve [rojas izq, rojas der] o null si las luces no están en pantalla (menús, selección, etc.)
+  const v = scr.v; if (!v || !v.videoWidth) return null;
+  const W = 800, H = Math.max(1, Math.round(800 * v.videoHeight / v.videoWidth));   // misma proporción que la imagen real
+  if (scr.cv.width !== W || scr.cv.height !== H) { scr.cv.width = W; scr.cv.height = H; }
+  scr.ctx.drawImage(v, 0, 0, W, H);
+  // la imagen del juego es 4:3 centrada dentro del lienzo (con franjas negras a los lados o arriba/abajo)
+  let gh = H, gw = H * 4 / 3; if (gw > W) { gw = W; gh = W * 3 / 4; }
+  const gx = (W - gw) / 2, gy = (H - gh) / 2, rad = Math.max(1, Math.round(gw * LIGHTS.rad));
+  const kind = fx => {
+    const x = Math.round(gx + fx * gw), y = Math.round(gy + LIGHTS.y * gh);
+    const px = scr.ctx.getImageData(x - rad, y - rad, rad * 2 + 1, rad * 2 + 1).data;
+    let R = 0, G = 0, B = 0, n = 0; for (let i = 0; i < px.length; i += 4) { R += px[i]; G += px[i + 1]; B += px[i + 2]; n++; }
+    R /= n; G /= n; B /= n;
+    if (R > 120 && R > G * 1.8 && R > B * 1.5) return 'r';       // roja: round ganado
+    if (B > 60 && B > R * 1.3 && B > G * 1.1) return 'b';        // azul: apagada
+    return '?';
+  };
+  const k = [...LIGHTS.l.map(kind), ...LIGHTS.r.map(kind)];
+  scr.seen = k.join('');
+  if (k.includes('?')) return null;
+  return [k.slice(0, 2).filter(x => x === 'r').length, k.slice(2).filter(x => x === 'r').length];
+}
+function scrTick(){
+  if (!started || (on && on.role !== 'h') || !emuReady() || !scrSetup()) return;
+  const st = scrRead(), now = Date.now();
+  if (!st) { if (!scr.invalidSince) scr.invalidSince = now; if (now - scr.invalidSince > 4000) scr.armed = false; return; }
+  scr.invalidSince = 0;
+  const key = st.join(':');
+  if (key !== scr.last) { scr.last = key; scr.same = 1; return; }
+  if (++scr.same !== 2) return;                                   // la misma lectura 2 veces seguidas
+  const [a, b] = st;
+  if (a === 0 && b === 0) { scr.armed = true; scr.cur = [0, 0]; scr.reported = false; scrHud(); return; }
+  if (!scr.armed) return;                                         // no vimos el 0-0 de esta pelea
+  const [c1, c2] = scr.cur;
+  if (a === c1 && b === c2) return;
+  const oneUp = (a === c1 + 1 && b === c2) || (b === c2 + 1 && a === c1);
+  if (!oneUp) { scr.armed = false; return; }                     // salto raro: no se cuenta
+  scr.cur = [a, b]; scrHud();
+  if ((a >= 2 || b >= 2) && !scr.reported) {
+    scr.reported = true;
+    const p1won = a >= 2;
+    watch.reported = true; watch.armed = false;                 // que el método viejo no la cuente otra vez
+    reportResult(p1won, '2-' + (p1won ? b : a));
+  }
+}
+function scrHud(){
+  const hr = $('hudRounds'); if (!hr) return;
+  const before = hr.textContent;
+  hr.style.display = ''; hr.textContent = '👁 Izq ' + scr.cur[0] + ' - ' + scr.cur[1] + ' Der';
+  if (before !== hr.textContent && /[1-9]/.test(hr.textContent)) { hr.classList.remove('flash'); void hr.offsetWidth; hr.classList.add('flash'); }
+}
+(function scrLoop(){ try { scrTick(); } catch(e){ console.warn(e); } setTimeout(scrLoop, 150); })();
+
 // ----- diagnóstico: guarda cómo se mueven los bytes calibrados durante la partida -----
 const diag = {t0:0, log:[], lastSig:'', last:null};
 function diagRec(d, r1, r2){
@@ -1628,7 +1700,7 @@ function diagRec(d, r1, r2){
 $('hudDiag').onclick = () => {
   if (!memCfg) return;
   const d = diag.last, near = k => d ? Array.from(d.slice(k - 8, k + 9)).map(v => v.toString(16).padStart(2, '0')).join(' ') : '';
-  const txt = 'BR2DIAG ' + JSON.stringify({ver:APP_V, ko:memCfg.ko || null, hp:memCfg.hp || null, hpCheck:{bien:hpHit, mal:hpMiss}, aprendiendo:{rounds:learn.n, ganados:learn.wins, perdidos:learn.losses, opciones:learn.last || null}, n:memCfg.n, p1:memCfg.p1, p2:memCfg.p2,
+  const txt = 'BR2DIAG ' + JSON.stringify({ver:APP_V, pantalla:{luces:scr.seen, marcador:scr.cur, armado:scr.armed, video:scr.v ? scr.v.videoWidth + 'x' + scr.v.videoHeight : null}, ko:memCfg.ko || null, hp:memCfg.hp || null, hpCheck:{bien:hpHit, mal:hpMiss}, aprendiendo:{rounds:learn.n, ganados:learn.wins, perdidos:learn.losses, opciones:learn.last || null}, n:memCfg.n, p1:memCfg.p1, p2:memCfg.p2,
     cerca:{p1:memCfg.p1.map(x => near(x[0])), p2:memCfg.p2.map(x => near(x[0]))}, log:diag.log});
   (navigator.clipboard ? navigator.clipboard.writeText(txt) : Promise.reject()).then(() => toast('Diagnóstico copiado: pégamelo en el chat', 5000))
     .catch(() => prompt('Copia este texto:', txt));
