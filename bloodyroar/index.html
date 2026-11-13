@@ -105,6 +105,9 @@
     background:rgba(20,5,9,.94);border:1px solid var(--red);border-radius:14px;padding:12px;box-shadow:0 0 20px rgba(255,59,59,.4)}
   #calib.on{display:block}
   #endScreen{z-index:310}
+  #hudDl,#hudLt,#hudVs{display:none!important}   /* ajustes de prueba: ocultos (quedan en automático) */
+  #npWait{position:fixed;inset:0;z-index:120;display:none;align-items:center;justify-content:center;padding:16px;background:rgba(13,3,6,.92)}
+  #npWait.on{display:flex}
   #calStep{margin:8px 0 4px;line-height:1.35}
 
   /* invitado online */
@@ -192,7 +195,7 @@
     </div>
     <div class="card">
       <h2>ONLINE 1 VS 1</h2>
-      <p class="mut small">El anfitrión corre el juego y su rival lo ve en vivo y juega desde su casa. Solo el anfitrión necesita el archivo.</p>
+      <p class="mut small">Cada uno juega en su propia PC, fluido y sin retraso de video. <b>Los dos necesitan su copia del juego</b> (la misma).</p>
       <div class="gap"></div>
       <button class="btn" id="bHost">🌐 CREAR SALA (ANFITRIÓN)</button>
       <div class="gap"></div>
@@ -202,9 +205,9 @@
       </div>
       <div class="err" id="onErr"></div>
       <ul class="tips mut small">
-        <li>El anfitrión juega sin retraso; el invitado ve la imagen un poquito tarde. Túrnense.</li>
+
         <li>Invitado: táctil en el celular; en PC usa las teclas del <b>Jugador 1</b> de la pestaña Controles, o un mando.</li>
-        <li>El anfitrión debe dejar la página abierta y en primer plano.</li>
+        <li>No cambien de pestaña durante la pelea: si uno lo hace, el juego se pausa para los dos.</li>
       </ul>
     </div>
   </section>
@@ -290,7 +293,13 @@
     <b class="sh l1" data-i="10">L1</b><b class="sh r1" data-i="11">R1</b><b class="sh st" data-i="3">START</b>
   </div>
 </div>
-<div id="hud"><span class="hb" id="hudVer" style="cursor:default;opacity:.7"></span><span id="hudRounds" class="hb" style="display:none;cursor:default"></span><span id="hudTag"></span><button class="hb" id="hudInv" style="display:none">📨 Invitar</button><button class="hb" id="hudCal" style="display:none">🎯 Calibrar</button><button class="hb" id="hudDiag" style="display:none" title="Copiar diagnóstico">📋</button><button class="hb" id="hudRes" style="display:none">🏁 Resultado</button><button class="hb" id="hudExit">✕ Salir</button></div>
+<div id="npWait"><div class="card" style="text-align:center;max-width:420px">
+  <h2 id="npwT">PREPARANDO LA PARTIDA</h2>
+  <div id="npwMe" style="margin:10px 0">⏳ Tu juego: esperando…</div>
+  <div id="npwRv">⏳ Rival: esperando…</div>
+  <p class="mut small" style="margin-top:12px">La pelea empieza sola cuando los dos terminen de cargar.</p>
+</div></div>
+<div id="hud"><span class="hb" id="hudVer" style="cursor:default;opacity:.7"></span><span id="hudRounds" class="hb" style="display:none;cursor:default"></span><span id="hudTag"></span><button class="hb" id="hudDl" title="Retraso de botones (lo elige el anfitrión)">Retraso: auto</button><button class="hb" id="hudLt" title="Dibuja 1 de cada 2 cuadros (el juego sigue a 60)">Ligero: no</button><button class="hb" id="hudVs" title="VSync">VSync: no</button><button class="hb" id="hudInv" style="display:none">📨 Invitar</button><button class="hb" id="hudCal" style="display:none">🎯 Calibrar</button><button class="hb" id="hudDiag" style="display:none" title="Copiar diagnóstico">📋</button><button class="hb" id="hudRes" style="display:none">🏁 Resultado</button><button class="hb" id="hudExit">✕ Salir</button></div>
 <div id="calib"><b>🎯 RESULTADO AUTOMÁTICO</b><div id="calStep" class="small"></div><div id="calDots" class="mut small"></div>
   <button class="hb" id="calDone" style="display:none;margin-top:6px;width:100%">✓ Terminar ya con lo encontrado</button>
   <div class="row" style="margin-top:8px"><button class="hb" id="calCancel">Cancelar</button><button class="btn" id="calMark" style="padding:9px">MARCAR</button></div></div>
@@ -327,7 +336,7 @@ const firebaseConfig = {
   messagingSenderId: "180444249462",
   appId: "1:180444249462:web:bdf189d171d908a0274e57"
 };
-const APP_V = 'v5.5';   // versión de la página: súbela en cada cambio
+const APP_V = 'v6.0';   // versión de la página: súbela en cada cambio
 const ACC_DOMAIN = 'clubcampestre.app';
 const P_PLAYERS = 'br2_players', P_MATCHES = 'br2_matches';
 const EJS_DATA = 'https://cdn.emulatorjs.org/stable/data/';
@@ -797,7 +806,7 @@ async function hostRoom(){
   if (!code) { $('onErr').textContent = 'No se pudo crear la sala (revisa las reglas de Firebase para br2_rooms).'; return; }
   on = {code, role:'h', ref:db.ref(P_ROOMS + '/' + code), offs:[], cands:[]};
   on.ref.onDisconnect().remove();
-  startGame(savedRom);
+  npWaitShow(); $('hud').classList.add('on');                // el juego NO arranca todavía
   $('hudInv').style.display = '';
   setTag('Sala ' + code + ' · esperando rival');
   on.ref.on('value', s => onRoom(s.val()));
@@ -816,6 +825,7 @@ async function joinRoom(raw){
   $('onErr').textContent = '';
   const code = String(raw || '').trim().toUpperCase();
   if (!/^[A-Z]{4}$/.test(code)) { $('onErr').textContent = 'El código tiene 4 letras'; return; }
+  if (!savedRom) { $('onErr').textContent = 'En netplay los dos necesitan el juego: primero carga tu copia (arriba).'; return; }
   const ref = db.ref(P_ROOMS + '/' + code);
   let r;
   try {
@@ -833,10 +843,8 @@ async function joinRoom(raw){
   on = {code, role:'g', ref, offs:[], cands:[]};
   ref.child('g').onDisconnect().remove();
   ref.child('gn').onDisconnect().remove();
-  $('guestBox').classList.add('on'); $('hud').classList.add('on');
-  $('pad').classList.toggle('on', matchMedia('(pointer:coarse)').matches);
+  npWaitShow(); $('hud').classList.add('on');          // el juego arranca cuando los dos estén conectados
   setTag('Sala ' + code + ' · vs ' + (v.hn || 'anfitrión'));
-  startInputs();
   ref.on('value', s => onRoom(s.val()));
 }
 
@@ -859,9 +867,9 @@ function onRoom(r){
   if (on.role === 'h'){
     if ((r.g || null) !== (on.peer || null)){
       const had = on.peer; on.peer = r.g || null;
-      closePc(); releaseGuest();
+      closePc(); NP.stop();
       if (on.peer) { setTag('Sala ' + on.code + ' · conectando con ' + (r.gn || 'rival') + '…'); startHostPc(); }
-      else { setTag('Sala ' + on.code + ' · esperando rival'); if (had) toast('Tu rival salió de la sala'); }
+      else { setTag('Sala ' + on.code + ' · esperando rival'); if (had) { toast('Tu rival salió de la sala'); npWaitShow(); npWaitSet('rv', '⏳ Rival: esperando…'); emuPause(true); } }
     }
   } else if (r.sid && r.sid !== on.sid){
     on.sid = r.sid; startGuestPc(r.sid);
@@ -918,67 +926,33 @@ function hostAudio(){
 }
 async function startHostPc(){
   setTag('Sala ' + on.code + ' · conectando…');
-  const canvas = await waitCanvas();
   if (!on || !on.peer || on.pc) return;
   const sid = Math.random().toString(36).slice(2, 10);
   const sref = on.ref.child('s/' + sid);
-  await on.ref.child('s').remove().catch(() => {});   // borra sesiones viejas antes de empezar
+  await on.ref.child('s').remove().catch(() => {});
   if (!on || !on.peer || on.pc) return;
   const pc = new RTCPeerConnection({iceServers:ICE}); on.pc = pc;
-  const dc = pc.createDataChannel('in', {ordered:true}); on.dc = dc;
-  dc.onmessage = e => { try { const a = JSON.parse(e.data); guestInput(a[0], a[1]); } catch(_){} };
-  dc.onclose = releaseGuest;
-  const vs = canvas.captureStream(60);
-  const vt = vs.getVideoTracks()[0];
-  try { vt.contentHint = 'motion'; } catch(e){}   // en un juego de pelea importa más la fluidez que el detalle
-  const ms = new MediaStream([vt]);
-  const at = hostAudio(); if (at) ms.addTrack(at);
-  ms.getTracks().forEach(t => pc.addTrack(t, ms));
-  // H264 primero: casi todas las PCs lo codifican con la tarjeta de video (mucho más rápido y sin tirones)
-  try {
-    const caps = RTCRtpSender.getCapabilities && RTCRtpSender.getCapabilities('video');
-    const tv = pc.getTransceivers().find(t => t.sender && t.sender.track === vt);
-    if (caps && tv && tv.setCodecPreferences) {
-      const rank = c => /h264/i.test(c.mimeType) ? 0 : /vp8/i.test(c.mimeType) ? 1 : /vp9/i.test(c.mimeType) ? 2 : 3;
-      tv.setCodecPreferences(caps.codecs.slice().sort((a, b) => rank(a) - rank(b)));
-    }
-  } catch(e){ console.warn('codec', e); }
+  const dc = pc.createDataChannel('np', {ordered:true}); on.dc = dc;
+  NP.attach(dc);
   watchState(pc, on.room && on.room.gn || 'tu rival');
   pc.onicecandidate = e => { if (e.candidate) sref.child('hc').push(e.candidate.toJSON()); };
   const offer = await pc.createOffer();
   await pc.setLocalDescription(offer);
   await sref.child('offer').set({type:offer.type, sdp:offer.sdp});
-  await on.ref.child('sid').set(sid);   // el invitado ve la sesión nueva y responde
+  await on.ref.child('sid').set(sid);
   listen(sref.child('answer'), 'value', async s => {
     const a = s.val();
     if (!a || pc.currentRemoteDescription) return;
-    try {
-      await pc.setRemoteDescription(a); flushCands(pc);
-      const snd = pc.getSenders().find(x => x.track && x.track.kind === 'video');
-      if (snd) { const p = snd.getParameters(); p.degradationPreference = 'maintain-framerate';   // nunca saltarse cuadros
-        // el juego es 320x240: mandar más de ~960 px de ancho solo hace más lento el envío
-        const sc = Math.max(1, (canvas.width || 960) / 960);
-        if (p.encodings && p.encodings[0]) { p.encodings[0].maxBitrate = 6000000; p.encodings[0].scaleResolutionDownBy = sc; p.encodings[0].maxFramerate = 60; }
-        snd.setParameters(p).catch(() => {}); }
-    } catch(e){ console.warn(e); }
+    try { await pc.setRemoteDescription(a); flushCands(pc); } catch(e){ console.warn(e); }
   });
   listen(sref.child('gc'), 'child_added', s => addCand(pc, s.val()));
 }
 async function startGuestPc(sid){
   closePc();
-  $('gMsg').style.display = ''; $('gMsg').textContent = 'Conectando con el anfitrión…';
   const sref = on.ref.child('s/' + sid);
   const pc = new RTCPeerConnection({iceServers:ICE}); on.pc = pc;
   watchState(pc, 'el anfitrión');
-  pc.ontrack = e => {
-    try { e.receiver.playoutDelayHint = 0; e.receiver.jitterBufferTarget = 0; } catch(_){}
-    const v = $('gv'), st = e.streams[0];
-    if (v.srcObject !== st) {
-      v.srcObject = st; v.muted = false;
-      v.play().catch(() => { v.muted = true; v.play().catch(() => {}); $('bSound').style.display = ''; });
-    }
-  };
-  pc.ondatachannel = e => { on.dc = e.channel; e.channel.onopen = () => resendAll(); };
+  pc.ondatachannel = e => { on.dc = e.channel; NP.attach(e.channel); };
   pc.onicecandidate = e => { if (e.candidate) sref.child('gc').push(e.candidate.toJSON()); };
   listen(sref.child('hc'), 'child_added', s => addCand(pc, s.val()));
   const offer = (await sref.child('offer').once('value')).val();
@@ -988,7 +962,333 @@ async function startGuestPc(sid){
   await pc.setLocalDescription(ans);
   await sref.child('answer').set({type:ans.type, sdp:ans.sdp});
 }
-$('bSound').onclick = () => { const v = $('gv'); v.muted = false; v.play().catch(() => {}); $('bSound').style.display = 'none'; };
+
+// ================= NETPLAY (los dos corren el juego, solo viajan los botones) =================
+// Lockstep: cada cuadro N del juego solo avanza cuando ya se tienen los botones de los DOS para ese cuadro.
+// Los botones propios se usan con D cuadros de retraso, para que alcancen a llegar al otro a tiempo.
+// Al empezar (y si algún día se desincroniza) el anfitrión manda una "foto" de la partida y los dos la cargan.
+const NP = {
+  dc:null, on:false, D:3, base:0, n:0, local:{}, remote:{}, applied:[0, 0], myBits:0, waitSince:0,
+  rx:null, syncing:false, lastHash:{}, rtt:0, pingT:0, stats:{wait:0, frames:0},
+  me(){ return on && on.role === 'h' ? 0 : 1; },                       // anfitrión = jugador 1, invitado = jugador 2
+  send(o){ if (this.dc && this.dc.readyState === 'open') this.dc.send(JSON.stringify(o)); },
+  attach(dc){
+    this.dc = dc; dc.binaryType = 'arraybuffer';
+    dc.onmessage = e => this.msg(e.data);
+    dc.onopen = () => { this.ping(); this.readyMe = false; this.readyRemote = false; this.boot(); };
+    dc.onclose = () => { this.stop(); };
+  },
+  ping(){ this.pingT = performance.now(); this.send({t:'ping'}); },
+  // ---- los dos cargan el juego; nadie empieza hasta que ambos estén listos ----
+  async boot(){
+    npWaitShow(); npWaitSet('me', '⏳ Tu juego: cargando…'); npWaitSet('rv', '⏳ Rival: cargando…');
+    if (!started) startGame(savedRom);
+    clearInterval(this.pct);
+    this.pct = setInterval(() => {                                       // porcentaje de carga (el que muestra el emulador)
+      if (this.readyMe) { clearInterval(this.pct); return; }
+      const m = (($('game') || {}).innerText || '').match(/(\d{1,3})\s*%/);
+      const p = m ? Math.min(99, +m[1]) : null;
+      npWaitSet('me', '⏳ Tu juego: cargando' + (p != null ? ' ' + p + '%' : '…'));
+      if (p != null && p !== this.lastPct) { this.lastPct = p; this.send({t:'pct', p}); }
+    }, 300);
+    try { await waitEmu(); } catch(e){ npFail('al cargar: ' + e.message); return; }
+    emuPause(true);                                                     // listo, pero quieto hasta que el otro termine
+    this.readyMe = true; clearInterval(this.pct); npWaitSet('me', '✅ Tu juego: listo (100%)');
+    this.send({t:'ready'});
+    if (on.role === 'h' && this.readyRemote) this.hostSync('inicio');
+  },
+  // ---- arranque / resincronización ----
+  async hostSync(why){
+    if (this.syncing) return; this.syncing = true;
+    try {
+      await waitEmu();
+      setTag('Sala ' + on.code + ' · sincronizando…');
+      emuPause(true); await sleep(80);
+      const st = EJS_emulator.gameManager.getState();
+      const rtt = this.rtt || 60;
+      const auto = Math.max(2, Math.min(6, Math.ceil((rtt / 2) / 16.7) + 2));    // retraso según la conexión (2 en la misma red)
+      const D = this.forceD || auto;
+      const sid = (this.syncId || 0) + 1;
+      this.send({t:'sh', size:st.length, D, why, sid});
+      for (let i = 0; i < st.length; i += 16000) {
+        while (this.dc.bufferedAmount > 1 << 20) await sleep(10);
+        this.dc.send(st.slice(i, i + 16000));
+        if (i % 480000 === 0) npWaitSet('rv', '🔄 Enviando la partida al rival: ' + Math.floor(i * 100 / st.length) + '%');
+      }
+      this.pendingState = st; this.pendingD = D; this.pendingSid = sid;   // se carga cuando el invitado confirme
+      setTag('Sala ' + on.code + ' · esperando que tu rival cargue la partida…');
+      clearTimeout(this.wd);
+      this.wd = setTimeout(() => {                                        // si en 25 s no confirma, se reintenta
+        if (!this.pendingState) return;
+        this.pendingState = null; this.syncing = false; emuPause(false);
+        toast('El rival no confirmó la sincronización: reintentando…', 3000);
+        this.hostSync('reintento');
+      }, 25000);
+    } catch(e){ console.warn('sync', e); this.syncing = false; emuPause(false); npFail('anfitrión: ' + (e && e.message || e)); }
+  },
+  async loadAndStart(st, D, sid){
+    emuPause(true);
+    EJS_emulator.gameManager.loadState(st);
+    await sleep(120);
+    this.D = D; this.base = EJS_emulator.gameManager.getFrameNum(); this.n = 0;
+    this.syncId = sid; this.local = {}; this.applied = [0, 0]; this.lastHash = {};
+    this.remote = (this.early && this.early[sid]) || {}; this.early = {};   // botones del rival que llegaron antes de terminar de cargar
+    for (let f = 1; f <= D; f++) { this.local[f] = 0; this.remote[f] = 0; }   // los primeros D cuadros sin botones
+    releaseAll();
+    $('npWait').classList.remove('on');
+    this.on = true; this.syncing = false; this.waitSince = 0; this.syncCount = (this.syncCount || 0) + 1;
+    setTag('Sala ' + on.code + ' · vs ' + ((on.room && (on.role === 'h' ? on.room.gn : on.room.hn)) || 'rival'));
+    emuPause(false);
+    if (NP.vsync !== undefined) setVsync(NP.vsync);
+    if (on && on.role === 'h' && NP.lite) setLite(true);
+  },
+  msg(data){
+    if (data instanceof ArrayBuffer) {                                  // pedazo de la foto de la partida
+      if (!this.rx) return;
+      this.rx.buf.set(new Uint8Array(data), this.rx.got); this.rx.got += data.byteLength;
+      setTag('Sala ' + on.code + ' · sincronizando ' + Math.floor(this.rx.got * 100 / this.rx.size) + '%');
+      npWaitSet('rv', '🔄 Recibiendo la partida: ' + Math.floor(this.rx.got * 100 / this.rx.size) + '%');
+      if (this.rx.got >= this.rx.size) {
+        const rx = this.rx; this.rx = null;
+        (async () => {
+          setTag('Sala ' + on.code + ' · esperando que arranque tu juego…');
+          await waitEmu();
+          try { await this.loadAndStart(rx.buf, rx.D, rx.sid); this.send({t:'ok'}); }
+          catch(e){ npFail('invitado: ' + (e && e.message || e)); this.send({t:'fail', why:String(e && e.message || e)}); }
+        })();
+      }
+      return;
+    }
+    let m; try { m = JSON.parse(data); } catch(e){ return; }
+    if (m.t === 'i') {
+      if (m.s === this.syncId && this.on) { for (const [f, b] of m.v) this.remote[f] = b; this.tick(); }
+      else if (m.s > (this.syncId || 0)) {                               // de una sincronización que aquí aún no terminó de cargar
+        this.early = this.early || {}; const e = this.early[m.s] || (this.early[m.s] = {});
+        for (const [f, b] of m.v) e[f] = b;
+      }
+    }
+    else if (m.t === 'ping') this.send({t:'pong'});
+    else if (m.t === 'pct') { if (!this.readyRemote) npWaitSet('rv', '⏳ Rival: cargando ' + m.p + '%'); }
+    else if (m.t === 'ready') {
+      this.readyRemote = true; npWaitSet('rv', '✅ Rival: listo (100%)');
+      if (on.role === 'h' && this.readyMe) this.hostSync('inicio');
+    }
+    else if (m.t === 'fps') this.remoteFps = m.fps;
+    else if (m.t === 'lite') setLite(!!m.v, true);
+    else if (m.t === 'pong') {
+      // se guarda la MEJOR medición reciente: mientras el juego carga la PC está ocupada y la medición sale inflada
+      const r = performance.now() - this.pingT; this.rtts = (this.rtts || []).concat(r).slice(-8);
+      this.rtt = Math.min.apply(null, this.rtts); setTimeout(() => this.ping(), 1000);
+    }
+    else if (m.t === 'sh') {                                             // el anfitrión empieza a mandar la foto
+      this.on = false;                                                   // (no se pausa aquí: el juego del invitado puede estar arrancando)
+      setTag('Sala ' + on.code + ' · sincronizando 0%');
+      this.rx = {size:m.size, got:0, buf:new Uint8Array(m.size), D:m.D, sid:m.sid};
+      if (m.why === 'desync') toast('Se desincronizó: re-sincronizando…', 2500);
+    }
+    else if (m.t === 'fail') npFail('rival: ' + m.why);
+    else if (m.t === 'ok' && on.role === 'h' && this.pendingState) {     // el invitado ya cargó: el anfitrión carga la misma
+      clearTimeout(this.wd);
+      const st = this.pendingState; this.pendingState = null;
+      this.loadAndStart(st, this.pendingD, this.pendingSid).catch(e => npFail('anfitrión al cargar: ' + (e && e.message || e)));
+      this.send({t:'go'});
+    }
+    else if (m.t === 'hash') {
+      const mine = this.lastHash[m.f];
+      if (mine !== undefined && mine !== m.h && on.role === 'h') { this.on = false; this.hostSync('desync'); }
+      this.lastHash[m.f + '_r'] = m.h;
+    }
+  },
+  stop(){ this.on = false; emuPause(false); },
+  // ---- enganche exacto: el emulador pregunta "¿corro el siguiente cuadro?" justo antes de cada uno ----
+  // (funciona igual con VSync activado o desactivado; si falta el botón del rival, se responde "todavía no")
+  pre(){
+    this.hookAt = performance.now();
+    if (!this.on) return true;
+    const ok = this.step();
+    return ok;
+  },
+  // ---- cada cuadro ----
+  tick(){
+    if (!this.on || !window.EJS_emulator) return;
+    if (performance.now() - (this.hookAt || 0) < 300) return;          // el enganche exacto está funcionando: él se encarga
+    if (this.step()) emuPause(false); else emuPause(true);
+  },
+  step(){
+    const gm = EJS_emulator.gameManager;
+    const done = gm.getFrameNum() - this.base;                          // cuadros ya corridos desde el arranque
+    if (done > this.n) {
+      if (done > this.n + 1) console.warn('[netplay] se saltaron cuadros', done - this.n);
+      this.stats.frames += done - this.n;
+      this.n = done;
+      // control de sincronía cada 10 s: huella de la memoria del juego en el mismo cuadro
+      if (this.n % 600 === 0 && this.n > 0) {
+        try { const h = quickHash(); this.lastHash[this.n] = h; this.send({t:'hash', f:this.n, h});
+          const r = this.lastHash[this.n + '_r']; if (r !== undefined && r !== h && on.role === 'h') { this.on = false; this.hostSync('desync'); return false; } } catch(e){}
+      }
+    }
+    const next = this.n + 1;
+    // mis botones para el cuadro next + D - 1 (se mandan ahora para que lleguen a tiempo)
+    const mine = next + this.D - 1;
+    if (this.local[mine] === undefined) {
+      this.local[mine] = this.myBits;
+      const out = []; for (let f = mine - 4; f <= mine; f++) if (this.local[f] !== undefined) out.push([f, this.local[f]]);
+      this.send({t:'i', s:this.syncId, v:out});                          // se reenvían los últimos por si acaso
+    }
+    const L = this.local[next], R = this.remote[next];
+    if (L === undefined || R === undefined) {                          // falta el del rival: se espera
+      if (!this.waitSince) { this.waitSince = performance.now(); this.stats.wait++; this.resendAt = 0; }
+      if (performance.now() - (this.resendAt || 0) > 250) {
+        this.resendAt = performance.now();
+        const out = []; for (let f = next; f <= next + this.D + 2; f++) if (this.local[f] !== undefined) out.push([f, this.local[f]]);
+        if (out.length) this.send({t:'i', s:this.syncId, v:out});
+      }
+      else if (performance.now() - this.waitSince > 1500) setTag('Sala ' + on.code + ' · esperando a tu rival…');
+      return false;
+    }
+    if (this.waitSince) { this.stats.waitMs = (this.stats.waitMs || 0) + performance.now() - this.waitSince; this.waitSince = 0; }
+    const p0 = this.me() === 0 ? L : R, p1 = this.me() === 0 ? R : L;
+    applyBits(0, p0); applyBits(1, p1);
+    delete this.local[next - 30]; delete this.remote[next - 30];
+    return true;
+  }
+};
+// El enganche "antes de cada cuadro" (preMainLoop) el emulador lo lee UNA sola vez, al crearse.
+// Por eso se mete en las opciones con las que EmulatorJS crea el núcleo (EJS_Runtime), antes de que exista.
+(function hookRuntime(){
+  let real;
+  try {
+    Object.defineProperty(window, 'EJS_Runtime', {configurable:true, get(){ return real; }, set(fn){
+      real = typeof fn !== 'function' ? fn : function(opts){
+        opts = opts || {}; opts.__np = true;   // (así el respaldo de abajo no lo engancha dos veces)
+        const prev = opts.preMainLoop;
+        opts.preMainLoop = function(){
+          if (prev && prev.apply(this, arguments) === false) return false;
+          try { return NP.pre() !== false; } catch(e){ console.warn(e); return true; }
+        };
+        return fn.apply(this, [opts].concat([].slice.call(arguments, 1)));
+      };
+    }});
+  } catch(e){ console.warn('hookRuntime', e); }
+})();
+// (respaldo para versiones viejas del emulador que sí leen Module.preMainLoop en cada cuadro)
+(function hookFrames(){
+  const t = setInterval(() => {
+    const M = window.EJS_emulator && EJS_emulator.gameManager && EJS_emulator.gameManager.Module;
+    if (!M || M.__np) return;
+    M.__np = true; clearInterval(t);
+    const prev = M.preMainLoop;
+    M.preMainLoop = function(){
+      if (prev && prev.apply(this, arguments) === false) return false;
+      try { return NP.pre() !== false; } catch(e){ console.warn(e); return true; }
+    };
+  }, 200);
+})();
+function npFail(why){
+  setTag('Sala ' + (on && on.code) + ' · error de sincronización');
+  alert('No se pudo sincronizar el netplay.\n\nDetalle (pásamelo en el chat): ' + why);
+}
+function npWaitShow(){ $('npWait').classList.add('on'); }
+function npWaitSet(who, txt){ const el = $(who === 'me' ? 'npwMe' : 'npwRv'); if (el) el.textContent = txt; }
+// ---- ajustes para probar (los decide el anfitrión y se aplican en las dos PCs) ----
+const DL_OPTS = [0, 1, 2, 3, 4, 5, 6, 8];   // 0 = automático
+function showDl(){ $('hudDl').textContent = 'Retraso: ' + (NP.forceD ? NP.forceD : 'auto' + (NP.on ? ' (' + NP.D + ')' : '')); }
+$('hudDl').onclick = () => {
+  if (!on || on.role !== 'h') { toast('El retraso lo elige el anfitrión'); return; }
+  const i = DL_OPTS.indexOf(NP.forceD || 0);
+  NP.forceD = DL_OPTS[(i + 1) % DL_OPTS.length] || 0;
+  showDl();
+  if (NP.on) { NP.on = false; NP.hostSync('ajuste'); }       // se re-sincroniza con el retraso nuevo (1 segundo)
+};
+function setLite(v, fromRemote){
+  NP.lite = v;
+  try {
+    const f = EJS_emulator.gameManager.functions;
+    f.setVariable('pcsx_rearmed_frameskip_type', v ? 'fixed_interval' : 'disabled');
+    f.setVariable('pcsx_rearmed_frameskip_interval', '1');
+  } catch(e){ console.warn('lite', e); }
+  $('hudLt').textContent = 'Ligero: ' + (v ? 'sí' : 'no');
+  if (!fromRemote) NP.send({t:'lite', v});
+}
+$('hudLt').onclick = () => {
+  if (on && on.role !== 'h') { toast('El modo ligero lo elige el anfitrión'); return; }
+  setLite(!NP.lite);
+};
+setInterval(showDl, 1000);
+function setVsync(v){
+  NP.vsync = v;
+  // por el mismo camino que el menú del emulador (así cambia de verdad, queda guardado y el menú lo muestra igual)
+  const val = v ? 'enabled' : 'disabled', em = window.EJS_emulator;
+  try {
+    if (em && typeof em.changeSettingOption === 'function') em.changeSettingOption('vsync', val);
+    else if (em && typeof em.menuOptionChanged === 'function') em.menuOptionChanged('vsync', val);
+    else em.gameManager.setVSync(v);
+  } catch(e){ try { em.gameManager.setVSync(v); } catch(_){} }
+  $('hudVs').textContent = 'VSync: ' + (v ? 'sí' : 'no');
+}
+$('hudVs').onclick = () => setVsync(!NP.vsync);
+(function vsyncDefault(){
+  const t = setInterval(() => { if (window.EJS_emulator && EJS_emulator.gameManager && EJS_emulator.gameManager.functions && EJS_emulator.started !== false) { clearInterval(t); setTimeout(() => setVsync(false), 1500); } }, 500);
+})();
+function applyBits(player, bits){
+  const prev = NP.applied[player]; if (prev === bits) return;
+  const f = EJS_emulator.gameManager.functions;
+  for (let i = 0; i < 16; i++) { const a = (prev >> i) & 1, b = (bits >> i) & 1; if (a !== b) f.simulateInput(player, i, b); }
+  NP.applied[player] = bits;
+}
+function releaseAll(){ try { const f = EJS_emulator.gameManager.functions; for (const p of [0, 1]) for (let i = 0; i < 16; i++) f.simulateInput(p, i, 0); } catch(e){} }
+let npPaused = false;
+function emuPause(v){ if (npPaused === v) return; npPaused = v; try { EJS_emulator.gameManager.functions.toggleMainLoop(v ? 0 : 1); } catch(e){} }
+// huella de la memoria del juego leyéndola directo (sin copiar 4 MB): no se nota en el juego
+let ramPtr = null;
+function quickHash(){
+  const gm = EJS_emulator.gameManager, M = gm.Module;
+  if (ramPtr === null) {
+    ramPtr = 0;
+    try { const r = M.cwrap('get_memory_data', 'string', ['string'])('RETRO_MEMORY_SYSTEM_RAM'); const [sz, ptr] = String(r).split('|').map(Number); if (sz > 0 && ptr > 0) ramPtr = [ptr, sz]; } catch(e){}
+  }
+  if (ramPtr) { const H = M.HEAPU8, end = ramPtr[0] + ramPtr[1]; let h = 2166136261; for (let i = ramPtr[0]; i < end; i += 4) { h ^= H[i] | (H[i + 1] << 8) | (H[i + 2] << 16); h = Math.imul(h, 16777619); } return h >>> 0; }
+  return hashRam(gm.getState());          // si no se puede leer directo, la forma lenta
+}
+function hashRam(st){ let h = 2166136261; const end = Math.min(st.length, SKIP + 0x200000); for (let i = SKIP; i < end; i++) { h ^= st[i]; h = Math.imul(h, 16777619); } return h >>> 0; }   // huella de toda la memoria del juego
+async function waitEmu(){
+  // que el emulador exista y el juego ya esté corriendo (no solo cargando)
+  for (;;) {
+    const gm = window.EJS_emulator && EJS_emulator.gameManager;
+    if (gm && gm.functions) {
+      let f; try { f = gm.getFrameNum(); } catch(e){ throw new Error('el emulador no da el número de cuadro (' + e.message + ')'); }
+      if (f > 30) return;
+    }
+    await sleep(200);
+  }
+}
+// los botones de ESTE jugador (teclado, mando o táctil) se interceptan: no van directo al juego
+(function hookInputs(){
+  const t = setInterval(() => {
+    const gm = window.EJS_emulator && EJS_emulator.gameManager; if (!gm || gm.__np) return;
+    gm.__np = true; clearInterval(t);
+    const orig = gm.simulateInput.bind(gm);
+    gm.simulateInput = (player, index, value) => {
+      if (!on || !on.dc) return orig(player, index, value);          // sin netplay: normal
+      if (index >= 16) return;                                         // sticks y atajos (guardar, etc.) apagados en netplay
+      const bit = 1 << index;
+      if (player !== 0) return;                                        // solo cuenta "mi" mando (el del jugador 1 local)
+      NP.myBits = value ? (NP.myBits | bit) : (NP.myBits & ~bit);
+    };
+  }, 300);
+})();
+// cada segundo: cuántos cuadros corrió el juego y cuántas veces tuvo que esperar al rival
+setInterval(() => {
+  if (!NP.on || !on) return;
+  const st = NP.stats, fps = st.frames, w = st.wait, ms = Math.round(st.waitMs || 0);
+  NP.stats = {wait:0, frames:0, waitMs:0};
+  NP.send({t:'fps', fps});
+  if (!NP.waitSince) setTag('Sala ' + on.code + ' · vs ' + ((on.room && (on.role === 'h' ? on.room.gn : on.room.hn)) || 'rival'));
+}, 1000);
+// el reloj del netplay: revisa muchas veces por cuadro
+(function npLoop(){ try { NP.tick(); } catch(e){ console.warn(e); } requestAnimationFrame(npLoop); })();
+setInterval(() => { try { NP.tick(); } catch(e){} }, 4);
+
 
 // ----- botones del invitado -> jugador 2 del anfitrión -----
 const held = {};

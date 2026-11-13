@@ -1,0 +1,1949 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Bloody Roar 2 · Club Campestre</title>
+<meta name="theme-color" content="#0d0306">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<link rel="manifest" href="../manifest.json">
+<link rel="icon" type="image/png" href="../icons/icon-192.png">
+<link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@700;900&family=Rajdhani:wght@500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:#0d0306; --panel:#1a070c; --panel2:#24090f; --line:rgba(255,80,80,.22);
+    --text:#fff; --soft:#f1d6d6; --mut:#b98f8f;
+    --red:#ff3b3b; --orange:#ff8a1f; --gold:#ffd54a; --green:#39ff88; --cyan:#19e6ff;
+    --display:"Orbitron","Segoe UI",system-ui,sans-serif;
+    --body:"Rajdhani","Segoe UI",system-ui,sans-serif;
+  }
+  *{box-sizing:border-box;margin:0}
+  html{background:var(--bg)}
+  body{min-height:100vh;color:var(--text);font-family:var(--body);font-size:1.1rem;
+    padding:calc(env(safe-area-inset-top,0px) + 10px) 14px calc(env(safe-area-inset-bottom,0px) + 90px);
+    background:radial-gradient(ellipse at 50% -10%,rgba(255,59,59,.28),transparent 60%),
+      repeating-linear-gradient(135deg,rgba(255,59,59,.05) 0 2px,transparent 2px 22px),var(--bg)}
+  button,select,input{font:inherit;color:inherit}
+  .wrap{max-width:640px;margin:0 auto}
+  .top{display:flex;align-items:center;gap:10px;margin-bottom:14px}
+  .ib{width:42px;height:42px;border-radius:12px;display:flex;align-items:center;justify-content:center;
+    background:var(--panel);border:1px solid var(--line);text-decoration:none;font-size:20px}
+  .me{margin-left:auto;display:flex;align-items:center;gap:8px;font-weight:700}
+  .logo{font-family:var(--display);font-weight:900;font-size:clamp(1.25rem,6vw,1.9rem);letter-spacing:.04em;line-height:1;
+    text-shadow:0 0 8px var(--red),0 0 22px rgba(255,59,59,.6)}
+  .logo small{display:block;font-size:.55em;color:var(--orange);text-shadow:none;letter-spacing:.2em;margin-top:4px}
+
+  .tabs{position:fixed;left:0;right:0;bottom:0;z-index:50;display:flex;justify-content:center;gap:4px;
+    padding:8px 8px calc(env(safe-area-inset-bottom,0px) + 8px);background:rgba(13,3,6,.94);border-top:1px solid var(--line);backdrop-filter:blur(8px)}
+  .tab{flex:1;max-width:150px;border:0;background:none;padding:6px 2px;border-radius:12px;color:var(--mut);font-weight:700;
+    font-size:.85rem;display:flex;flex-direction:column;align-items:center;gap:2px;position:relative;cursor:pointer}
+  .tab span{font-size:1.35rem;line-height:1}
+  .tab.on{color:#fff;background:rgba(255,59,59,.16)}
+  .tab .bdg{position:absolute;top:2px;right:calc(50% - 22px);min-width:18px;height:18px;border-radius:9px;background:var(--red);
+    color:#fff;font-size:.72rem;display:none;align-items:center;justify-content:center;padding:0 5px}
+  .tab .bdg.on{display:flex}
+
+  .screen{display:none}.screen.on{display:block}
+  .card{background:linear-gradient(180deg,var(--panel2),var(--panel));border:1px solid var(--line);border-radius:18px;padding:16px;margin-bottom:14px}
+  .card h2{font-family:var(--display);font-size:1rem;letter-spacing:.06em;margin-bottom:10px;color:var(--orange)}
+  .mut{color:var(--mut)}.small{font-size:.92rem}
+  .btn{display:flex;align-items:center;justify-content:center;gap:8px;width:100%;border:0;border-radius:14px;padding:13px 14px;
+    font-family:var(--display);font-weight:900;letter-spacing:.05em;font-size:.95rem;cursor:pointer;
+    background:linear-gradient(180deg,#ff5252,#c81e1e);box-shadow:0 0 18px rgba(255,59,59,.45);color:#fff}
+  .btn:disabled{opacity:.45;cursor:default}
+  .btn.alt{background:var(--panel2);border:1px solid var(--line);box-shadow:none}
+  .btn.ok{background:linear-gradient(180deg,#3fe28a,#16a35a);box-shadow:0 0 14px rgba(57,255,136,.35)}
+  .row{display:flex;gap:10px}.row>*{flex:1}
+  .gap{height:10px}
+  label.f{display:block;font-weight:700;color:var(--soft);margin:12px 0 6px;font-size:.95rem}
+  select,input[type=text],input[type=password]{width:100%;padding:12px;border-radius:12px;background:#0b0204;border:1px solid var(--line);outline:none}
+  select:focus,input:focus{border-color:var(--red)}
+  .seg{display:flex;gap:8px}
+  .seg button{flex:1;padding:12px 6px;border-radius:12px;border:1px solid var(--line);background:#0b0204;font-weight:700;cursor:pointer}
+  .seg button.on{background:rgba(255,59,59,.22);border-color:var(--red);color:#fff;box-shadow:0 0 10px rgba(255,59,59,.35)}
+  .seg.win button.on[data-v="w"]{background:rgba(57,255,136,.18);border-color:var(--green);box-shadow:0 0 10px rgba(57,255,136,.35)}
+  .err{color:#ff8080;min-height:1.2em;margin-top:8px;font-weight:600}
+
+  /* MMR */
+  .mmr{display:flex;align-items:center;gap:14px}
+  .rk{width:66px;height:66px;flex:0 0 auto;border-radius:16px;display:flex;align-items:center;justify-content:center;font-size:2rem;
+    background:radial-gradient(circle at 35% 30%,#3a1016,#100205);box-shadow:0 0 0 2px var(--rc,#888),0 0 18px var(--rc,#888)}
+  .mmr .num{font-family:var(--display);font-weight:900;font-size:1.9rem;line-height:1}
+  .mmr .rn{font-weight:700;color:var(--rc,#ccc);letter-spacing:.05em}
+  .stats{display:flex;gap:8px;margin-top:12px}
+  .stats div{flex:1;text-align:center;background:#0b0204;border:1px solid var(--line);border-radius:12px;padding:8px 4px}
+  .stats b{display:block;font-family:var(--display);font-size:1.1rem}
+  .stats small{color:var(--mut);font-size:.8rem}
+
+  /* listas */
+  .li{display:flex;align-items:center;gap:10px;padding:10px 0;border-bottom:1px solid rgba(255,80,80,.1)}
+  .li:last-child{border-bottom:0}
+  .li .pos{width:26px;text-align:center;font-family:var(--display);font-weight:900;color:var(--mut)}
+  .li .pos.p1{color:var(--gold)}.li .pos.p2{color:#d7e0ea}.li .pos.p3{color:#e0915a}
+  .li .nm{flex:1;min-width:0;font-weight:700;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .li .nm small{display:block;font-weight:600;color:var(--mut);font-size:.82rem}
+  .li .val{font-family:var(--display);font-weight:900;text-align:right}
+  .li.mine{background:rgba(255,59,59,.08);border-radius:10px;padding-left:6px;padding-right:6px}
+  .up{color:var(--green)}.down{color:#ff6b6b}
+  .av{width:36px;height:36px;border-radius:50%;flex:0 0 auto;display:inline-flex;align-items:center;justify-content:center;font-weight:800}
+  .pend{background:#0b0204;border:1px solid var(--line);border-radius:14px;padding:12px;margin-top:10px}
+  .pend .row{margin-top:10px}
+
+  /* emulador */
+  #gameBox{display:none;position:fixed;inset:0;z-index:100;background:#000}
+  #gameBox.on{display:block}
+  #game{width:100%;height:100%}
+  #hud{position:fixed;z-index:150;top:calc(env(safe-area-inset-top,0px) + 6px);right:6px;display:none;gap:6px;align-items:center;flex-wrap:wrap;justify-content:flex-end;max-width:96vw}
+  #hud.on{display:flex}
+  .hb{border:0;border-radius:10px;padding:7px 11px;background:rgba(0,0,0,.7);color:#fff;font-weight:700;font-size:.9rem;cursor:pointer}
+  #hudTag{padding:6px 10px;border-radius:10px;background:rgba(0,0,0,.7);font-size:.85rem;font-weight:700}
+  #hudTag:empty{display:none}
+  #hudRounds.flash{animation:pt .9s ease-out}
+  @keyframes pt{0%{background:#ff3b3b;transform:scale(1.35)}100%{background:rgba(0,0,0,.7);transform:scale(1)}}
+  #calib{position:fixed;z-index:160;left:8px;top:calc(env(safe-area-inset-top,0px) + 50px);width:min(330px,92vw);display:none;
+    background:rgba(20,5,9,.94);border:1px solid var(--red);border-radius:14px;padding:12px;box-shadow:0 0 20px rgba(255,59,59,.4)}
+  #calib.on{display:block}
+  #endScreen{z-index:310}
+  #calStep{margin:8px 0 4px;line-height:1.35}
+
+  /* invitado online */
+  #guestBox{display:none;position:fixed;inset:0;z-index:100;background:#000}
+  #guestBox.on{display:block}
+  #gv{position:absolute;inset:0;width:100%;height:100%;object-fit:contain;background:#000}
+  #gMsg{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);text-align:center;color:#fff;font-weight:700;padding:16px;width:90%}
+  #bSound{position:absolute;left:50%;top:calc(env(safe-area-inset-top,0px) + 8px);transform:translateX(-50%);display:none;z-index:3}
+  .pad{position:absolute;inset:0;pointer-events:none;display:none;z-index:2}
+  .pad.on{display:block}
+  .pad>*{pointer-events:auto;touch-action:none;user-select:none;-webkit-user-select:none;-webkit-touch-callout:none}
+  .dpad{position:absolute;left:4vmin;bottom:8vmin;width:40vmin;height:40vmin;max-width:190px;max-height:190px;border-radius:50%;
+    background:rgba(255,255,255,.07);border:2px solid rgba(255,255,255,.25)}
+  .dpad i{position:absolute;left:50%;top:50%;width:36%;height:36%;margin:-18% 0 0 -18%;border-radius:50%;background:rgba(255,255,255,.3);pointer-events:none}
+  .face{position:absolute;right:4vmin;bottom:8vmin;width:42vmin;height:42vmin;max-width:200px;max-height:200px;pointer-events:none}
+  .face b{position:absolute;width:36%;height:36%;border-radius:50%;background:rgba(255,255,255,.1);border:2px solid rgba(255,255,255,.3);
+    display:flex;align-items:center;justify-content:center;font-size:clamp(16px,5vmin,26px);pointer-events:auto;touch-action:none}
+  .face .t{left:32%;top:0;color:#5fe3a0}.face .c{right:0;top:32%;color:#ff6b6b}.face .x{left:32%;bottom:0;color:#7cc8ff}.face .s{left:0;top:32%;color:#ff8fd1}
+  .face b.dn,.sh.dn{background:rgba(255,59,59,.55)}
+  .sh{position:absolute;top:calc(env(safe-area-inset-top,0px) + 56px);padding:10px 18px;border-radius:12px;background:rgba(255,255,255,.1);
+    border:2px solid rgba(255,255,255,.3);color:#fff;font-weight:800}
+  .sh.l1{left:4vmin}.sh.r1{right:4vmin}
+  .sh.st{top:auto;bottom:3vmin;left:50%;transform:translateX(-50%);padding:6px 14px;font-size:.8rem}
+  .modal{position:fixed;inset:0;z-index:300;background:rgba(0,0,0,.72);display:none;align-items:center;justify-content:center;padding:16px}
+  .modal.on{display:flex}
+  .modal .card{width:min(420px,100%);margin:0}
+  .ck{min-width:110px;padding:8px 12px;border-radius:10px;border:1px solid var(--line);background:#0b0204;font-weight:700;cursor:pointer;text-align:center}
+  .ck.wait{border-color:var(--orange);color:var(--orange);animation:blink 1s infinite}
+  .ck.none{color:var(--mut)}
+  @keyframes blink{50%{opacity:.45}}
+  /* cosas que ya no se usan (la detección por pantalla lo hace todo) */
+  #hudCal,#hudDiag,#hudRes,#abFlip,#calRow,#optTimeRow,.tab[data-s="sReport"]{display:none!important}
+  .code{font-family:var(--display);letter-spacing:.2em;text-transform:uppercase;text-align:center}
+  .drop{border:2px dashed var(--line);border-radius:16px;padding:18px;text-align:center;margin-bottom:12px}
+  .drop b{color:#fff}
+  ul.tips{padding-left:20px;margin-top:8px}ul.tips li{margin:4px 0}
+
+  #toast{position:fixed;left:50%;bottom:calc(env(safe-area-inset-bottom,0px) + 90px);transform:translate(-50%,40px);opacity:0;
+    background:#2a0a10;border:1px solid var(--red);padding:10px 16px;border-radius:12px;font-weight:700;z-index:200;
+    transition:.25s;pointer-events:none;max-width:90vw;text-align:center}
+  #toast.on{opacity:1;transform:translate(-50%,0)}
+  .empty{text-align:center;color:var(--mut);padding:14px 0}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="top">
+    <a class="ib" href="../" title="Club Campestre">🏡</a>
+    <div class="logo">BLOODY ROAR 2<small>RANKED · MMR · <span id="appV"></span></small></div>
+    <div class="me" id="meBox"></div>
+  </div>
+
+  <!-- LOGIN -->
+  <section class="screen" id="sLogin">
+    <div class="card">
+      <h2>ENTRA CON TU CUENTA</h2>
+      <p class="mut small">La misma de Club Campestre. Tu MMR queda guardado en tu cuenta.</p>
+      <label class="f" for="lgUser">Usuario</label>
+      <input type="text" id="lgUser" autocomplete="username" autocapitalize="none">
+      <label class="f" for="lgPass">Contraseña</label>
+      <input type="password" id="lgPass" autocomplete="current-password">
+      <div class="err" id="lgErr"></div>
+      <div class="gap"></div>
+      <button class="btn" id="bLogin">ENTRAR</button>
+      <p class="mut small" style="margin-top:12px;text-align:center">¿No tienes cuenta? <a href="../" style="color:var(--orange)">Créala en Club Campestre</a></p>
+    </div>
+  </section>
+
+  <!-- JUGAR -->
+  <section class="screen" id="sPlay">
+    <div class="card" id="myCard"></div>
+    <div class="card">
+      <h2>JUGAR</h2>
+      <div class="drop" id="romBox"></div>
+      <input type="file" id="romFile" hidden multiple accept=".chd,.pbp,.zip,.7z,.rar,.cue,.bin,.iso,.img,.m3u,.ecm">
+      <div id="romBtns"></div>
+      <div class="li small" id="calRow" style="border:0;gap:10px"><span class="nm" id="calInfo"></span><button class="btn alt" id="bCopyCal" style="width:auto;padding:8px 12px;display:none">📋 Copiar calibración</button></div>
+      <label class="li small" id="optTimeRow" style="cursor:pointer;gap:10px;border:0"><input type="checkbox" id="optTime" style="width:20px;height:20px;accent-color:#ff3b3b"> <span><b>⏱️ Tiempo infinito</b> en las peleas (sin límite de tiempo)</span></label>
+      <ul class="tips mut small">
+        <li>Usa <b>tu propia copia</b> del juego. El archivo se queda en este dispositivo: nunca se sube a internet.</li>
+        <li>Elige el archivo <b>grande</b> del juego: el <b>.bin</b> (unos 400–600 MB), o el <b>.zip</b> tal cual lo descargaste. También sirven .chd, .pbp o .iso. El .cue solo no sirve.</li>
+        <li>2 jugadores en el mismo equipo: dos mandos, o el teclado (mira la pestaña <b>Controles</b>). En el celular aparece un mando táctil.</li>
+        <li>Las peleas son con <b>tiempo infinito</b> y el ganador se detecta solo al terminar.</li>
+      </ul>
+    </div>
+    <div class="card">
+      <h2>ONLINE 1 VS 1</h2>
+      <p class="mut small">El anfitrión corre el juego y su rival lo ve en vivo y juega desde su casa. Solo el anfitrión necesita el archivo.</p>
+      <div class="gap"></div>
+      <button class="btn" id="bHost">🌐 CREAR SALA (ANFITRIÓN)</button>
+      <div class="gap"></div>
+      <div class="row">
+        <input type="text" id="joinCode" class="code" placeholder="CÓDIGO" maxlength="4" autocapitalize="characters" autocomplete="off">
+        <button class="btn alt" id="bJoin" style="flex:0 0 auto;width:auto;padding:12px 18px">UNIRME</button>
+      </div>
+      <div class="err" id="onErr"></div>
+      <ul class="tips mut small">
+        <li>El anfitrión juega sin retraso; el invitado ve la imagen un poquito tarde. Túrnense.</li>
+        <li>Invitado: táctil en el celular; en PC usa las teclas del <b>Jugador 1</b> de la pestaña Controles, o un mando.</li>
+        <li>El anfitrión debe dejar la página abierta y en primer plano.</li>
+      </ul>
+    </div>
+  </section>
+
+  <!-- REPORTAR -->
+  <section class="screen" id="sReport">
+    <div class="card" id="pendCard" style="display:none">
+      <h2>POR CONFIRMAR</h2>
+      <div id="pendList"></div>
+    </div>
+    <div class="card">
+      <h2>REPORTAR PELEA</h2>
+      <label class="f" for="rRival">Rival</label>
+      <select id="rRival"></select>
+      <label class="f">Resultado</label>
+      <div class="seg win" id="rRes"><button data-v="w">🏆 Gané</button><button data-v="l">💀 Perdí</button></div>
+      <label class="f">Rounds</label>
+      <div class="seg" id="rSc"><button data-v="2-0">2 - 0</button><button data-v="2-1">2 - 1</button></div>
+      <div class="row">
+        <div><label class="f" for="rCa">Mi personaje</label><select id="rCa"></select></div>
+        <div><label class="f" for="rCb">Su personaje</label><select id="rCb"></select></div>
+      </div>
+      <div class="err" id="rErr"></div>
+      <div class="gap"></div>
+      <button class="btn" id="bReport">ENVIAR RESULTADO</button>
+      <p class="mut small" style="margin-top:10px">Tu rival tiene que confirmarlo desde su cuenta. Si lo rechaza, no cuenta.</p>
+    </div>
+    <div class="card" id="waitCard" style="display:none">
+      <h2>ESPERANDO A TU RIVAL</h2>
+      <div id="waitList"></div>
+    </div>
+  </section>
+
+  <!-- CONTROLES -->
+  <section class="screen" id="sCtl">
+    <div class="card" id="ctlCard">
+      <h2>🎮 CONTROLES (PC)</h2>
+      <div class="seg" id="ctlP"><button data-v="0" class="on">Jugador 1</button><button data-v="1">Jugador 2</button></div>
+      <div id="ctlList" style="margin-top:8px"></div>
+      <div class="gap"></div>
+      <button class="btn alt" id="ctlReset">Restaurar teclas por defecto</button>
+      <p class="mut small" style="margin-top:10px">Toca un botón y presiona la tecla que quieras (Esc cancela). Los mandos USB/Bluetooth funcionan solos. En online, el invitado usa las teclas del Jugador 1.</p>
+    </div>
+  </section>
+
+  <!-- RANKING -->
+  <section class="screen" id="sRank">
+    <div class="card">
+      <h2>RANKING</h2>
+      <div id="rankList"></div>
+    </div>
+    <div class="card">
+      <h2>RANGOS</h2>
+      <div id="rankInfo"></div>
+    </div>
+  </section>
+
+  <!-- HISTORIAL -->
+  <section class="screen" id="sHist">
+    <div class="card">
+      <h2>ÚLTIMAS PELEAS</h2>
+      <div id="histList"></div>
+    </div>
+  </section>
+</div>
+
+<nav class="tabs" id="tabs" style="display:none">
+  <button class="tab on" data-s="sPlay"><span>🎮</span>Jugar</button>
+  <button class="tab" data-s="sReport"><span>📝</span>Reportar<i class="bdg" id="bdg"></i></button>
+  <button class="tab" data-s="sRank"><span>🏆</span>Ranking</button>
+  <button class="tab" data-s="sHist"><span>📜</span>Historial</button>
+  <button class="tab" data-s="sCtl" id="tabCtl"><span>⌨️</span>Controles</button>
+</nav>
+
+<div id="gameBox"><div id="game"></div></div>
+<div id="guestBox">
+  <video id="gv" autoplay playsinline muted></video>
+  <div id="gMsg">Conectando con el anfitrión…</div>
+  <button class="hb" id="bSound">🔊 Activar sonido</button>
+  <div class="pad" id="pad">
+    <div class="dpad" id="dpad"><i></i></div>
+    <div class="face"><b class="t" data-i="9">△</b><b class="c" data-i="8">○</b><b class="x" data-i="0">✕</b><b class="s" data-i="1">□</b></div>
+    <b class="sh l1" data-i="10">L1</b><b class="sh r1" data-i="11">R1</b><b class="sh st" data-i="3">START</b>
+  </div>
+</div>
+<div id="hud"><span class="hb" id="hudVer" style="cursor:default;opacity:.7"></span><span id="hudRounds" class="hb" style="display:none;cursor:default"></span><span id="hudTag"></span><button class="hb" id="hudInv" style="display:none">📨 Invitar</button><button class="hb" id="hudCal" style="display:none">🎯 Calibrar</button><button class="hb" id="hudDiag" style="display:none" title="Copiar diagnóstico">📋</button><button class="hb" id="hudRes" style="display:none">🏁 Resultado</button><button class="hb" id="hudExit">✕ Salir</button></div>
+<div id="calib"><b>🎯 RESULTADO AUTOMÁTICO</b><div id="calStep" class="small"></div><div id="calDots" class="mut small"></div>
+  <button class="hb" id="calDone" style="display:none;margin-top:6px;width:100%">✓ Terminar ya con lo encontrado</button>
+  <div class="row" style="margin-top:8px"><button class="hb" id="calCancel">Cancelar</button><button class="btn" id="calMark" style="padding:9px">MARCAR</button></div></div>
+<div class="modal" id="endScreen"><div class="card" style="text-align:center">
+  <div id="endTitle" style="font-family:var(--display);font-weight:900;font-size:2rem;letter-spacing:.06em"></div>
+  <div id="endSub" style="margin:8px 0 12px"></div>
+  <div id="endDelta" class="num" style="font-family:var(--display);font-weight:900;font-size:2.4rem"></div>
+  <div id="endMmr" style="margin:6px 0 14px"></div>
+  <button class="btn alt" id="abFlip" style="margin-bottom:10px">↔️ El ganador salió al revés</button>
+  <div class="row"><button class="btn" id="endAgain">⚔️ REVANCHA</button><button class="btn alt" id="endExit">✕ SALIR</button></div>
+</div></div>
+<div class="modal" id="resModal"><div class="card">
+  <h2>¿QUIÉN GANÓ?</h2>
+  <div class="mut small" id="resInfo"></div>
+  <div class="seg" id="resW" style="margin-top:10px"></div>
+  <label class="f">Rounds</label>
+  <div class="seg" id="resSc"><button data-v="2-0">2 - 0</button><button data-v="2-1">2 - 1</button></div>
+  <div class="err" id="resErr"></div>
+  <div class="row" style="margin-top:6px"><button class="btn alt" id="resClose">Cerrar</button><button class="btn" id="resSend">ENVIAR</button></div>
+</div></div>
+<div id="toast"></div>
+
+<script src="../club-xp.js"></script>
+<script src="../club-avatar.js"></script>
+<script>
+'use strict';
+// ============ CONFIG ============
+const firebaseConfig = {
+  apiKey: "AIzaSyBfrs6B-j22O67pnUb5DYq5CevrIg0dtEs",
+  authDomain: "project-349e4491-0828-4f64-bb5.firebaseapp.com",
+  databaseURL: "https://project-349e4491-0828-4f64-bb5-default-rtdb.firebaseio.com",
+  projectId: "project-349e4491-0828-4f64-bb5",
+  storageBucket: "project-349e4491-0828-4f64-bb5.firebasestorage.app",
+  messagingSenderId: "180444249462",
+  appId: "1:180444249462:web:bdf189d171d908a0274e57"
+};
+const APP_V = 'v5.5';   // versión de la página: súbela en cada cambio
+const ACC_DOMAIN = 'clubcampestre.app';
+const P_PLAYERS = 'br2_players', P_MATCHES = 'br2_matches';
+const EJS_DATA = 'https://cdn.emulatorjs.org/stable/data/';
+const START_MMR = 1000;
+const XP_WIN = 150, XP_LOSS = 70;
+const CHARS = ['Yugo','Alice','Uriko','Long','Bakuryu','Busuzima','Gado','Jenny','Shina','Stun','Shenlong','Uranus'];
+const RANKS = [
+  {min:-1e9, n:'Bronce',   i:'🥉', c:'#c47a3d'},
+  {min:900,  n:'Plata',    i:'🥈', c:'#cfd8e3'},
+  {min:1050, n:'Oro',      i:'🥇', c:'#ffd54a'},
+  {min:1200, n:'Platino',  i:'💠', c:'#5fe3d0'},
+  {min:1350, n:'Diamante', i:'💎', c:'#7cc8ff'},
+  {min:1500, n:'Bestia',   i:'🐺', c:'#ff3b3b'}
+];
+
+// ============ UTILIDADES ============
+const $ = id => document.getElementById(id);
+const esc = s => String(s == null ? '' : s).replace(/[&<>"']/g, m => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]));
+function toast(t, ms){ const e = $('toast'); e.textContent = t; e.classList.add('on'); clearTimeout(toast.t); toast.t = setTimeout(() => e.classList.remove('on'), ms || 2600); }
+const rankOf = m => RANKS.reduce((r, x) => (m >= x.min ? x : r), RANKS[0]);
+function ago(t){
+  const s = Math.max(0, (Date.now() - (+t || 0)) / 1000);
+  if (s < 60) return 'ahora'; if (s < 3600) return Math.floor(s / 60) + ' min';
+  if (s < 86400) return Math.floor(s / 3600) + ' h'; return Math.floor(s / 86400) + ' d';
+}
+function loadScript(u){
+  return new Promise((ok, ko) => {
+    const s = document.createElement('script'); s.src = u; s.async = true;
+    s.onload = ok; s.onerror = () => ko(new Error(u)); document.head.appendChild(s);
+  });
+}
+async function loadFirebase(){
+  for (const b of ['https://cdn.jsdelivr.net/npm/firebase@9.23.0/', 'https://www.gstatic.com/firebasejs/9.23.0/']){
+    try {
+      if (!window.firebase) await loadScript(b + 'firebase-app-compat.js');
+      if (!firebase.auth) await loadScript(b + 'firebase-auth-compat.js');
+      if (!firebase.database) await loadScript(b + 'firebase-database-compat.js');
+      if (firebase.auth && firebase.database) return true;
+    } catch(e){ console.warn(e); }
+  }
+  return false;
+}
+function show(id){
+  document.querySelectorAll('.screen').forEach(s => s.classList.toggle('on', s.id === id));
+  document.querySelectorAll('.tab').forEach(t => t.classList.toggle('on', t.dataset.s === id));
+}
+function avatar(el, uid, name){
+  el.style.background = 'hsl(' + hue(name) + ',55%,35%)'; el.textContent = (String(name || '?')[0] || '?').toUpperCase();
+  if (avReady && uid) { try { ClubAvatar.render(uid, el, {name, size: el.offsetWidth || 36}); } catch(e){} }
+}
+function hue(s){ let h = 0; for (const ch of String(s || '?')) h = (h * 31 + ch.charCodeAt(0)) % 360; return h; }
+
+// ============ ESTADO ============
+let db = null, fauth = null, me = null, avReady = false;
+let players = {}, matches = {};
+let pRef = null, mRef = null;
+
+// ============ CUENTA ============
+function authErr(e){
+  const c = (e && e.code) || '';
+  if (/user-not-found|invalid-credential|wrong-password|invalid-login|invalid-email/.test(c)) return 'Usuario o contraseña incorrectos';
+  if (/too-many/.test(c)) return 'Demasiados intentos, espera un momento';
+  if (/network/.test(c)) return 'Sin conexión a internet';
+  return 'No se pudo entrar (' + (c || 'error') + ')';
+}
+async function doLogin(){
+  const u = ($('lgUser').value || '').trim().toLowerCase(), p = $('lgPass').value || '';
+  if (!/^[a-z0-9_]{3,16}$/.test(u)) { $('lgErr').textContent = 'El usuario tiene de 3 a 16 letras, números o _'; return; }
+  if (!p) { $('lgErr').textContent = 'Escribe tu contraseña'; return; }
+  $('lgErr').textContent = ''; $('bLogin').disabled = true;
+  try { await fauth.signInWithEmailAndPassword(u + '@' + ACC_DOMAIN, p); $('lgPass').value = ''; }
+  catch(e){ $('lgErr').textContent = authErr(e); }
+  $('bLogin').disabled = false;
+}
+
+async function onUser(user){
+  if (pRef) { pRef.off(); mRef.off(); pRef = mRef = null; }
+  if (!user){
+    me = null; $('tabs').style.display = 'none'; $('meBox').innerHTML = '';
+    if (window.ClubXP) ClubXP.reset();
+    show('sLogin'); return;
+  }
+  me = {uid:user.uid, name:String(user.displayName || (user.email || '').split('@')[0] || 'jugador').slice(0, 16)};
+  try { localStorage.setItem('cc_uid', me.uid); } catch(e){}
+  $('meBox').innerHTML = '<span class="mut small">' + esc(me.name) + '</span><span class="av" id="meAv"></span>';
+  if (window.ClubAvatar && !avReady) { try { ClubAvatar.init({db}); avReady = true; } catch(e){} }
+  avatar($('meAv'), me.uid, me.name);
+  if (window.ClubXP) ClubXP.init({db, uid:me.uid, game:'bloodyroar'});
+  $('tabs').style.display = ''; show('sPlay');
+  if (pendingSala && !on) {   // entró con un link de invitación
+    const c = pendingSala; pendingSala = '';
+    history.replaceState(null, '', location.pathname);
+    joinRoom(c);
+  }
+
+  // ficha del jugador (se crea la primera vez)
+  try {
+    await db.ref(P_PLAYERS + '/' + me.uid).transaction(cur => {
+      if (!cur) return {n:me.name, mmr:START_MMR, w:0, l:0, pk:START_MMR, t:Date.now()};
+      if (cur.n !== me.name) { cur.n = me.name; return cur; }
+      return;   // sin cambios
+    });
+  } catch(e){
+    console.warn(e);
+    toast('Firebase no dejó guardar tu ficha (revisa las reglas de la base de datos)', 5000);
+  }
+  pRef = db.ref(P_PLAYERS);
+  pRef.on('value', s => { players = s.val() || {}; renderAll(); }, e => console.warn(e));
+  mRef = db.ref(P_MATCHES).limitToLast(150);
+  mRef.on('value', s => { matches = s.val() || {}; renderAll(); grantXp(); }, e => console.warn(e));
+  db.ref(P_MEM).on('value', s => {
+    const v = okCfg(s.val());
+    if (v) { memCfg = v; try { localStorage.setItem('br2_mem', JSON.stringify(v)); } catch(e){} }
+    else if (memCfg) db.ref(P_MEM).set(memCfg).catch(() => {});   // Firebase la perdió: se restaura desde la copia
+    updateCalBtn();
+  }, () => {});
+  renderAll();
+}
+
+// ============ MMR (Elo) ============
+function kOf(p){ return ((+p.w || 0) + (+p.l || 0)) < 10 ? 40 : 24; }   // las primeras 10 peleas mueven más
+function eloDelta(win, lose, score){
+  const ew = 1 / (1 + Math.pow(10, ((+lose.mmr || START_MMR) - (+win.mmr || START_MMR)) / 400));
+  const mult = score === '2-0' ? 1.15 : 1;                               // ganar sin perder round da un poco más
+  const up = Math.max(1, Math.round(kOf(win) * (1 - ew) * mult));
+  const dn = Math.max(1, Math.round(kOf(lose) * (1 - ew) * mult));
+  return {up, dn};
+}
+function player(uid){ return players[uid] || {n:'?', mmr:START_MMR, w:0, l:0, pk:START_MMR}; }
+
+// ============ REPORTE ============
+let selRes = '', selSc = '';
+function segInit(id, cb){
+  $(id).querySelectorAll('button').forEach(b => b.onclick = () => {
+    $(id).querySelectorAll('button').forEach(x => x.classList.toggle('on', x === b)); cb(b.dataset.v);
+  });
+}
+async function sendReport(){
+  const rival = $('rRival').value;
+  $('rErr').textContent = '';
+  if (!rival) { $('rErr').textContent = 'Elige a tu rival'; return; }
+  if (!selRes) { $('rErr').textContent = '¿Ganaste o perdiste?'; return; }
+  if (!selSc) { $('rErr').textContent = 'Elige cómo quedaron los rounds'; return; }
+  const dup = Object.values(matches).some(m => m.st === 'p' && m.a === me.uid && m.b === rival);
+  if (dup) { $('rErr').textContent = 'Ya tienes una pelea con esa persona esperando confirmación'; return; }
+  $('bReport').disabled = true;
+  try {
+    await db.ref(P_MATCHES).push({
+      a:me.uid, an:me.name, b:rival, bn:player(rival).n,
+      w: selRes === 'w' ? me.uid : rival, sc:selSc,
+      ca:$('rCa').value || '', cb:$('rCb').value || '',
+      st:'p', t:firebase.database.ServerValue.TIMESTAMP
+    });
+    toast('Enviado. ' + player(rival).n + ' tiene que confirmarlo');
+    selRes = selSc = ''; document.querySelectorAll('#rRes button,#rSc button').forEach(b => b.classList.remove('on'));
+  } catch(e){ console.warn(e); $('rErr').textContent = 'No se pudo enviar (' + (e.code || e.message) + ')'; }
+  $('bReport').disabled = false;
+}
+// Calcula el MMR nuevo de los dos (solo las rutas de los jugadores; la pelea la agrega quien llama)
+async function buildApply(m){
+  const [sa, sb] = await Promise.all([db.ref(P_PLAYERS + '/' + m.a).once('value'), db.ref(P_PLAYERS + '/' + m.b).once('value')]);
+  const A = Object.assign({mmr:START_MMR, w:0, l:0, pk:START_MMR}, sa.val() || {});
+  const B = Object.assign({mmr:START_MMR, w:0, l:0, pk:START_MMR}, sb.val() || {});
+  const aWon = m.w === m.a;
+  const d = aWon ? eloDelta(A, B, m.sc) : eloDelta(B, A, m.sc);
+  const da = aWon ? d.up : -d.dn, dbb = aWon ? -d.dn : d.up;
+  const na = Math.round(+A.mmr + da), nb = Math.round(+B.mmr + dbb);
+  const u = {};
+  u[P_PLAYERS + '/' + m.a + '/n'] = A.n || m.an;
+  u[P_PLAYERS + '/' + m.a + '/mmr'] = na;
+  u[P_PLAYERS + '/' + m.a + '/pk'] = Math.max(+A.pk || START_MMR, na);
+  u[P_PLAYERS + '/' + m.a + '/' + (aWon ? 'w' : 'l')] = (+A[aWon ? 'w' : 'l'] || 0) + 1;
+  u[P_PLAYERS + '/' + m.b + '/n'] = B.n || m.bn;
+  u[P_PLAYERS + '/' + m.b + '/mmr'] = nb;
+  u[P_PLAYERS + '/' + m.b + '/pk'] = Math.max(+B.pk || START_MMR, nb);
+  u[P_PLAYERS + '/' + m.b + '/' + (aWon ? 'l' : 'w')] = (+B[aWon ? 'l' : 'w'] || 0) + 1;
+  return {u, da, dbb};
+}
+async function confirmMatch(id){
+  const ref = db.ref(P_MATCHES + '/' + id);
+  try {
+    // null = aún sin datos locales: Firebase reintenta con el valor real del servidor
+    const lock = await ref.child('st').transaction(s => (s === null ? null : s === 'p' ? 'c' : undefined));
+    if (!lock.committed || lock.snapshot.val() !== 'c') { toast('Esa pelea ya fue procesada'); return; }
+    const m = (await ref.once('value')).val();
+    const {u, da, dbb} = await buildApply(m);
+    u[P_MATCHES + '/' + id + '/st'] = 'ok';
+    u[P_MATCHES + '/' + id + '/da'] = da;
+    u[P_MATCHES + '/' + id + '/db'] = dbb;
+    u[P_MATCHES + '/' + id + '/ct'] = firebase.database.ServerValue.TIMESTAMP;
+    await db.ref().update(u);   // todo junto: o se guarda completo o no se guarda nada
+    const mine = m.b === me.uid ? dbb : da;
+    toast('Confirmada · ' + (mine > 0 ? '+' : '') + mine + ' MMR');
+  } catch(e){
+    console.warn(e);
+    try { await ref.child('st').set('p'); } catch(_){}
+    toast('No se pudo confirmar (' + (e.code || e.message) + ')');
+  }
+}
+async function rejectMatch(id){
+  try { await db.ref(P_MATCHES + '/' + id).update({st:'x'}); toast('Rechazada'); } catch(e){ toast('No se pudo rechazar'); }
+}
+async function cancelMatch(id){
+  try { await db.ref(P_MATCHES + '/' + id).remove(); toast('Cancelada'); } catch(e){ toast('No se pudo cancelar'); }
+}
+
+// XP compartida: cada uno cobra la suya al ver su pelea confirmada (marca xa / xb para no repetir)
+const xpBusy = {};
+function grantXp(){
+  if (!me || !window.ClubXP) return;
+  Object.entries(matches).forEach(([id, m]) => {
+    if (m.st !== 'ok') return;
+    const side = m.a === me.uid ? 'xa' : m.b === me.uid ? 'xb' : '';
+    if (!side || m[side] || xpBusy[id]) return;
+    xpBusy[id] = true;
+    const gain = m.w === me.uid ? XP_WIN : XP_LOSS;
+    ClubXP.add(gain, 'bloodyroar', {key:id})
+      .then(() => db.ref(P_MATCHES + '/' + id + '/' + side).set(true))
+      .catch(() => {}).finally(() => { delete xpBusy[id]; });
+  });
+}
+
+// ============ PINTAR ============
+function renderAll(){ if (!me) return; renderMe(); renderReport(); renderRank(); renderHist(); if ($('endScreen').classList.contains('on')) renderEndMmr(); }
+function renderMe(){
+  const p = player(me.uid), r = rankOf(+p.mmr || START_MMR), g = (+p.w || 0) + (+p.l || 0);
+  const wr = g ? Math.round((+p.w || 0) / g * 100) : 0;
+  const sorted = Object.keys(players).filter(k => ((+players[k].w || 0) + (+players[k].l || 0)) > 0)
+    .sort((a, b) => (+players[b].mmr || 0) - (+players[a].mmr || 0));
+  const pos = sorted.indexOf(me.uid);
+  $('myCard').innerHTML =
+    '<h2>TU MMR</h2><div class="mmr" style="--rc:' + r.c + '"><div class="rk">' + r.i + '</div><div>' +
+    '<div class="num">' + Math.round(+p.mmr || START_MMR) + '</div><div class="rn">' + r.n.toUpperCase() +
+    (pos >= 0 ? ' · #' + (pos + 1) : '') + '</div></div></div>' +
+    '<div class="stats"><div><b>' + (+p.w || 0) + '</b><small>Victorias</small></div><div><b>' + (+p.l || 0) +
+    '</b><small>Derrotas</small></div><div><b>' + wr + '%</b><small>Winrate</small></div><div><b>' +
+    Math.round(+p.pk || START_MMR) + '</b><small>Récord</small></div></div>' +
+    (g < 10 ? '<p class="mut small" style="margin-top:10px">Calibración: ' + g + '/10 peleas (en estas ganas y pierdes más MMR).</p>' : '');
+}
+function renderReport(){
+  // rivales
+  const sel = $('rRival'), cur = sel.value;
+  const opts = Object.keys(players).filter(k => k !== me.uid).sort((a, b) => String(players[a].n).localeCompare(String(players[b].n)));
+  sel.innerHTML = '<option value="">' + (opts.length ? 'Elige a tu rival…' : 'Aún no hay más jugadores: que abran esta página') + '</option>' +
+    opts.map(k => '<option value="' + esc(k) + '">' + esc(players[k].n) + ' · ' + Math.round(+players[k].mmr || START_MMR) + '</option>').join('');
+  if (opts.includes(cur)) sel.value = cur;
+  ['rCa', 'rCb'].forEach(id => {
+    const s = $(id); if (s.options.length) return;
+    s.innerHTML = '<option value="">—</option>' + CHARS.map(c => '<option>' + c + '</option>').join('');
+  });
+
+  const list = Object.entries(matches);
+  const pend = list.filter(([, m]) => m.st === 'p' && m.b === me.uid).sort((x, y) => (y[1].t || 0) - (x[1].t || 0));
+  const wait = list.filter(([, m]) => m.st === 'p' && m.a === me.uid);
+  $('bdg').textContent = pend.length; $('bdg').classList.toggle('on', pend.length > 0);
+  $('pendCard').style.display = pend.length ? '' : 'none';
+  $('pendList').innerHTML = pend.map(([id, m]) => {
+    const iWon = m.w === me.uid;
+    const sc = iWon ? m.sc : m.sc.split('-').reverse().join('-');
+    return '<div class="pend"><b>' + esc(m.an) + '</b> dice que ' + (iWon ? '<span class="up">ganaste tú</span>' : '<span class="down">te ganó</span>') +
+      ' <b>' + esc(sc) + '</b>' + (m.ca || m.cb ? '<div class="mut small">' + esc(m.cb || '?') + ' (tú) vs ' + esc(m.ca || '?') + '</div>' : '') +
+      '<div class="mut small">hace ' + ago(m.t) + '</div>' +
+      '<div class="row"><button class="btn ok" data-ok="' + esc(id) + '">✓ CONFIRMAR</button><button class="btn alt" data-no="' + esc(id) + '">✕ RECHAZAR</button></div></div>';
+  }).join('');
+  $('waitCard').style.display = wait.length ? '' : 'none';
+  $('waitList').innerHTML = wait.map(([id, m]) =>
+    '<div class="li"><div class="nm">vs ' + esc(m.bn) + '<small>' + (m.w === me.uid ? 'Ganaste ' : 'Perdiste ') + esc(m.sc) + ' · hace ' + ago(m.t) + '</small></div>' +
+    '<button class="btn alt" style="width:auto;padding:8px 12px" data-cancel="' + esc(id) + '">Cancelar</button></div>').join('');
+  // rechazadas recientes que reporté yo
+  const rej = list.filter(([, m]) => m.st === 'x' && m.a === me.uid && Date.now() - (m.t || 0) < 86400000);
+  if (rej.length) $('waitCard').style.display = '', $('waitList').innerHTML += rej.map(([id, m]) =>
+    '<div class="li"><div class="nm">vs ' + esc(m.bn) + '<small class="down">Rechazada por tu rival</small></div>' +
+    '<button class="btn alt" style="width:auto;padding:8px 12px" data-cancel="' + esc(id) + '">Quitar</button></div>').join('');
+}
+function renderRank(){
+  const ids = Object.keys(players).sort((a, b) => (+players[b].mmr || 0) - (+players[a].mmr || 0));
+  const act = ids.filter(k => ((+players[k].w || 0) + (+players[k].l || 0)) > 0);
+  const html = act.map((k, i) => {
+    const p = players[k], r = rankOf(+p.mmr || START_MMR);
+    return '<div class="li' + (k === me.uid ? ' mine' : '') + '"><div class="pos' + (i < 3 ? ' p' + (i + 1) : '') + '">' + (i + 1) + '</div>' +
+      '<span class="av" data-av="' + esc(k) + '" data-n="' + esc(p.n) + '"></span>' +
+      '<div class="nm">' + esc(p.n) + '<small style="color:' + r.c + '">' + r.i + ' ' + r.n + ' · ' + (+p.w || 0) + 'V ' + (+p.l || 0) + 'D</small></div>' +
+      '<div class="val">' + Math.round(+p.mmr || START_MMR) + '</div></div>';
+  }).join('');
+  $('rankList').innerHTML = html || '<div class="empty">Nadie ha peleado todavía. ¡Sé el primero!</div>';
+  $('rankList').querySelectorAll('[data-av]').forEach(el => avatar(el, el.dataset.av, el.dataset.n));
+  if (!$('rankInfo').innerHTML) $('rankInfo').innerHTML = RANKS.map((r, i) =>
+    '<div class="li"><div class="pos">' + r.i + '</div><div class="nm" style="color:' + r.c + '">' + r.n + '</div><div class="val mut small">' +
+    (i === 0 ? '&lt; ' + RANKS[1].min : r.min + (RANKS[i + 1] ? ' – ' + (RANKS[i + 1].min - 1) : '+')) + '</div></div>').join('') +
+    '<p class="mut small" style="margin-top:8px">Todos empiezan en ' + START_MMR + '. Ganarle a alguien con más MMR te da más puntos.</p>';
+}
+function renderHist(){
+  const done = Object.entries(matches).filter(([, m]) => m.st === 'ok').sort((x, y) => (y[1].ct || y[1].t || 0) - (x[1].ct || x[1].t || 0)).slice(0, 60);
+  $('histList').innerHTML = done.map(([, m]) => {
+    const wA = m.w === m.a, mineSide = m.a === me.uid ? 'a' : m.b === me.uid ? 'b' : '';
+    const d = mineSide === 'a' ? m.da : mineSide === 'b' ? m.db : null;
+    const left = '<b' + (wA ? ' class="up"' : '') + '>' + esc(m.an) + '</b>', right = '<b' + (!wA ? ' class="up"' : '') + '>' + esc(m.bn) + '</b>';
+    const sc = wA ? m.sc : m.sc.split('-').reverse().join('-');
+    return '<div class="li' + (mineSide ? ' mine' : '') + '"><div class="nm">' + left + ' ' + esc(sc) + ' ' + right +
+      '<small>' + (m.ca || m.cb ? esc(m.ca || '?') + ' vs ' + esc(m.cb || '?') + ' · ' : '') + 'hace ' + ago(m.ct || m.t) + '</small></div>' +
+      (d != null ? '<div class="val ' + (d > 0 ? 'up' : 'down') + '">' + (d > 0 ? '+' : '') + d + '</div>' :
+        '<div class="val mut small">' + (wA ? '+' + m.da : '+' + m.db) + '</div>') + '</div>';
+  }).join('') || '<div class="empty">Todavía no hay peleas confirmadas.</div>';
+}
+
+// ============ EMULADOR ============
+// La copia del juego se guarda SOLO en este dispositivo (IndexedDB), nunca en internet.
+const IDB = {
+  open(){ return new Promise((ok, ko) => { const r = indexedDB.open('br2_rom', 1); r.onupgradeneeded = () => r.result.createObjectStore('f'); r.onsuccess = () => ok(r.result); r.onerror = () => ko(r.error); }); },
+  async run(mode, fn){ const d = await this.open(); return new Promise((ok, ko) => { const tx = d.transaction('f', mode); const r = fn(tx.objectStore('f')); tx.oncomplete = () => ok(r && r.result); tx.onerror = () => ko(tx.error); tx.onabort = () => ko(tx.error); }); },
+  get(){ return this.run('readonly', s => s.get('rom')); },
+  put(f){ return this.run('readwrite', s => s.put(f, 'rom')); },
+  del(){ return this.run('readwrite', s => s.delete('rom')); }
+};
+let savedRom = null, memRom = null, started = false;
+async function refreshRom(){
+  try { savedRom = (await IDB.get()) || memRom; } catch(e){ savedRom = memRom; }
+  const mb = f => (f.size / 1048576).toFixed(0) + ' MB';
+  if (savedRom){
+    $('romBox').innerHTML = '💿 <b>' + esc(savedRom.name) + '</b><div class="mut small">' + mb(savedRom) + (savedRom === memRom && memRom ? ' · listo' : ' · guardado en este dispositivo') + '</div>';
+    $('romBtns').innerHTML = '<button class="btn" id="bPlay">▶ JUGAR EN ESTE EQUIPO</button><div class="gap"></div>' +
+      '<div class="row"><button class="btn alt" id="bPick">Cambiar archivo</button><button class="btn alt" id="bForget">Borrar del equipo</button></div>';
+    $('bPlay').onclick = () => startGame(savedRom);
+    $('bForget').onclick = async () => { await IDB.del().catch(() => {}); refreshRom(); toast('Borrado de este dispositivo'); };
+  } else {
+    $('romBox').innerHTML = '💿 <b>Carga tu copia de Bloody Roar 2</b><div class="mut small">Solo la primera vez: después queda guardada en este dispositivo</div>';
+    $('romBtns').innerHTML = '<button class="btn" id="bPick">ELEGIR ARCHIVO DEL JUEGO</button>';
+  }
+  $('bPick').onclick = () => $('romFile').click();
+}
+// ----- preparar el archivo: lo dejamos en el formato que el emulador abre seguro -----
+const extOf = n => String(n || '').split('.').pop().toLowerCase();
+const baseOf = n => String(n || '').split('/').pop();
+async function zipEntries(f){
+  const tail = new DataView(await f.slice(Math.max(0, f.size - 65558)).arrayBuffer());
+  let eo = -1;
+  for (let i = tail.byteLength - 22; i >= 0; i--) if (tail.getUint32(i, true) === 0x06054b50) { eo = i; break; }
+  if (eo < 0) throw new Error('zip');
+  const n = tail.getUint16(eo + 10, true), cdSize = tail.getUint32(eo + 12, true), cdOff = tail.getUint32(eo + 16, true);
+  const cd = new DataView(await f.slice(cdOff, cdOff + cdSize).arrayBuffer());
+  const out = [];
+  for (let i = 0, p = 0; i < n && p < cd.byteLength; i++){
+    if (cd.getUint32(p, true) !== 0x02014b50) break;
+    const method = cd.getUint16(p + 10, true), csize = cd.getUint32(p + 20, true), usize = cd.getUint32(p + 24, true);
+    const nl = cd.getUint16(p + 28, true), el = cd.getUint16(p + 30, true), cl = cd.getUint16(p + 32, true), lo = cd.getUint32(p + 42, true);
+    const name = new TextDecoder().decode(new Uint8Array(cd.buffer, cd.byteOffset + p + 46, nl));
+    out.push({name, method, csize, usize, lo});
+    p += 46 + nl + el + cl;
+  }
+  return out;
+}
+async function zipExtract(f, e){
+  const h = new DataView(await f.slice(e.lo, e.lo + 30).arrayBuffer());
+  const start = e.lo + 30 + h.getUint16(26, true) + h.getUint16(28, true);
+  const raw = f.slice(start, start + e.csize);
+  if (e.method === 0) return new File([raw], baseOf(e.name));
+  if (e.method !== 8 || typeof DecompressionStream === 'undefined') throw new Error('metodo');
+  const blob = await new Response(raw.stream().pipeThrough(new DecompressionStream('deflate-raw'))).blob();
+  return new File([blob], baseOf(e.name));
+}
+const GAME_EXT = ['chd', 'pbp', 'iso', 'bin', 'img'];
+async function prepareRom(files){
+  files = Array.from(files);
+  const bad = files.find(f => ['ecm', 'ape'].includes(extOf(f.name)));
+  if (bad) throw 'El formato .' + extOf(bad.name) + ' no se puede abrir directo. Busca la versión .bin/.cue, .chd o .pbp.';
+  const zip = files.find(f => extOf(f.name) === 'zip');
+  if (zip){
+    let list;
+    try { list = (await zipEntries(zip)).filter(e => !e.name.endsWith('/') && !/(^|\/)__MACOSX\//.test(e.name)); }
+    catch(e){ return {file:zip}; }   // zip raro: que el emulador lo intente igual
+    const one = list.find(e => ['chd', 'pbp', 'iso'].includes(extOf(e.name)));
+    const bins = list.filter(e => ['bin', 'img'].includes(extOf(e.name)));
+    if (!one && !bins.length) throw 'Ese .zip no trae el juego (no tiene .bin, .chd, .pbp ni .iso).';
+    if (one || bins.length === 1){
+      toast('Descomprimiendo el juego…', 8000);
+      try { return {file: await zipExtract(zip, one || bins[0])}; } catch(e){ return {file:zip}; }
+    }
+    return {file:zip};   // varios .bin (pistas de audio): va el zip completo con su .cue
+  }
+  const packed = files.find(f => ['7z', 'rar'].includes(extOf(f.name)));
+  if (packed) return {file:packed, warn:'Si no arranca, descomprímelo y elige el .bin.'};
+  const game = files.filter(f => GAME_EXT.includes(extOf(f.name)));
+  if (!game.length) {
+    if (files.some(f => ['cue', 'm3u'].includes(extOf(f.name))))
+      throw 'Elegiste solo el .cue (es un archivo de texto pequeñito). Elige el .bin, que es el grande (unos 400–600 MB).';
+    throw 'Ese archivo no es un juego de PS1. Elige el .bin, .zip, .chd, .pbp o .iso.';
+  }
+  if (game.length > 1 && game.every(f => ['bin', 'img'].includes(extOf(f.name))))
+    throw 'Ese juego viene en varias partes: elige el .zip completo tal cual lo descargaste.';
+  const f = game.sort((a, b) => b.size - a.size)[0];
+  const warn = f.size < 20 * 1048576 ? 'Ese archivo pesa muy poco (' + (f.size / 1048576).toFixed(1) + ' MB) para ser el juego completo.' : '';
+  return {file:f, warn};
+}
+$('romFile').onchange = async e => {
+  const fs = e.target.files ? Array.from(e.target.files) : []; e.target.value = '';
+  if (!fs.length) return;
+  let res;
+  try { res = await prepareRom(fs); }
+  catch(err){ $('romBox').innerHTML = '⚠️ <b>' + esc(typeof err === 'string' ? err : 'No se pudo leer el archivo') + '</b>'; return; }
+  if (res.warn) toast(res.warn, 6000);
+  const f = res.file;
+  memRom = f;
+  try { await IDB.put(f); toast('Listo: guardado en este dispositivo'); }
+  catch(err){ console.warn(err); toast('No hubo espacio para guardarlo; sirve hasta que cierres la página', 4000); }
+  await refreshRom();
+};
+function startGame(blob){
+  if (started) { location.reload(); return; }
+  started = true;
+  const file = blob instanceof File ? blob : new File([blob], blob.name || 'bloodyroar2.chd');
+  $('gameBox').classList.add('on'); $('hud').classList.add('on');
+  setTimeout(updateCalBtn, 0);
+  window.EJS_player = '#game';
+  window.EJS_core = 'psx';
+  window.EJS_gameName = 'Bloody Roar 2';
+  window.EJS_gameUrl = file;
+  window.EJS_pathtodata = EJS_DATA;
+  window.EJS_startOnLoaded = true;
+  window.EJS_color = '#ff3b3b';
+  window.EJS_backgroundColor = '#000';
+  window.EJS_language = 'es';
+  window.EJS_defaultControls = ejsControls();
+  window.EJS_cheats = [['Tiempo infinito', CHEAT_TIME]];
+  // si el emulador guardó controles de antes, se reemplazan por los de esta página
+  try {
+    const k = 'ejs-1-psx-Bloody Roar 2-settings', cur = JSON.parse(localStorage.getItem(k) || 'null');
+    if (cur) { cur.controlSettings = ejsControls(); localStorage.setItem(k, JSON.stringify(cur)); }
+  } catch(e){}
+  loadScript(EJS_DATA + 'loader.js').catch(() => {
+    toast('No se pudo cargar el emulador (¿sin internet?)', 4000);
+    $('gameBox').classList.remove('on'); started = false;
+  });
+}
+$('hudExit').onclick = () => leaveOnline();
+
+// ============ ONLINE (anfitrión transmite, invitado manda botones) ============
+// La conexión se arma con Firebase (br2_rooms/<CÓDIGO>) y el video va directo entre los dos (WebRTC).
+const P_ROOMS = 'br2_rooms';
+const ICE = [
+  {urls:['stun:stun.l.google.com:19302', 'stun:stun1.l.google.com:19302', 'stun:stun.cloudflare.com:3478']}
+  // Si alguien no logra conectarse con datos móviles, agrega aquí un servidor TURN (p. ej. el gratis de metered.ca):
+  // , {urls:'turn:SERVIDOR:80', username:'USUARIO', credential:'CLAVE'}
+];
+let on = null;   // {code, role:'h'|'g', ref, room, pc, dc, sid, peer, offs:[], cands:[]}
+const resShown = {};
+let lastShown = '', badShown = 0, resSel = {w:'', sc:''};
+
+function genCode(){ const a = 'ABCDEFGHJKLMNPQRSTUVWXYZ'; let c = ''; for (let i = 0; i < 4; i++) c += a[Math.floor(Math.random() * a.length)]; return c; }
+const otherUid = r => on.role === 'h' ? r.g : r.h;
+const otherName = r => on.role === 'h' ? (r.gn || 'rival') : (r.hn || 'anfitrión');
+function setTag(t){ $('hudTag').textContent = t; }
+
+async function hostRoom(){
+  $('onErr').textContent = '';
+  if (!me) return;
+  if (!savedRom) { $('onErr').textContent = 'Primero carga tu copia del juego (en la tarjeta de arriba).'; return; }
+  $('bHost').disabled = true;
+  let code = null;
+  try {
+    for (let i = 0; i < 6 && !code; i++){
+      const c = genCode();
+      const r = await db.ref(P_ROOMS + '/' + c).transaction(cur => cur ? undefined : {h:me.uid, hn:me.name, rn:1, t:Date.now()});
+      if (r.committed && r.snapshot.val() && r.snapshot.val().h === me.uid) code = c;
+    }
+  } catch(e){ console.warn(e); }
+  $('bHost').disabled = false;
+  if (!code) { $('onErr').textContent = 'No se pudo crear la sala (revisa las reglas de Firebase para br2_rooms).'; return; }
+  on = {code, role:'h', ref:db.ref(P_ROOMS + '/' + code), offs:[], cands:[]};
+  on.ref.onDisconnect().remove();
+  startGame(savedRom);
+  $('hudInv').style.display = '';
+  setTag('Sala ' + code + ' · esperando rival');
+  on.ref.on('value', s => onRoom(s.val()));
+  invite();
+}
+function invite(){
+  if (!on) return;
+  const url = location.origin + location.pathname + '?sala=' + on.code;
+  const txt = '¡Pelea conmigo en Bloody Roar 2! Sala ' + on.code;
+  if (navigator.share) navigator.share({title:'Bloody Roar 2', text:txt, url}).catch(() => {});
+  else if (navigator.clipboard) navigator.clipboard.writeText(txt + ' ' + url).then(() => toast('Link copiado: mándaselo a tu rival')).catch(() => toast('Código: ' + on.code));
+  else toast('Código de sala: ' + on.code, 5000);
+}
+
+async function joinRoom(raw){
+  $('onErr').textContent = '';
+  const code = String(raw || '').trim().toUpperCase();
+  if (!/^[A-Z]{4}$/.test(code)) { $('onErr').textContent = 'El código tiene 4 letras'; return; }
+  const ref = db.ref(P_ROOMS + '/' + code);
+  let r;
+  try {
+    r = await ref.transaction(c => {
+      if (c === null) return null;                    // aún sin datos: Firebase reintenta con el valor real
+      if (c.h === me.uid) return;                     // es tu propia sala
+      if (c.g && c.g !== me.uid) return;              // ya hay alguien
+      c.g = me.uid; c.gn = me.name; return c;
+    });
+  } catch(e){ $('onErr').textContent = 'No se pudo entrar (' + (e.code || e.message) + ')'; return; }
+  const v = r.snapshot.val();
+  if (!v) { $('onErr').textContent = 'Esa sala no existe o ya se cerró'; return; }
+  if (v.h === me.uid) { $('onErr').textContent = 'Esa es tu propia sala'; return; }
+  if (v.g !== me.uid) { $('onErr').textContent = 'La sala ya está llena'; return; }
+  on = {code, role:'g', ref, offs:[], cands:[]};
+  ref.child('g').onDisconnect().remove();
+  ref.child('gn').onDisconnect().remove();
+  $('guestBox').classList.add('on'); $('hud').classList.add('on');
+  $('pad').classList.toggle('on', matchMedia('(pointer:coarse)').matches);
+  setTag('Sala ' + code + ' · vs ' + (v.hn || 'anfitrión'));
+  startInputs();
+  ref.on('value', s => onRoom(s.val()));
+}
+
+function leaveOnline(){
+  try {
+    if (on && on.role === 'h') on.ref.remove();
+    else if (on && on.role === 'g') on.ref.update({g:null, gn:null});
+  } catch(e){}
+  setTimeout(() => location.replace(location.pathname), 250);
+}
+
+function onRoom(r){
+  if (!on) return;
+  if (!r) {
+    if (on.role === 'g') { toast('El anfitrión cerró la sala', 4000); setTimeout(() => location.replace(location.pathname), 1500); }
+    return;
+  }
+  on.room = r;
+  setTimeout(() => { if (on) on.seen = true; }, 0);
+  if (on.role === 'h'){
+    if ((r.g || null) !== (on.peer || null)){
+      const had = on.peer; on.peer = r.g || null;
+      closePc(); releaseGuest();
+      if (on.peer) { setTag('Sala ' + on.code + ' · conectando con ' + (r.gn || 'rival') + '…'); startHostPc(); }
+      else { setTag('Sala ' + on.code + ' · esperando rival'); if (had) toast('Tu rival salió de la sala'); }
+    }
+  } else if (r.sid && r.sid !== on.sid){
+    on.sid = r.sid; startGuestPc(r.sid);
+  }
+  $('hudRes').style.display = r.g && r.h ? '' : 'none';
+  handleRes(r);
+}
+
+// ----- WebRTC -----
+function closePc(){
+  (on.offs || []).forEach(f => { try { f(); } catch(e){} }); on.offs = []; on.cands = [];
+  if (on.dc) { try { on.dc.close(); } catch(e){} on.dc = null; }
+  if (on.pc) { try { on.pc.close(); } catch(e){} on.pc = null; }
+}
+function listen(ref, ev, fn){ ref.on(ev, fn); on.offs.push(() => ref.off(ev, fn)); }
+function addCand(pc, c){
+  if (!c) return;
+  if (pc.remoteDescription) pc.addIceCandidate(c).catch(() => {}); else on.cands.push(c);
+}
+function flushCands(pc){ const q = on.cands; on.cands = []; q.forEach(c => pc.addIceCandidate(c).catch(() => {})); }
+function watchState(pc, who){
+  pc.onconnectionstatechange = () => {
+    const s = pc.connectionState;
+    if (on.role === 'h' && on.room) {
+      if (s === 'connected') { setTag('Sala ' + on.code + ' · vs ' + (on.room.gn || 'rival')); toast('¡' + (on.room.gn || 'Tu rival') + ' está conectado!'); }
+      if (s === 'failed') { setTag('Sala ' + on.code + ' · no se pudo conectar'); toast('No se pudo conectar con ' + who + '. Prueben los dos con wifi.', 6000); }
+    }
+    if (on.role === 'g') {
+      if (s === 'connected') $('gMsg').style.display = 'none';
+      if (s === 'failed' || s === 'disconnected') { $('gMsg').style.display = ''; $('gMsg').textContent = s === 'failed' ? 'No se pudo conectar con el anfitrión. Prueben los dos con wifi.' : 'Conexión inestable…'; }
+    }
+  };
+}
+function waitCanvas(){
+  return new Promise(ok => {
+    const t = setInterval(() => {
+      const cv = document.querySelector('#game canvas');
+      const em = window.EJS_emulator;
+      if (cv && em && em.gameManager && em.gameManager.functions && em.started !== false) { clearInterval(t); ok(cv); }
+    }, 400);
+  });
+}
+function hostAudio(){
+  try {
+    const em = window.EJS_emulator;
+    if (em && typeof em.collectScreenRecordingMediaTracks === 'function'){
+      const tmp = document.createElement('canvas'); tmp.width = tmp.height = 2;
+      const s = em.collectScreenRecordingMediaTracks(tmp, 1);
+      const a = s && s.getAudioTracks()[0];
+      if (a) return a;
+    }
+  } catch(e){ console.warn('audio', e); }
+  return null;
+}
+async function startHostPc(){
+  setTag('Sala ' + on.code + ' · conectando…');
+  const canvas = await waitCanvas();
+  if (!on || !on.peer || on.pc) return;
+  const sid = Math.random().toString(36).slice(2, 10);
+  const sref = on.ref.child('s/' + sid);
+  await on.ref.child('s').remove().catch(() => {});   // borra sesiones viejas antes de empezar
+  if (!on || !on.peer || on.pc) return;
+  const pc = new RTCPeerConnection({iceServers:ICE}); on.pc = pc;
+  const dc = pc.createDataChannel('in', {ordered:true}); on.dc = dc;
+  dc.onmessage = e => { try { const a = JSON.parse(e.data); guestInput(a[0], a[1]); } catch(_){} };
+  dc.onclose = releaseGuest;
+  const vs = canvas.captureStream(60);
+  const vt = vs.getVideoTracks()[0];
+  try { vt.contentHint = 'motion'; } catch(e){}   // en un juego de pelea importa más la fluidez que el detalle
+  const ms = new MediaStream([vt]);
+  const at = hostAudio(); if (at) ms.addTrack(at);
+  ms.getTracks().forEach(t => pc.addTrack(t, ms));
+  // H264 primero: casi todas las PCs lo codifican con la tarjeta de video (mucho más rápido y sin tirones)
+  try {
+    const caps = RTCRtpSender.getCapabilities && RTCRtpSender.getCapabilities('video');
+    const tv = pc.getTransceivers().find(t => t.sender && t.sender.track === vt);
+    if (caps && tv && tv.setCodecPreferences) {
+      const rank = c => /h264/i.test(c.mimeType) ? 0 : /vp8/i.test(c.mimeType) ? 1 : /vp9/i.test(c.mimeType) ? 2 : 3;
+      tv.setCodecPreferences(caps.codecs.slice().sort((a, b) => rank(a) - rank(b)));
+    }
+  } catch(e){ console.warn('codec', e); }
+  watchState(pc, on.room && on.room.gn || 'tu rival');
+  pc.onicecandidate = e => { if (e.candidate) sref.child('hc').push(e.candidate.toJSON()); };
+  const offer = await pc.createOffer();
+  await pc.setLocalDescription(offer);
+  await sref.child('offer').set({type:offer.type, sdp:offer.sdp});
+  await on.ref.child('sid').set(sid);   // el invitado ve la sesión nueva y responde
+  listen(sref.child('answer'), 'value', async s => {
+    const a = s.val();
+    if (!a || pc.currentRemoteDescription) return;
+    try {
+      await pc.setRemoteDescription(a); flushCands(pc);
+      const snd = pc.getSenders().find(x => x.track && x.track.kind === 'video');
+      if (snd) { const p = snd.getParameters(); p.degradationPreference = 'maintain-framerate';   // nunca saltarse cuadros
+        // el juego es 320x240: mandar más de ~960 px de ancho solo hace más lento el envío
+        const sc = Math.max(1, (canvas.width || 960) / 960);
+        if (p.encodings && p.encodings[0]) { p.encodings[0].maxBitrate = 6000000; p.encodings[0].scaleResolutionDownBy = sc; p.encodings[0].maxFramerate = 60; }
+        snd.setParameters(p).catch(() => {}); }
+    } catch(e){ console.warn(e); }
+  });
+  listen(sref.child('gc'), 'child_added', s => addCand(pc, s.val()));
+}
+async function startGuestPc(sid){
+  closePc();
+  $('gMsg').style.display = ''; $('gMsg').textContent = 'Conectando con el anfitrión…';
+  const sref = on.ref.child('s/' + sid);
+  const pc = new RTCPeerConnection({iceServers:ICE}); on.pc = pc;
+  watchState(pc, 'el anfitrión');
+  pc.ontrack = e => {
+    try { e.receiver.playoutDelayHint = 0; e.receiver.jitterBufferTarget = 0; } catch(_){}
+    const v = $('gv'), st = e.streams[0];
+    if (v.srcObject !== st) {
+      v.srcObject = st; v.muted = false;
+      v.play().catch(() => { v.muted = true; v.play().catch(() => {}); $('bSound').style.display = ''; });
+    }
+  };
+  pc.ondatachannel = e => { on.dc = e.channel; e.channel.onopen = () => resendAll(); };
+  pc.onicecandidate = e => { if (e.candidate) sref.child('gc').push(e.candidate.toJSON()); };
+  listen(sref.child('hc'), 'child_added', s => addCand(pc, s.val()));
+  const offer = (await sref.child('offer').once('value')).val();
+  if (!offer || on.pc !== pc) return;
+  await pc.setRemoteDescription(offer); flushCands(pc);
+  const ans = await pc.createAnswer();
+  await pc.setLocalDescription(ans);
+  await sref.child('answer').set({type:ans.type, sdp:ans.sdp});
+}
+$('bSound').onclick = () => { const v = $('gv'); v.muted = false; v.play().catch(() => {}); $('bSound').style.display = 'none'; };
+
+// ----- botones del invitado -> jugador 2 del anfitrión -----
+const held = {};
+function guestInput(i, v){
+  i = i | 0; v = v ? 1 : 0;
+  if (i < 0 || i > 15) return;
+  const f = window.EJS_emulator && EJS_emulator.gameManager && EJS_emulator.gameManager.functions;
+  if (!f || !f.simulateInput) return;
+  f.simulateInput(1, i, v);
+  if (v) { held[i] = 1; lastGuestIn = Date.now(); } else delete held[i];
+}
+function releaseGuest(){ Object.keys(held).forEach(i => guestInput(+i, 0)); }
+
+const src = {kb:{}, gp:{}, tc:{}}, sent = {};
+function push(i){
+  const v = (src.kb[i] || src.gp[i] || src.tc[i]) ? 1 : 0;
+  if (sent[i] === v) return;
+  sent[i] = v;
+  if (on && on.dc && on.dc.readyState === 'open') on.dc.send(JSON.stringify([i, v]));
+}
+function setSrc(k, i, v){ if (!!src[k][i] === !!v) return; if (v) src[k][i] = 1; else delete src[k][i]; push(i); }
+function resendAll(){ for (let i = 0; i < 16; i++) { delete sent[i]; push(i); } }
+function guestKey(e){   // tecla -> botón, según el Jugador 1 de "Controles"
+  const name = KEYNAME[e.keyCode]; if (!name) return null;
+  const m = ctl[0]; for (const i in m) if (m[i] === name) return +i;
+  return null;
+}
+// Mando estándar: ✕ ○ □ △ L1 R1 L2 R2 Select Start · cruceta
+const GP = {0:0, 1:8, 2:1, 3:9, 4:10, 5:11, 6:12, 7:13, 8:2, 9:3, 12:4, 13:5, 14:6, 15:7};
+function startInputs(){
+  addEventListener('keydown', e => { if (!on || on.role !== 'g' || $('resModal').classList.contains('on')) return;
+    const i = guestKey(e); if (i == null) return; e.preventDefault(); setSrc('kb', i, 1); });
+  addEventListener('keyup', e => { const i = guestKey(e); if (i == null || !on) return; setSrc('kb', i, 0); });
+  addEventListener('blur', () => { Object.keys(src.kb).forEach(i => setSrc('kb', +i, 0)); });
+  (function poll(){
+    const g = navigator.getGamepads ? Array.from(navigator.getGamepads()).find(x => x && x.connected) : null;
+    if (g) {
+      Object.entries(GP).forEach(([b, i]) => setSrc('gp', i, g.buttons[b] && g.buttons[b].pressed));
+      const ax = g.axes[0] || 0, ay = g.axes[1] || 0;
+      setSrc('gp', 6, ax < -0.5 || (g.buttons[14] && g.buttons[14].pressed));
+      setSrc('gp', 7, ax > 0.5 || (g.buttons[15] && g.buttons[15].pressed));
+      setSrc('gp', 4, ay < -0.5 || (g.buttons[12] && g.buttons[12].pressed));
+      setSrc('gp', 5, ay > 0.5 || (g.buttons[13] && g.buttons[13].pressed));
+    }
+    requestAnimationFrame(poll);
+  })();
+  // cruceta táctil de 8 direcciones
+  const dp = $('dpad'), knob = dp.querySelector('i');
+  let dpId = null;
+  const dpSet = e => {
+    const r = dp.getBoundingClientRect(), cx = r.left + r.width / 2, cy = r.top + r.height / 2;
+    let nx = (e.clientX - cx) / (r.width / 2), ny = (e.clientY - cy) / (r.height / 2);
+    const d = Math.hypot(nx, ny); if (d > 1) { nx /= d; ny /= d; }
+    knob.style.transform = 'translate(' + (nx * 32) + '%,' + (ny * 32) + '%)';
+    setSrc('tc', 4, ny < -0.38); setSrc('tc', 5, ny > 0.38); setSrc('tc', 6, nx < -0.38); setSrc('tc', 7, nx > 0.38);
+  };
+  const dpEnd = () => { dpId = null; knob.style.transform = ''; [4, 5, 6, 7].forEach(i => setSrc('tc', i, 0)); };
+  dp.addEventListener('pointerdown', e => { e.preventDefault(); dpId = e.pointerId; dp.setPointerCapture(e.pointerId); dpSet(e); });
+  dp.addEventListener('pointermove', e => { if (e.pointerId === dpId) dpSet(e); });
+  ['pointerup', 'pointercancel', 'lostpointercapture'].forEach(ev => dp.addEventListener(ev, e => { if (e.pointerId === dpId) dpEnd(); }));
+  document.querySelectorAll('#pad [data-i]').forEach(b => {
+    const i = +b.dataset.i;
+    const up = () => { b.classList.remove('dn'); setSrc('tc', i, 0); };
+    b.addEventListener('pointerdown', e => { e.preventDefault(); b.setPointerCapture(e.pointerId); b.classList.add('dn'); setSrc('tc', i, 1); if (navigator.vibrate) navigator.vibrate(8); });
+    ['pointerup', 'pointercancel', 'lostpointercapture'].forEach(ev => b.addEventListener(ev, up));
+  });
+  $('pad').addEventListener('contextmenu', e => e.preventDefault());
+}
+
+// ----- resultado con doble confirmación -----
+function openRes(){
+  const r = on && on.room; if (!r || !r.g) return;
+  resSel = {w:'', sc:''};
+  $('resW').innerHTML = [[r.h, r.hn], [r.g, r.gn]].map(([u, n]) =>
+    '<button data-v="' + esc(u) + '">' + (u === me.uid ? '🏆 Yo' : '🏆 ' + esc(n || '?')) + '</button>').join('');
+  segInit('resW', v => resSel.w = v);
+  $('resSc').querySelectorAll('button').forEach(b => b.classList.remove('on'));
+  $('resErr').textContent = '';
+  const rs = (r.res && r.res[r.rn || 1]) || {}, th = rs[otherUid(r)];
+  $('resInfo').textContent = th ? otherName(r) + ' ya envió su resultado. Elige lo que pasó tú también.' : 'Los dos tienen que enviar lo mismo para que cuente.';
+  $('resModal').classList.add('on');
+}
+async function sendRes(){
+  const r = on && on.room; if (!r) return;
+  if (!resSel.w) { $('resErr').textContent = '¿Quién ganó?'; return; }
+  if (!resSel.sc) { $('resErr').textContent = 'Elige los rounds'; return; }
+  try { await on.ref.child('res/' + (r.rn || 1) + '/' + me.uid).set({w:resSel.w, sc:resSel.sc}); $('resModal').classList.remove('on'); }
+  catch(e){ $('resErr').textContent = 'No se pudo enviar'; }
+}
+function handleRes(r){
+  const rn = r.rn || 1, rs = (r.res && r.res[rn]) || {};
+  const mine = rs[me.uid], ou = otherUid(r), theirs = ou && rs[ou];
+  const sig = r.last && r.last.rn ? r.last.rn + (r.last.fixed ? 'f' : '') : 0;
+  if (sig && sig !== lastShown) {
+    if (lastShown || on.seen) {
+      const d = r.h === me.uid ? r.last.da : r.last.db;
+      const txt = (r.last.fixed ? '↔️ Corregido: ' : '') + (r.last.w === me.uid ? '🏆 ¡Ganaste! ' : '💀 Perdiste · ') + (d > 0 ? '+' : '') + d + ' MMR';
+      showEnd(r);
+    }
+    lastShown = sig;
+  }
+  if (on.role === 'h' && r.flip && r.last && r.flip.rn === r.last.rn && !r.last.fixed) flipLast(r);
+  if (againSeen === null) againSeen = r.again || 0;
+  if ((r.again || 0) !== againSeen) { againSeen = r.again || 0; if ($('endScreen').classList.contains('on')) { closeEnd(true); toast('⚔️ ¡Revancha!'); } }
+  if (r.bad && r.bad !== badShown) { if (badShown || on.seen) toast('No coinciden los resultados. Vuelvan a enviarlo.', 4000); badShown = r.bad; }
+  if (!mine && !theirs) delete resShown[rn];   // se borró (no coincidían): se puede volver a preguntar
+  if (theirs && !mine && !resShown[rn]) { resShown[rn] = true; openRes(); toast(otherName(r) + ' envió el resultado: confirma tú también'); }
+  if (mine && !theirs) setTag('Sala ' + on.code + ' · esperando que ' + otherName(r) + ' confirme');
+  if (mine && theirs) {
+    if (mine.w === theirs.w && mine.sc === theirs.sc) { if (on.role === 'h') processRoomResult(rn, r, mine); }
+    else if (on.role === 'h') { const up = {bad:Date.now()}; up['res/' + rn] = null; on.ref.update(up); }
+  }
+}
+let processing = false;
+async function processRoomResult(rn, r, res){
+  if (processing) return; processing = true;
+  try {
+    const lock = await on.ref.child('rn').transaction(c => (c === null ? null : c === rn ? rn + 1 : undefined));
+    if (!lock.committed || lock.snapshot.val() !== rn + 1) return;
+    const m = {a:r.h, an:r.hn, b:r.g, bn:r.gn, w:res.w, sc:res.sc, ca:'', cb:'', st:'ok', on:on.code, t:Date.now()};
+    if (res.auto) m.auto = true;
+    const id = db.ref(P_MATCHES).push().key;
+    try {
+      const {u, da, dbb} = await buildApply(m);
+      u[P_MATCHES + '/' + id] = Object.assign({}, m, {da, db:dbb, ct:firebase.database.ServerValue.TIMESTAMP});
+      await db.ref().update(u);
+      const up = {last:{rn, w:res.w, sc:res.sc, da, db:dbb, id, auto:!!res.auto}}; up['res/' + rn] = null;
+      await on.ref.update(up);
+      setTag('Sala ' + on.code + ' · vs ' + (r.gn || 'rival'));
+    } catch(e){
+      console.warn(e); toast('No se pudo guardar el resultado (' + (e.code || e.message) + ')', 5000);
+      on.ref.child('rn').set(rn).catch(() => {});
+    }
+  } finally { processing = false; }
+}
+$('hudRes').onclick = openRes;
+$('hudInv').onclick = invite;
+$('resClose').onclick = () => $('resModal').classList.remove('on');
+$('resSend').onclick = sendRes;
+segInit('resSc', v => resSel.sc = v);
+$('bHost').onclick = hostRoom;
+$('bJoin').onclick = () => joinRoom($('joinCode').value);
+$('joinCode').onkeydown = e => { if (e.key === 'Enter') joinRoom($('joinCode').value); };
+let pendingSala = (new URLSearchParams(location.search).get('sala') || '').toUpperCase();
+if (pendingSala) $('joinCode').value = pendingSala;
+
+// ============ RESULTADO AUTOMÁTICO (lee la memoria del juego) ============
+// El emulador puede sacar una "foto" completa del estado (getState). Con una calibración de una sola vez
+// encontramos en qué bytes guarda el juego los rounds ganados de cada jugador, y se comparte en br2_cfg/mem.
+const P_MEM = 'br2_cfg/mem';
+const SKIP = 36900;                 // cabecera + miniatura del estado: ahí no está la memoria del juego
+const RAM_END = SKIP + 0x200000 + 16;   // después vienen video y sonido: ahí tampoco
+const CAL_V = 5;                    // versión de la calibración (las anteriores se descartan)
+// Calibración fija dentro de la página (si Firebase no tiene una, se usa esta). Pegar aquí la de "Copiar calibración".
+const DEFAULT_MEM = {n:4456472, v:5, by:'Michael (de fábrica)',
+  p1:[[1896021,0,1],[1896022,0,1],[1905073,0,1],[1905074,0,1],[1914125,0,1],[1914126,0,1]],
+  p2:[[1895757,0,1],[1895758,0,1],[1904809,0,1],[1904810,0,1],[1913861,0,1],[1913862,0,1]]};
+const okCfg = c => (c && c.v >= CAL_V) ? c : null;
+let memCfg = (() => { try { return okCfg(JSON.parse(localStorage.getItem('br2_mem') || 'null')) || DEFAULT_MEM; } catch(e){ return DEFAULT_MEM; } })();
+let lastGuestIn = 0, sizeWarned = false;
+const sleep = ms => new Promise(ok => setTimeout(ok, ms));
+function grabState(){ try { return EJS_emulator.gameManager.getState(); } catch(e){ return null; } }
+function emuReady(){ return !!(window.EJS_emulator && EJS_emulator.gameManager && EJS_emulator.started !== false); }
+function updateCalBtn(){
+  $('calInfo').innerHTML = memCfg ? '🎯 <b>Resultado automático activado</b>' + (memCfg.by ? ' <span class="mut">(calibró ' + esc(memCfg.by) + ')</span>' : '')
+    : '🎯 <span class="mut">Resultado automático sin calibrar</span>';
+  $('bCopyCal').style.display = memCfg ? '' : 'none';
+  const host = started && (!on || on.role === 'h');
+  $('hudCal').style.display = host ? '' : 'none';
+  $('hudDiag').style.display = host && memCfg ? '' : 'none';
+  $('hudCal').textContent = memCfg ? '🎯' : '🎯 Calibrar';
+  $('hudCal').title = memCfg ? 'Resultado automático activado (tocar para recalibrar)' : 'Calibrar resultado automático';
+}
+// --- calibración: 4 marcas en una pelea ---
+const calRev = () => cal && cal.fight % 2 === 0;   // en las peleas pares se invierte quién gana cada round
+// Se marca JUSTO cuando aparece el punto en pantalla (en el KO), así se encuentra el marcador que el juego
+// actualiza al instante, incluido el del round final. Cada pelea: 5 marcas.
+const sideA = () => calRev() ? 'DERECHA' : 'IZQUIERDA', sideB = () => calRev() ? 'IZQUIERDA' : 'DERECHA';
+const CAL_STEPS = [
+  'Entra a una pelea (Versus o Arcade, también con bots). Cuando empiece el <b>ROUND 1</b> y ya se pueda pelear, toca MARCAR.',
+  () => 'Que gane el round 1 la <b>' + sideA() + '</b>. Apenas le aparezca <b>el punto en pantalla</b> (tras el KO), toca MARCAR.',
+  () => 'Que gane el round 2 la <b>' + sideB() + '</b>. Apenas le aparezca <b>el punto en pantalla</b>, toca MARCAR.',
+  () => 'Que gane el round final otra vez la <b>' + sideA() + '</b>. Apenas aparezca <b>el punto final</b>, toca MARCAR.',
+  'Elijan personajes otra vez y, cuando empiece el <b>ROUND 1 de la siguiente pelea</b>, toca MARCAR.'
+];
+const CAL_N = CAL_STEPS.length;
+// marcador esperado en cada marca [izq, der] (pelea normal / pelea invertida)
+const CAL_SEQ = [[[0,0],[1,0],[1,1],[2,1],[0,0]], [[0,0],[0,1],[1,1],[1,2],[0,0]]];
+let cal = null;   // {i, snaps:[{d, ok}], prev:{p1,p2}|null, fight}
+// vigilancia continua entre marcas: el marcador se queda quieto y cambia UNA vez por round (en el KO)
+function monStart(d){
+  const n = d.length;
+  cal.mon = {prev:d.slice(), chg:new Uint8Array(n), bad:new Uint8Array(n), samples:0};
+}
+setInterval(() => {
+  if (!cal || !cal.mon || !$('calib').classList.contains('on')) return;
+  const d = grabState(); if (!d || d.length !== cal.mon.prev.length) return;
+  const m = cal.mon, end = Math.min(RAM_END, d.length);
+  for (let k = SKIP; k < end; k++) if (d[k] !== m.prev[k]) { if (m.chg[k] < 250) m.chg[k]++; m.prev[k] = d[k]; }
+  m.samples++;
+}, 500);
+function monCut(strict){
+  const m = cal.mon; if (!m) return;
+  if (strict) for (let k = SKIP; k < m.chg.length; k++) if (m.chg[k] > 2) m.bad[k] = 1;
+  m.chg.fill(0);
+}
+function calShow(){
+  const stp = CAL_STEPS[cal.i];
+  $('calStep').innerHTML = '<b>Pelea ' + cal.fight + (cal.fight <= 2 ? ' de 2' : '') + '</b> · paso ' + (cal.i + 1) + '/' + CAL_N + '<br>' + (typeof stp === 'function' ? stp() : stp);
+  $('calDots').textContent = (cal.i >= 1 && cal.i <= 3 ? 'Marca durante la cámara lenta / pose del KO, cuando ya se ve el punto.' : 'Marca cuando ya se pueda pelear.') +
+    (cal.prev ? ' Posibles hasta ahora: ' + (cal.prev.w.length + Math.max(cal.prev.f1.length, cal.prev.f2.length)) + '.' : '');
+  $('calDone').style.display = cal.prev ? '' : 'none';
+  $('calMark').disabled = false; $('calMark').textContent = 'MARCAR';
+}
+function calStart(){
+  if (!emuReady()) { toast('Primero que arranque el juego'); return; }
+  if (!cal || !cal.keep) {   // ¿quedó una calibración a medias (por ejemplo, al recargar la página)?
+    try {
+      const sv = JSON.parse(localStorage.getItem('br2_calkeep') || 'null');
+      if (sv && sv.v === 3 && Date.now() - sv.t < 3 * 3600000 && confirm('Tienes una calibración a medias (' + (sv.fight - 1) + ' pelea(s) hechas). ¿Continuarla?'))
+        cal = {keep:sv.keep, fight:sv.fight, n:sv.n};
+      else localStorage.removeItem('br2_calkeep');
+    } catch(e){}
+  }
+  const keep = cal && cal.keep ? cal.keep : null, last = cal && cal.lastSnap;
+  cal = {i:0, snaps:[], prev:keep, fight: keep ? (cal.fight || 2) : 1, n: cal && cal.n};
+  // la siguiente pelea empieza justo donde marcaste el último paso: ese ya cuenta como su paso 1
+  if (keep && last) { cal.snaps = [last]; cal.i = 1; }
+  cal.mon = null; if (cal.i >= 1) monStart(last.d);
+  $('calib').classList.add('on'); calShow();
+}
+async function stableSnap(){
+  const a = grabState(); await sleep(250); const b = grabState(); await sleep(250); const c = grabState();
+  if (!a || !b || !c || a.length !== b.length || b.length !== c.length) return null;
+  const ok = new Uint8Array(c.length);
+  for (let k = SKIP; k < c.length; k++) ok[k] = (a[k] === c[k] && b[k] === c[k]) ? 1 : 0;
+  return {d:c, ok};
+}
+async function calMark(){
+  $('calMark').disabled = true; $('calMark').textContent = 'Leyendo…';
+  const sn = await stableSnap();
+  if (!sn) { toast('No se pudo leer la memoria del juego'); calShow(); return; }
+  if (cal.snaps.length && sn.d.length !== cal.snaps[0].d.length) { toast('El estado cambió de tamaño; empieza de nuevo'); calCancel(); return; }
+  cal.snaps.push(sn); cal.i++;
+  if (cal.i === 1) monStart(sn.d);            // primera marca: empieza a vigilar
+  else monCut(cal.i <= 4);                    // rounds 1, 2 y final: estrictos; el último tramo incluye la selección
+  if (cal.i < CAL_N) { calShow(); return; }
+  calFinish();
+}
+function calScan(S, bad, end){
+  // Busca el dato que el juego pone en el KO: "este round lo ganó la izquierda / la derecha".
+  //  w  = un solo valor: nadie / ganó izq / ganó der
+  //  f1 = bandera de la izquierda (encendida en sus KO); f2 = bandera de la derecha
+  const rev = calRev(), out = {w:[], f1:[], f2:[]}, st = {mov:0};
+  for (let k = SKIP; k < end; k++){
+    let ok = true; for (const x of S) if (!x.ok[k]) { ok = false; break; }
+    if (!ok) continue;
+    if (bad && bad[k]) { st.mov++; continue; }
+    const [v0, v1, v2, v3, v4] = S.map(x => x.d[k]);
+    if (v0 !== v4) continue;                                         // en la pelea siguiente vuelve a "nadie"
+    // marcas: 0 inicio · 1 KO del lado A · 2 KO del lado B · 3 KO final del lado A · 4 pelea siguiente
+    if (v1 === v3 && v1 !== v0 && v2 !== v0 && v2 !== v1) {
+      const A = v1, B = v2; out.w.push([k, v0, rev ? B : A, rev ? A : B]);          // [dir, nadie, ganó izq, ganó der]
+    } else if (v1 === v3 && v1 !== v0 && v2 === v0) {
+      out[rev ? 'f2' : 'f1'].push([k, v0, v1]);                                    // bandera del lado A
+    } else if (v1 === v0 && v3 === v0 && v2 !== v0) {
+      out[rev ? 'f1' : 'f2'].push([k, v0, v2]);                                    // bandera del lado B
+    }
+  }
+  return {out, st};
+}
+function calFinish(){
+  const S = cal.snaps, n = S[0].d.length;
+  const bad = cal.mon ? cal.mon.bad : null, end = Math.min(RAM_END, n);
+  let {out, st} = calScan(S, bad, end);
+  const found = {w:out.w.length, f1:out.f1.length, f2:out.f2.length};
+  if (cal.prev) {
+    // 2ª pelea en adelante: solo quedan los que hicieron exactamente lo mismo en las dos
+    const key = x => x.join(',');
+    const keep = {};
+    for (const t of ['w', 'f1', 'f2']) { const ks = new Set((cal.prev[t] || []).map(key)); keep[t] = out[t].filter(x => ks.has(key(x))); }
+    if (keep.w.length || (keep.f1.length && keep.f2.length)) out = keep;
+    else if (out.w.length || (out.f1.length && out.f2.length)) { cal.prev = null; toast('Esta pelea no coincidió con la anterior; la tomo como nueva pelea 1.', 5000); }
+  }
+  const total = out.w.length + Math.max(out.f1.length, out.f2.length);
+  console.log('[BR2 calibración KO]', {w:out.w.length, f1:out.f1.length, f2:out.f2.length});
+  if (!out.w.length && !(out.f1.length && out.f2.length)) {
+    const why = 'ganador: ' + found.w + ' · izq: ' + found.f1 + ' · der: ' + found.f2 + ' · descartados: ' + st.mov + ' · lecturas: ' + (cal.mon ? cal.mon.samples : 0);
+    cal = null; $('calib').classList.remove('on');
+    alert('No encontré el dato del KO.\n\nDetalle (pásamelo en el chat si se repite): ' + why +
+      '\n\nRevisa que gane cada round el lado que pide el panel y que marques apenas aparece el punto.');
+    return;
+  }
+  const prevN = cal.prev ? cal.prev.w.length + Math.max(cal.prev.f1.length, cal.prev.f2.length) : Infinity;
+  const needMore = !cal.prev || (total > 24 && total < prevN && (cal.fight || 1) < 5);
+  if (needMore) {
+    const wasPrev = !!cal.prev, nextFight = (cal.fight || 1) + 1;
+    cal = {keep:out, lastSnap:S[CAL_N - 1], fight:nextFight}; $('calib').classList.remove('on');
+    try { localStorage.setItem('br2_calkeep', JSON.stringify({v:3, keep:out, fight:nextFight, n, t:Date.now()})); } catch(e){}
+    toast(wasPrev ? 'Bien. Quedan ' + total + ' opciones: una pelea más para afinar.' : '✅ Pelea 1 lista. En la pelea 2 se invierte: gana primero la DERECHA (su inicio ya quedó marcado).', 7000);
+    setTimeout(calStart, 400);
+    return;
+  }
+  saveKo(out);
+}
+function saveKo(out){
+  // se prefiere el dato "ganador" (un solo valor); si no hay, las dos banderas
+  const ko = out.w.length ? {w:out.w.slice(0, 24)} : {f1:out.f1.slice(0, 24), f2:out.f2.slice(0, 24)};
+  try { localStorage.removeItem('br2_calkeep'); } catch(e){}
+  cal = null; $('calib').classList.remove('on');
+  memCfg.ko = ko; memCfg.hp = null; hpHit = hpMiss = 0;
+  try { localStorage.setItem('br2_mem', JSON.stringify(memCfg)); } catch(e){}
+  db.ref(P_MEM).set(memCfg).then(() => toast('🎯 ¡Listo! Ahora cada punto (también el final) se cuenta en el KO.', 6000))
+    .catch(e => toast('No se pudo guardar la calibración (' + (e.code || e.message) + ')', 6000));
+  updateCalBtn();
+}
+function calCancel(){ cal = null; $('calib').classList.remove('on'); }
+function calSaveKeep(){
+  const k = cal && cal.prev;
+  if (!k || !(k.w && k.w.length || (k.f1 && k.f1.length && k.f2 && k.f2.length))) { toast('Aún no hay nada que guardar'); return; }
+  saveKo(k);
+}
+$('calDone').onclick = calSaveKeep;
+$('hudCal').onclick = () => { if (memCfg && !confirm('El resultado automático ya está calibrado. ¿Calibrar de nuevo?')) return; calStart(); };
+$('calMark').onclick = calMark;
+$('bCopyCal').onclick = () => {
+  const txt = 'BR2CAL ' + JSON.stringify({n:memCfg.n, p1:memCfg.p1, p2:memCfg.p2});
+  (navigator.clipboard ? navigator.clipboard.writeText(txt) : Promise.reject()).then(() => toast('Copiada. Pégamela en el chat para dejarla fija en la página.', 5000))
+    .catch(() => prompt('Copia este texto:', txt));
+};
+setTimeout(updateCalBtn, 0);
+$('calCancel').onclick = calCancel;
+
+// --- detección en vivo (solo el anfitrión de una sala online) ---
+const watch = {last:'', same:0, armed:false, cur:'0:0', at:0, k1:0, k2:0, roundOver:false, koKey:-1, koSame:0};
+let MIN_ROUND_MS = 8000;   // un round dura más que esto: subir 2 rounds más rápido no es una pelea real
+const sd = (x, y) => ((y - x + 384) % 256) - 128;   // diferencia de un byte con vuelta (254→255→0 es +1, +1)
+function voteSteps(list, d){
+  // rounds ganados = (valor actual - valor inicial) / salto por round; se vota entre los candidatos
+  const counts = {};
+  list.forEach(([k, b, st, map]) => {
+    let x;
+    if (map) x = map.indexOf(d[k]);                    // valores propios para 0, 1 y 2 puntos
+    else { st = st || 1; x = sd(b, d[k]) / st; }
+    if (Number.isInteger(x) && x >= 0 && x <= 5) counts[x] = (counts[x] || 0) + 1;
+  });
+  let best = -1, bc = 0, tie = false;
+  for (const s in counts) { if (counts[s] > bc) { bc = counts[s]; best = +s; tie = false; } else if (counts[s] === bc) tie = true; }
+  return tie ? -1 : best;
+}
+
+// ----- VIDA: la página aprende sola dónde está, para contar el punto en el KO (también el del round final) -----
+// El juego anota el round recién cuando empieza el siguiente; en el último round no hay siguiente.
+// Cuando el contador dice quién ganó un round, revisamos TODA la memoria del juego (números de 2 bytes) buscando:
+//   modo 0 = vida que baja: empieza > 0, llega a 0 en el round que ese jugador pierde, nunca llega a 0 si gana;
+//   modo 1 = daño que sube: llega a un mismo tope en los rounds que pierde, y queda por debajo si gana.
+const RAM_N = 0x200000;                               // 2 MB de memoria del juego
+const u16 = (d, k) => d[k] | (d[k + 1] << 8), s16 = v => (v << 16) >> 16;
+// Se aprende SOLO con el round 2 de cada pelea: desde 3 s después de que el juego anota el punto del round 1
+// hasta que anota el del round 2. Así no se mete la selección de personaje ni el KO del round anterior.
+// Se buscan números de 2 bytes (direcciones pares) y de 1 byte (todas), de dos formas:
+//   modo 0 = vida que baja: el que perdió llegó a 0, el que ganó nunca;  modo 1 = daño que sube hasta un tope fijo.
+const learn = {on:false, from:0,
+  mn16:new Int16Array(RAM_N / 2), mx16:new Uint16Array(RAM_N / 2), mn8:new Uint8Array(RAM_N), mx8:new Uint8Array(RAM_N),
+  st16:new Uint16Array(RAM_N / 2), st8:new Uint8Array(RAM_N),          // valor al empezar a mirar el round
+  z16:new Uint8Array(RAM_N / 2), z8:new Uint8Array(RAM_N),              // ¿ya llegó a 0?
+  mp16:new Uint16Array(RAM_N / 2), mp8:new Uint8Array(RAM_N),           // máximo ANTES de llegar a 0 (después se rellena para el round siguiente)
+  // por jugador (0 = J1, 1 = J2) y por tipo: aciertos/fallos y tope del daño
+  ok16:[[new Uint8Array(RAM_N / 2), new Uint8Array(RAM_N / 2)], [new Uint8Array(RAM_N / 2), new Uint8Array(RAM_N / 2)]],
+  bad16:[[new Uint8Array(RAM_N / 2), new Uint8Array(RAM_N / 2)], [new Uint8Array(RAM_N / 2), new Uint8Array(RAM_N / 2)]],
+  top16:[new Uint16Array(RAM_N / 2), new Uint16Array(RAM_N / 2)],
+  ok8:[[new Uint8Array(RAM_N), new Uint8Array(RAM_N)], [new Uint8Array(RAM_N), new Uint8Array(RAM_N)]],
+  bad8:[[new Uint8Array(RAM_N), new Uint8Array(RAM_N)], [new Uint8Array(RAM_N), new Uint8Array(RAM_N)]],
+  top8:[new Uint8Array(RAM_N), new Uint8Array(RAM_N)],
+  wins:[0, 0], losses:[0, 0], n:0};
+function learnSample(d){
+  return;   // apagado en v5.0 (el resultado sale del contador de rounds + peleas perdidas)
+  const L = learn;
+  if (!L.from || Date.now() < L.from) return;           // solo durante el round 2 (ya empezado)
+  const fresh = !L.on, end = Math.min(d.length - 1, SKIP + RAM_N);
+  for (let k = SKIP, i = 0; k < end; k += 2, i++){
+    const v = d[k] | (d[k + 1] << 8), sv = (v << 16) >> 16;
+    if (fresh) { L.mn16[i] = sv; L.mx16[i] = v; L.z16[i] = 0; L.st16[i] = sv > 0 ? v : 0; L.mp16[i] = sv > 0 ? v : 0; }
+    else if (!L.mp16[i]) { if (sv > 0) { L.st16[i] = v; L.mp16[i] = v; } }         // aún no tenía vida: empieza cuando la tenga
+    else if (!L.z16[i]) { if (sv <= 0) L.z16[i] = 1; else if (v > L.mp16[i]) L.mp16[i] = v; }
+    if (fresh) {} else { if (sv < L.mn16[i]) L.mn16[i] = sv; if (v > L.mx16[i]) L.mx16[i] = v; }
+  }
+  for (let k = SKIP, i = 0; k < end; k++, i++){
+    const v = d[k];
+    if (fresh) { L.mn8[i] = v; L.mx8[i] = v; L.z8[i] = 0; L.st8[i] = v; L.mp8[i] = v; }
+    else if (!L.mp8[i]) { if (v > 0) { L.st8[i] = v; L.mp8[i] = v; } }
+    else if (!L.z8[i]) { if (v === 0) L.z8[i] = 1; else if (v > L.mp8[i]) L.mp8[i] = v; }
+    if (fresh) {} else { if (v < L.mn8[i]) L.mn8[i] = v; if (v > L.mx8[i]) L.mx8[i] = v; }
+  }
+  L.on = true;
+}
+function judge(ok, bad, top, mn, mx, st, mp, zf, n, lose, w){
+  // mn/mx: mínimo (con signo si es de 2 bytes) y máximo del round; st: valor al empezar; mp: máximo antes de llegar a 0
+  for (let i = 0; i < n; i++){
+    const m = mn[i], M = mx[i], S = st[i], Ss = w === 2 ? (S << 16) >> 16 : S;
+    for (const pl of [0, 1]){
+      const lost = pl === lose;
+      // vida que baja: desde que tiene vida, el que pierde llega a 0 y el que gana nunca
+      const down = mp[i] > 0 && (lost ? zf[i] === 1 : zf[i] === 0);
+      if (down) ok[pl][0][i]++; else if (bad[pl][0][i] < 250) bad[pl][0][i]++;
+      // daño que sube: el que pierde llega a un tope fijo; el que gana se queda por debajo
+      let up = false;
+      if (lost) { if (M > (m < 0 ? 0 : m)) { if (!top[pl][i]) top[pl][i] = M; up = top[pl][i] === M; } }
+      else up = M < (top[pl][i] || 65535);
+      if (up) ok[pl][1][i]++; else if (bad[pl][1][i] < 250) bad[pl][1][i]++;
+    }
+  }
+}
+function learnRound(p1won){
+  return;   // apagado en v5.0
+  const L = learn;
+  if (!L.on || hpReady()) { L.on = false; return; }
+  const lose = p1won ? 1 : 0;
+  judge(L.ok16, L.bad16, L.top16, L.mn16, L.mx16, L.st16, L.mp16, L.z16, RAM_N / 2, lose, 2);
+  judge(L.ok8, L.bad8, L.top8, L.mn8, L.mx8, L.st8, L.mp8, L.z8, RAM_N, lose, 1);
+  L.on = false; L.n++;
+  if (p1won) { L.wins[0]++; L.losses[1]++; } else { L.wins[1]++; L.losses[0]++; }
+  if (!L.wins[0] || !L.losses[0] || !L.wins[1] || !L.losses[1] || L.n < 3) return;
+  // los contadores de rounds se parecen a la "vida" del rival: se excluyen
+  const cnt = new Set(); [...memCfg.p1, ...memCfg.p2].forEach(([k]) => { cnt.add(k); cnt.add(k - 1); });
+  const pick = (pl, w, mode) => {
+    const out = [], ok = w === 2 ? L.ok16 : L.ok8, bad = w === 2 ? L.bad16 : L.bad8, top = w === 2 ? L.top16 : L.top8, n = w === 2 ? RAM_N / 2 : RAM_N;
+    for (let i = 0; i < n; i++)
+      if (ok[pl][mode][i] === L.n && !bad[pl][mode][i] && (!mode || top[pl][i])) {
+        const k = SKIP + i * w; if (cnt.has(k) || cnt.has(k + w - 1)) continue;
+        out.push([k, mode, mode ? top[pl][i] : 0, w]);
+      }
+    return out;
+  };
+  const pair = (h1, h2) => {
+    // la vida de los dos funciona igual (mismo modo y tope), y una dirección no puede ser de los dos
+    const key = x => x[1] + ':' + x[2], k1 = new Set(h1.map(key)), k2 = new Set(h2.map(key));
+    const a1 = new Set(h1.map(x => x[0])), a2 = new Set(h2.map(x => x[0]));
+    return [h1.filter(x => k2.has(key(x)) && !a2.has(x[0])), h2.filter(x => k1.has(key(x)) && !a1.has(x[0]))];
+  };
+  // orden de preferencia: vida que baja de 2 bytes, de 1 byte; luego daño que sube de 2 bytes, de 1 byte
+  let h1 = [], h2 = [], best = null;
+  for (const [w, mode] of [[2, 0], [1, 0], [2, 1], [1, 1]]) {
+    const [a, b] = pair(pick(0, w, mode), pick(1, w, mode));
+    if (!a.length || !b.length) continue;
+    if (!best) best = [a, b];
+    if (a.length <= 16 && b.length <= 16) { best = [a, b]; break; }
+  }
+  if (best) [h1, h2] = best;
+  console.log('[BR2 vida]', {rounds:L.n, j1:h1.length, j2:h2.length});
+  L.last = {j1:h1.length, j2:h2.length};
+  learnSave(cnt);
+  if (!h1.length || !h2.length || h1.length > 16 || h2.length > 16) return;   // aún no: sigue aprendiendo
+  const hp = {v:HP_V, p1:h1, p2:h2}; hpHit = hpMiss = 0;
+  memCfg.hp = hp;
+  db.ref(P_MEM + '/hp').set(hp).catch(() => {});
+  try { localStorage.setItem('br2_mem', JSON.stringify(memCfg)); } catch(e){}
+  try { localStorage.removeItem('br2_hplearn'); } catch(e){}
+  toast('❤️ Aprendí dónde está la vida: desde ahora el punto se cuenta en el KO', 6000);
+}
+// avance del aprendizaje: cuando ya quedan pocas opciones se guarda, para no perderlo al recargar
+function learnSave(){
+  const L = learn, out = [];
+  for (const [ok, bad, top, n, w] of [[L.ok16, L.bad16, L.top16, RAM_N / 2, 2], [L.ok8, L.bad8, L.top8, RAM_N, 1]])
+    for (const pl of [0, 1]) for (const mode of [0, 1]) for (let i = 0; i < n; i++)
+      if (ok[pl][mode][i] === L.n && !bad[pl][mode][i]) { out.push([pl, mode, w, i, mode ? top[pl][i] : 0]); if (out.length > 20000) return; }
+  try { localStorage.setItem('br2_hplearn', JSON.stringify({v:HP_V, n:L.n, wins:L.wins, losses:L.losses, c:out, last:L.last})); } catch(e){}
+}
+function learnLoad(){
+  try {
+    const sv = JSON.parse(localStorage.getItem('br2_hplearn') || 'null');
+    if (!sv || sv.v !== HP_V || !sv.c) return;
+    const L = learn; L.n = sv.n; L.wins = sv.wins; L.losses = sv.losses; L.last = sv.last;
+    sv.c.forEach(([pl, mode, w, i, top]) => {
+      if (w === 2) { L.ok16[pl][mode][i] = sv.n; if (mode) L.top16[pl][i] = top; }
+      else { L.ok8[pl][mode][i] = sv.n; if (mode) L.top8[pl][i] = top; }
+    });
+  } catch(e){}
+}
+const HP_V = 6;   // versión de la vida aprendida (las anteriores se descartan y se vuelve a aprender)
+const koReady = () => !!(memCfg && memCfg.ko && ((memCfg.ko.w && memCfg.ko.w.length) || (memCfg.ko.f1 && memCfg.ko.f1.length && memCfg.ko.f2 && memCfg.ko.f2.length)));
+const hpReady = () => false && koReady() || !!(memCfg && memCfg.hp && memCfg.hp.v === HP_V && memCfg.hp.p1 && memCfg.hp.p1.length && memCfg.hp.p2 && memCfg.hp.p2.length);
+let hpHit = 0, hpMiss = 0;
+function forgetHp(why){
+  const L = learn;
+  memCfg.hp = null; memCfg.ko = null; hpHit = hpMiss = 0;
+  L.n = 0; L.wins = [0, 0]; L.losses = [0, 0]; L.on = false; L.from = 0;
+  [L.ok16, L.bad16, L.ok8, L.bad8].forEach(a => a.forEach(p => p.forEach(x => x.fill(0))));
+  L.top16.forEach(x => x.fill(0)); L.top8.forEach(x => x.fill(0));
+  db.ref(P_MEM + '/hp').remove().catch(() => {}); db.ref(P_MEM + '/ko').remove().catch(() => {});
+  try { localStorage.setItem('br2_mem', JSON.stringify(memCfg)); } catch(e){}
+  try { localStorage.removeItem('br2_hplearn'); } catch(e){}
+  if (why) toast(why, 6000);
+}
+setTimeout(learnLoad, 0);
+function koState(d){
+  // 1 = cayó la izquierda, 2 = cayó la derecha, 3 = los dos, 0 = nadie
+  const ko = memCfg.ko;
+  if (ko && ko.w && ko.w.length) {
+    let a = 0, b = 0; ko.w.forEach(([k, none, p1v, p2v]) => { const v = d[k]; if (v === p1v) a++; else if (v === p2v) b++; });
+    const half = ko.w.length / 2; return a > half ? 2 : b > half ? 1 : 0;
+  }
+  if (ko && ko.f1 && ko.f1.length && ko.f2 && ko.f2.length) {
+    const on = l => l.filter(([k, off, onv]) => d[k] === onv).length > l.length / 2;
+    return (on(ko.f1) ? 2 : 0) + (on(ko.f2) ? 1 : 0);
+  }
+  const dead = list => {
+    let z = 0;
+    list.forEach(([k, mode, top, w]) => { const v = w === 1 ? d[k] : u16(d, k); if (mode ? v >= top : (w === 1 ? v : s16(v)) <= 0) z++; });
+    return z > list.length / 2;
+  };
+  return (dead(memCfg.hp.p1) ? 1 : 0) + (dead(memCfg.hp.p2) ? 2 : 0);
+}
+// PELEAS GANADAS: justo al lado del contador de rounds el juego guarda cuántas peleas lleva ganadas cada lado
+// en la sesión (3 copias). Cuando sube en 1, ese lado ganó la pelea: no hace falta calibrar ni marcar nada.
+const WINS = {n:4456472, p1:[1896023, 1905075, 1914127], p2:[1895759, 1904811, 1913863]};
+const readW = (d, l) => (d[l[1]] === d[l[0]] && d[l[2]] === d[l[0]]) ? d[l[0]] : -1;
+function reportResult(p1won, sc){
+  const side = p1won ? 'IZQUIERDA' : 'DERECHA', now = Date.now();
+  if (!on || !on.room || !on.room.g) { toast('🏆 Ganó el de la ' + side + ' (' + sc + ')', 7000); return; }   // jugando en este equipo: solo aviso
+  if (now - lastGuestIn > 300000) { toast('🏆 Ganó el de la ' + side + ' · no cuenta: tu rival no estaba jugando', 6000); return; }
+  const r = on.room;
+  processRoomResult(r.rn || 1, r, {w: p1won ? r.h : r.g, sc, auto:true});
+}
+function fightOver(p1won, sc){
+  if (watch.reported) return;                       // esta pelea ya se informó
+  watch.reported = true;
+  watch.armed = false;
+  reportResult(p1won, sc);
+}
+let lastShownRounds = '';
+const scr = {v:null, cv:null, ctx:null, last:'', same:0, armed:false, cur:[0, 0], reported:false, seen:'', invalidSince:0};
+function showRounds(){
+  if (scr.armed) return scrHud();
+  const hr = $('hudRounds'); hr.style.display = '';
+  const before = hr.textContent;
+  const hpOk = hpReady();
+  if (!watch.armed) { hr.textContent = '🎯 Izq ? - ? Der'; return; }
+  const [c1, c2] = watch.cur.split(':').map(Number);
+  const prog = !hpOk && learn.last ? ' · 🧠 ' + Math.max(learn.last.j1, learn.last.j2).toLocaleString('es') : '';
+  hr.textContent = (hpOk ? '❤️' : '🎯') + ' Izq ' + Math.max(c1, watch.k1) + ' - ' + Math.max(c2, watch.k2) + ' Der' + prog;
+  if (before && hr.textContent !== before && /[1-9]/.test(hr.textContent)) { hr.classList.remove('flash'); void hr.offsetWidth; hr.classList.add('flash'); }
+}
+function detectTick(){
+  // corre en el anfitrión online y también al jugar en este equipo (para probar sin tocar el MMR)
+  if (!memCfg || cal || !started || (on && on.role !== 'h') || !emuReady()) { $('hudRounds').style.display = 'none'; return; }
+  const d = grabState();
+  if (!d) return;
+  if (d.length !== memCfg.n) {
+    if (!sizeWarned) { sizeWarned = true; toast('El emulador se actualizó y la calibración ya no coincide: toca 🎯 para calibrar de nuevo.', 8000); }
+    return;
+  }
+  const r1 = voteSteps(memCfg.p1, d), r2 = voteSteps(memCfg.p2, d);
+  const key = r1 + ':' + r2, now = Date.now();
+  const hpOk = hpReady();
+  // --- peleas perdidas de cada lado (el juego lo anota al cargar la pelea siguiente) ---
+  // Sirve para saber quién ganó la pelea anterior cuando iba 1-1 (el contador de rounds no anota el último).
+  if (watch.armed) { watch.liveAt = now; watch.lastCur = watch.cur.split(':').map(Number); }
+  const w1 = d.length === WINS.n ? readW(d, WINS.p1) : -1, w2 = d.length === WINS.n ? readW(d, WINS.p2) : -1;
+  watch.wNow = w1 + '-' + w2;
+  if (w1 >= 0 && w2 >= 0) {
+    const wk = w1 + ':' + w2;
+    if (wk !== watch.wKey) { watch.wKey = wk; watch.wSame = 1; } else watch.wSame++;
+    if (watch.wSame >= 2 && watch.armed) {
+      const pd = watch.pending;
+      if (watch.w && pd) {
+        const d1 = w1 - watch.w[0], d2 = w2 - watch.w[1];
+        if (!pd.reported && now - pd.at < 60000 && ((d1 === 1 && d2 === 0) || (d2 === 1 && d1 === 0))) {
+          const p1won = d2 === 1, [c1, c2] = pd.cur;                  // sube el número del que PERDIÓ
+          if ((p1won ? c1 : c2) >= 1) reportResult(p1won, '2-' + Math.min(1, p1won ? c2 : c1));
+        }
+        watch.pending = null;
+      }
+      watch.w = [w1, w2];
+    }
+  }
+  diagRec(d, r1, r2);
+  if (watch.armed && !hpOk) learnSample(d);
+
+  // --- KO (si ya sabemos dónde está la vida): el punto se cuenta en el momento ---
+  if (watch.armed && hpOk) {
+    const ko = koState(d);
+    if (ko !== watch.koKey) { watch.koKey = ko; watch.koSame = 1; } else watch.koSame++;
+    if (watch.koSame >= 2) {                                           // misma lectura 2 veces seguidas
+      if (ko === 0) watch.roundOver = false;                          // los dos con vida: round en curso
+      else if (!watch.roundOver) {                                     // (al empezar cada round queda bloqueado hasta ver a los dos con vida)
+        watch.roundOver = true;
+        const [c1, c2] = watch.cur.split(':').map(Number);
+        watch.k1 = Math.max(watch.k1, c1); watch.k2 = Math.max(watch.k2, c2);
+        if (ko === 2) { watch.k1++; watch.koSide = 1; } else if (ko === 1) { watch.k2++; watch.koSide = 2; }
+        showRounds();
+        if (watch.k1 >= 2 || watch.k2 >= 2) { const p1won = watch.k1 >= 2; return fightOver(p1won, '2-' + (p1won ? watch.k2 : watch.k1)); }
+      }
+    }
+  }
+
+  // --- contador de rounds del juego (se actualiza al empezar el round siguiente) ---
+  if (key !== watch.last) { watch.last = key; watch.same = 1; return; }
+  if (++watch.same !== 2) return;
+  if (r1 < 0 || r2 < 0) {
+    // lectura rara (fin de pelea / selección de personaje). Si iba 1-0 y aún no sé dónde está la vida: ganó ese 2-0
+    if (watch.armed) { const [c1, c2] = watch.cur.split(':').map(Number); if (c1 + c2 === 1) { fightOver(c1 === 1, '2-0'); } }
+    watch.armed = false; showRounds(); return;
+  }
+  if (r1 === 0 && r2 === 0) {                               // 0-0: empieza una pelea
+    if (watch.armed && watch.cur !== '0:0') {
+      // la pelea terminó sin que el contador marcara el último round: si iba 1-0, ganó ese mismo 2-0
+      const [c1, c2] = watch.cur.split(':').map(Number);
+      if (c1 + c2 === 1) { watch.armed = false; fightOver(c1 === 1, '2-0'); }
+      else if (c1 === 1 && c2 === 1) toast('No vi quién ganó el último round (aún estoy aprendiendo dónde está la vida).', 6000);
+    }
+    if (!watch.armed || watch.cur !== '0:0') {
+      // la pelea anterior queda "pendiente": si nadie la informó, se resuelve con las peleas perdidas
+      watch.pending = watch.lastCur ? {cur:watch.lastCur, reported:!!watch.reported || scr.reported || (watch.lastCur[0] + watch.lastCur[1] === 0), at:watch.liveAt || 0} : null;
+      Object.assign(watch, {armed:true, cur:'0:0', at:now, k1:0, k2:0, roundOver:true, koKey:-1, koSame:0, koSide:0, reported:false});
+      learn.on = false; learn.from = 0;                         // pelea nueva: aún no se aprende (round 1)
+    }
+    showRounds();
+    return;
+  }
+  if (!watch.armed) { showRounds(); return; }               // no vimos el 0-0: puede ser el menú / selección
+  const [c1, c2] = watch.cur.split(':').map(Number);
+  if (r1 === c1 && r2 === c2) { showRounds(); return; }
+  const oneUp = (r1 === c1 + 1 && r2 === c2) || (r2 === c2 + 1 && r1 === c1);
+  if (!oneUp || now - watch.at < MIN_ROUND_MS) { watch.armed = false; showRounds(); return; }   // salto raro: no es una pelea
+  watch.cur = key; watch.at = now;
+  const p1wonRound = r1 === c1 + 1;
+  if (!hpOk) {
+    if (c1 + c2 === 0) { learn.on = false; learn.from = now + 1500; }   // terminó el round 1: el round 2 se mira desde 1.5 s después
+    else { learnRound(p1wonRound); learn.from = 0; }                     // terminó el round 2: se aprende de él
+  }
+  else {
+    // el juego confirmó quién ganó el round: ¿coincide con lo que vi en el KO?
+    if (watch.koSide === (p1wonRound ? 1 : 2)) hpHit++;
+    else if (watch.koSide === 0) { /* no vi ese KO a tiempo: no es un error, el contador del juego ya lo cubrió */ }
+    else { hpMiss++; if (hpMiss >= 2 && hpMiss * 3 > hpHit) forgetHp(memCfg.ko ? 'La calibración del KO no era correcta: toca 🎯 para calibrar de nuevo.' : 'La "vida" que aprendí no era correcta: la vuelvo a aprender.'); }
+  }
+  watch.k1 = r1; watch.k2 = r2;                               // el contador del juego manda: corrige si el KO se equivocó
+  watch.koSide = 0; watch.roundOver = true;                   // nuevo round: espera ver a los dos con vida
+  showRounds();
+  if (!hpOk && (r1 >= 2 || r2 >= 2)) { const p1won = r1 >= 2; fightOver(p1won, '2-' + (p1won ? r2 : r1)); }
+}
+// con la vida aprendida se mira 4 veces por segundo (el punto aparece ~0.5 s después del KO)
+// (el detector antiguo por memoria quedó apagado: ahora todo se detecta mirando la pantalla)
+
+// ============ DETECCIÓN POR PANTALLA (las luces de round ganado) ============
+// Debajo de cada barra de vida hay 2 luces: azules apagadas, ROJAS cuando ese lado gana un round.
+// Se encienden en el mismo KO (también el del round final), así que se miran directamente en la imagen.
+// Posiciones medidas sobre la imagen del juego (4:3), como fracción del ancho / alto.
+const LIGHTS = {y:0.1788, l:[0.3752, 0.4142], r:[0.5920, 0.6310], rad:0.006};
+function scrSetup(){
+  if (scr.v) return true;
+  const c = document.querySelector('#game canvas'); if (!c || !c.captureStream) return false;
+  try {
+    const v = document.createElement('video'); v.muted = true; v.playsInline = true;
+    v.srcObject = c.captureStream(20); v.play().catch(() => {});
+    scr.v = v; scr.cv = document.createElement('canvas'); scr.cv.width = 640; scr.cv.height = 360;
+    scr.ctx = scr.cv.getContext('2d', {willReadFrequently:true});
+    return true;
+  } catch(e){ console.warn('pantalla', e); return false; }
+}
+function scrRect(W, H){
+  const now = Date.now();
+  if (scr.rect && scr.rect.W === W && scr.rect.H === H && now - scr.rect.t < 3000) return scr.rect;
+  const px = scr.ctx.getImageData(0, 0, W, H).data, lit = (x, y) => { const i = (y * W + x) * 4; return px[i] + px[i + 1] + px[i + 2] > 40; };
+  let x0 = W, x1 = -1, y0 = H, y1 = -1;
+  for (let y = 0; y < H; y += 2) for (let x = 0; x < W; x += 2) if (lit(x, y)) { if (x < x0) x0 = x; if (x > x1) x1 = x; if (y < y0) y0 = y; if (y > y1) y1 = y; }
+  let r = null;
+  if (x1 > x0 && y1 > y0) { const w = x1 - x0 + 2, h = y1 - y0 + 2, a = w / h; if (a > 1.22 && a < 1.45 && w > W * 0.3) r = {x:x0, y:y0, w, h}; }
+  if (!r && scr.rect && scr.rect.W === W && scr.rect.H === H) r = scr.rect;
+  if (!r) { let gh = H, gw = H * 4 / 3; if (gw > W) { gw = W; gh = W * 3 / 4; } r = {x:(W - gw) / 2, y:(H - gh) / 2, w:gw, h:gh}; }
+  scr.rect = {x:r.x, y:r.y, w:r.w, h:r.h, W, H, t:now};
+  return scr.rect;
+}
+function scrRead(){
+  // devuelve [rojas izq, rojas der] o null si las luces no están en pantalla (menús, selección, etc.)
+  const v = scr.v; if (!v || !v.videoWidth) return null;
+  const W = 800, H = Math.max(1, Math.round(800 * v.videoHeight / v.videoWidth));   // misma proporción que la imagen real
+  if (scr.cv.width !== W || scr.cv.height !== H) { scr.cv.width = W; scr.cv.height = H; }
+  scr.ctx.drawImage(v, 0, 0, W, H);
+  // dónde está la imagen del juego dentro del lienzo (cambia con el tamaño de la ventana): se busca el
+  // rectángulo que no es negro; si no sale 4:3, se usa el último bueno o uno 4:3 centrado
+  const R = scrRect(W, H);
+  const gx = R.x, gy = R.y, gw = R.w, gh = R.h, rad = Math.max(1, Math.round(gw * LIGHTS.rad));
+  const kind = fx => {
+    const x = Math.round(gx + fx * gw), y = Math.round(gy + LIGHTS.y * gh);
+    const px = scr.ctx.getImageData(x - rad, y - rad, rad * 2 + 1, rad * 2 + 1).data;
+    let R = 0, G = 0, B = 0, n = 0; for (let i = 0; i < px.length; i += 4) { R += px[i]; G += px[i + 1]; B += px[i + 2]; n++; }
+    R /= n; G /= n; B /= n;
+    if (R > 120 && R > G * 1.8 && R > B * 1.5) return 'r';       // roja: round ganado
+    if (B > 60 && B > R * 1.3 && B > G * 1.1) return 'b';        // azul: apagada
+    return '?';
+  };
+  const k = [...LIGHTS.l.map(kind), ...LIGHTS.r.map(kind)];
+  // además, las barras de vida tienen que estar ahí (amarillo / azul / negro): así un menú no se confunde con una pelea
+  const bar = fx => {
+    const x = Math.round(gx + fx * gw), y = Math.round(gy + 0.130 * gh);
+    const px = scr.ctx.getImageData(x - 2, y - 2, 5, 5).data;
+    let R = 0, G = 0, B = 0, n = 0; for (let i = 0; i < px.length; i += 4) { R += px[i]; G += px[i + 1]; B += px[i + 2]; n++; }
+    R /= n; G /= n; B /= n;
+    return (R > 150 && G > 110 && B < 90) || (B > 90 && B > R * 1.2) || (R + G + B < 90);
+  };
+  const bars = [0.10, 0.20, 0.30, 0.40, 0.60, 0.70, 0.80, 0.90].filter(bar).length;
+  scr.seen = k.join('') + ' barras ' + bars + '/8';
+  if (k.includes('?') || bars < 6) return null;
+  return [k.slice(0, 2).filter(x => x === 'r').length, k.slice(2).filter(x => x === 'r').length];
+}
+function scrTick(){
+  if (!started || (on && on.role !== 'h') || !emuReady() || !scrSetup()) { if ($('hudRounds')) $('hudRounds').style.display = 'none'; return; }
+  const st = scrRead(), now = Date.now();
+  if (!st) {
+    // entre rounds la pantalla se funde a negro o pasan textos: NO se olvida el marcador por eso
+    if (!scr.invalidSince) scr.invalidSince = now;
+    if (now - scr.invalidSince > 4000) scr.rect = null;           // por si cambió el tamaño de la ventana
+    if (!scr.armed) { $('hudRounds').style.display = ''; $('hudRounds').textContent = '👁 esperando pelea…'; }
+    return;
+  }
+  scr.invalidSince = 0;
+  const key = st.join(':');
+  if (key !== scr.last) { scr.last = key; scr.same = 1; return; }
+  if (++scr.same !== 3) return;                                   // la misma lectura 3 veces seguidas (~0.45 s)
+  const [a, b] = st;
+  if (a === 0 && b === 0) { scr.armed = true; scr.cur = [0, 0]; scr.reported = false; scrHud(); return; }
+  if (!scr.armed) {
+    // empezó a mirar con la pelea ya empezada (por ejemplo, tras recargar): se toma el marcador que se ve
+    if (a < 2 && b < 2) { scr.armed = true; scr.cur = [a, b]; scr.reported = false; scrHud(); }
+    return;
+  }
+  const [c1, c2] = scr.cur;
+  if (a === c1 && b === c2) return;
+  if (a < c1 || b < c2) {                                         // bajó sin pasar por 0-0: es otra pelea
+    if (a < 2 && b < 2) { scr.cur = [a, b]; scr.reported = false; scrHud(); }
+    return;
+  }
+  scr.cur = [a, b]; scrHud();
+  if ((a >= 2) !== (b >= 2) && !scr.reported) {                   // uno llegó a 2 (si los dos, es una lectura rara)
+    scr.reported = true;
+    const p1won = a >= 2;
+    watch.reported = true; watch.armed = false;
+    reportResult(p1won, '2-' + Math.min(1, p1won ? b : a));
+  }
+}
+function scrHud(){
+  const hr = $('hudRounds'); if (!hr) return;
+  const before = hr.textContent;
+  hr.style.display = ''; hr.textContent = '👁 Izq ' + scr.cur[0] + ' - ' + scr.cur[1] + ' Der';
+  if (before !== hr.textContent && /[1-9]/.test(hr.textContent)) { hr.classList.remove('flash'); void hr.offsetWidth; hr.classList.add('flash'); }
+}
+(function scrLoop(){ try { scrTick(); } catch(e){ console.warn(e); } setTimeout(scrLoop, 150); })();
+
+// ----- diagnóstico: guarda cómo se mueven los bytes calibrados durante la partida -----
+const diag = {t0:0, log:[], lastSig:'', last:null};
+function diagRec(d, r1, r2){
+  if (!diag.t0) diag.t0 = Date.now();
+  diag.last = d;
+  const v1 = memCfg.p1.map(x => d[x[0]]), v2 = memCfg.p2.map(x => d[x[0]]);
+  const sig = v1.join(',') + '|' + v2.join(',') + '|' + (watch.armed ? 'A' : '-');
+  if (sig === diag.lastSig) return;
+  diag.lastSig = sig;
+  if (diag.log.length < 900) diag.log.push(Math.round((Date.now() - diag.t0) / 1000) + 's J1[' + v1.join(',') + '] J2[' + v2.join(',') + '] => ' + r1 + '-' + r2 + ' ko ' + watch.k1 + '-' + watch.k2 + ' w ' + watch.wNow + (watch.armed ? ' armado' : ''));
+}
+$('hudDiag').onclick = () => {
+  if (!memCfg) return;
+  const d = diag.last, near = k => d ? Array.from(d.slice(k - 8, k + 9)).map(v => v.toString(16).padStart(2, '0')).join(' ') : '';
+  const txt = 'BR2DIAG ' + JSON.stringify({ver:APP_V, pantalla:{luces:scr.seen, marcador:scr.cur, armado:scr.armed, video:scr.v ? scr.v.videoWidth + 'x' + scr.v.videoHeight : null, juego:scr.rect ? [scr.rect.x, scr.rect.y, scr.rect.w, scr.rect.h, scr.rect.W, scr.rect.H].map(Math.round) : null}, ko:memCfg.ko || null, hp:memCfg.hp || null, hpCheck:{bien:hpHit, mal:hpMiss}, aprendiendo:{rounds:learn.n, ganados:learn.wins, perdidos:learn.losses, opciones:learn.last || null}, n:memCfg.n, p1:memCfg.p1, p2:memCfg.p2,
+    cerca:{p1:memCfg.p1.map(x => near(x[0])), p2:memCfg.p2.map(x => near(x[0]))}, log:diag.log});
+  (navigator.clipboard ? navigator.clipboard.writeText(txt) : Promise.reject()).then(() => toast('Diagnóstico copiado: pégamelo en el chat', 5000))
+    .catch(() => prompt('Copia este texto:', txt));
+};
+
+// ----- pantalla de fin de pelea: se pausa el juego y se muestra el MMR -----
+function showEnd(r){
+  const L = r.last, won = L.w === me.uid, d = r.h === me.uid ? L.da : L.db;
+  const rival = me.uid === r.h ? (r.gn || 'rival') : (r.hn || 'anfitrión');
+  const sc = won ? L.sc : String(L.sc || '').split('-').reverse().join('-');
+  $('endTitle').textContent = won ? '🏆 VICTORIA' : '💀 DERROTA';
+  $('endTitle').style.color = won ? 'var(--gold)' : '#ff6b6b';
+  const side = L.w === r.h ? 'IZQUIERDA' : 'DERECHA';
+  $('endSub').innerHTML = '<div style="font-weight:800;margin-bottom:4px">Ganó el de la ' + side + '</div>' + (L.fixed ? '↔️ Resultado corregido · ' : '') + esc(me.name) + ' <b>' + esc(sc) + '</b> ' + esc(rival) + (L.auto ? ' <span class="mut">(automático)</span>' : '');
+  $('endDelta').textContent = (d > 0 ? '+' : '') + d + ' MMR';
+  $('endDelta').className = 'num ' + (d > 0 ? 'up' : 'down');
+  $('abFlip').style.display = L.auto && !L.fixed ? '' : 'none';
+  renderEndMmr();
+  $('endScreen').classList.add('on');
+  if (on.role === 'h') { try { EJS_emulator.pause(); } catch(e){} }
+}
+function renderEndMmr(){
+  if (!me || !$('endScreen')) return;
+  const p = player(me.uid), rk = rankOf(+p.mmr || START_MMR);
+  $('endMmr').innerHTML = 'Tu MMR: <b>' + Math.round(+p.mmr || START_MMR) + '</b> · <span style="color:' + rk.c + '">' + rk.i + ' ' + rk.n + '</span>';
+}
+function closeEnd(resume){
+  $('endScreen').classList.remove('on');
+  if (resume && on && on.role === 'h') { try { EJS_emulator.play(); } catch(e){} }
+}
+$('endAgain').onclick = () => { closeEnd(true); if (on) on.ref.child('again').set(Date.now()).catch(() => {}); };
+$('endExit').onclick = () => leaveOnline();
+let againSeen = null;
+function hideAutoBar(){}
+
+// ----- "Al revés": corrige el último resultado automático y deja la calibración bien para siempre -----
+$('abFlip').onclick = () => {
+  const r = on && on.room; if (!r || !r.last) return;
+  $('abFlip').style.display = 'none';
+  on.ref.child('flip').set({rn:r.last.rn, by:me.uid}).catch(() => toast('No se pudo corregir'));
+  toast('Corrigiendo…');
+};
+let flipping = false;
+async function flipLast(r){
+  if (flipping) return; flipping = true;
+  try {
+    const L = r.last;
+    const lock = await on.ref.child('fixlock/' + L.rn).transaction(c => c ? undefined : true);
+    if (!lock.committed) return;
+    const ms = (await db.ref(P_MATCHES + '/' + L.id).once('value')).val();
+    if (!ms) return;
+    const [sa, sb] = await Promise.all([db.ref(P_PLAYERS + '/' + ms.a).once('value'), db.ref(P_PLAYERS + '/' + ms.b).once('value')]);
+    const A = Object.assign({mmr:START_MMR, w:0, l:0, pk:START_MMR}, sa.val() || {});
+    const B = Object.assign({mmr:START_MMR, w:0, l:0, pk:START_MMR}, sb.val() || {});
+    const aWonOld = ms.w === ms.a;
+    // deshacer lo que se aplicó
+    A.mmr -= (+ms.da || 0); B.mmr -= (+ms.db || 0);
+    if (aWonOld) { A.w = Math.max(0, A.w - 1); B.l = Math.max(0, B.l - 1); } else { A.l = Math.max(0, A.l - 1); B.w = Math.max(0, B.w - 1); }
+    // aplicar al revés
+    const aWon = !aWonOld;
+    const d = aWon ? eloDelta(A, B, ms.sc) : eloDelta(B, A, ms.sc);
+    const da = aWon ? d.up : -d.dn, dbb = aWon ? -d.dn : d.up;
+    const na = Math.round(A.mmr + da), nb = Math.round(B.mmr + dbb);
+    const u = {};
+    u[P_PLAYERS + '/' + ms.a + '/mmr'] = na; u[P_PLAYERS + '/' + ms.b + '/mmr'] = nb;
+    u[P_PLAYERS + '/' + ms.a + '/w'] = A.w + (aWon ? 1 : 0); u[P_PLAYERS + '/' + ms.a + '/l'] = A.l + (aWon ? 0 : 1);
+    u[P_PLAYERS + '/' + ms.b + '/w'] = B.w + (aWon ? 0 : 1); u[P_PLAYERS + '/' + ms.b + '/l'] = B.l + (aWon ? 1 : 0);
+    u[P_PLAYERS + '/' + ms.a + '/pk'] = Math.max(+A.pk || START_MMR, na); u[P_PLAYERS + '/' + ms.b + '/pk'] = Math.max(+B.pk || START_MMR, nb);
+    const nw = aWon ? ms.a : ms.b;
+    u[P_MATCHES + '/' + L.id + '/w'] = nw; u[P_MATCHES + '/' + L.id + '/da'] = da; u[P_MATCHES + '/' + L.id + '/db'] = dbb;
+    u[P_MATCHES + '/' + L.id + '/fixed'] = true;
+    await db.ref().update(u);
+    await on.ref.update({last:Object.assign({}, L, {w:nw, da, db:dbb, fixed:true}), flip:null});
+    // si fue automático, la calibración tenía los jugadores cruzados: se invierte para siempre
+    if (L.auto && memCfg) { await db.ref(P_MEM).update({p1:memCfg.p2, p2:memCfg.p1}); }
+  } catch(e){ console.warn(e); toast('No se pudo corregir (' + (e.code || e.message) + ')'); on.ref.child('fixlock/' + r.last.rn).remove().catch(() => {}); }
+  finally { flipping = false; }
+}
+
+// ----- tiempo infinito en las peleas (código GameShark de la versión USA) -----
+const CHEAT_TIME = '80151356 2400';
+let timeApplied = false;
+function wantInfTime(){ return true; }   // en el 1 vs 1 siempre es tiempo infinito
+function applyInfTime(){
+  const em = window.EJS_emulator;
+  if (!em || !em.gameManager || !em.gameManager.functions || !em.gameManager.functions.setCheat) return false;
+  const on_ = wantInfTime();
+  try {
+    if (Array.isArray(em.cheats)) { const c = em.cheats.find(x => x.code === CHEAT_TIME); if (c) c.checked = on_; }
+    em.gameManager.functions.setCheat(90, on_ ? 1 : 0, CHEAT_TIME);
+    return true;
+  } catch(e){ console.warn('cheat', e); return false; }
+}
+setInterval(() => { if (started && !timeApplied && emuReady() && window.EJS_emulator.started) timeApplied = applyInfTime(); }, 1000);
+$('optTime').checked = wantInfTime();
+$('optTime').onchange = e => { try { localStorage.setItem('br2_inftime', e.target.checked ? '1' : '0'); } catch(_){} if (started) applyInfTime(); };
+
+// ============ CONTROLES (teclado en PC) ============
+// Nombres de tecla que entiende el emulador (EmulatorJS) según keyCode.
+const KEYNAME = {8:'backspace',9:'tab',13:'enter',16:'shift',17:'ctrl',18:'alt',20:'caps lock',32:'space',33:'page up',34:'page down',
+  35:'end',36:'home',37:'left arrow',38:'up arrow',39:'right arrow',40:'down arrow',45:'insert',46:'delete',
+  96:'numpad 0',97:'numpad 1',98:'numpad 2',99:'numpad 3',100:'numpad 4',101:'numpad 5',102:'numpad 6',103:'numpad 7',104:'numpad 8',105:'numpad 9',
+  106:'multiply',107:'add',109:'subtract',110:'decimal point',111:'divide',186:'semi-colon',187:'equal sign',188:'comma',189:'dash',
+  190:'period',191:'forward slash',192:'grave accent',219:'open bracket',220:'back slash',221:'close braket',222:'single quote'};
+for (let c = 48; c <= 57; c++) KEYNAME[c] = String.fromCharCode(c);
+for (let c = 65; c <= 90; c++) KEYNAME[c] = String.fromCharCode(c).toLowerCase();
+const ACTIONS = [[4,'↑ Arriba'],[5,'↓ Abajo'],[6,'← Izquierda'],[7,'→ Derecha'],[1,'□ Cuadrado'],[0,'✕ Equis'],[8,'○ Círculo'],
+  [9,'△ Triángulo'],[10,'L1'],[11,'R1'],[12,'L2'],[13,'R2'],[3,'Start'],[2,'Select']];
+const CTL_DEF = {
+  0:{4:'w',5:'s',6:'a',7:'d',1:'k',0:'l',8:'i',9:'j',10:'u',11:'o',12:'y',13:'p',3:'enter',2:'v'},
+  1:{4:'up arrow',5:'down arrow',6:'left arrow',7:'right arrow',1:'numpad 4',0:'numpad 5',8:'numpad 6',9:'numpad 8',
+     10:'numpad 7',11:'numpad 9',12:'numpad 1',13:'numpad 3',3:'numpad 0',2:'decimal point'}
+};
+const PADNAME = {0:'BUTTON_2',1:'BUTTON_4',2:'SELECT',3:'START',4:'DPAD_UP',5:'DPAD_DOWN',6:'DPAD_LEFT',7:'DPAD_RIGHT',8:'BUTTON_1',
+  9:'BUTTON_3',10:'LEFT_TOP_SHOULDER',11:'RIGHT_TOP_SHOULDER',12:'LEFT_BOTTOM_SHOULDER',13:'RIGHT_BOTTOM_SHOULDER',14:'LEFT_STICK',15:'RIGHT_STICK'};
+let ctl = (() => { try { const v = JSON.parse(localStorage.getItem('br2_ctl') || 'null'); if (v && v[0] && v[1]) {
+  const old = (x, y, z, w) => v[0][1] === x && v[0][0] === y && v[0][8] === z && v[0][9] === w;
+  if (old('j', 'k', 'l', 'i') || old('l', 'k', 'i', 'j')) { v[0][1] = 'k'; v[0][0] = 'l'; v[0][8] = 'i'; v[0][9] = 'j'; }   // teclas por defecto antiguas
+  return v; } } catch(e){} return JSON.parse(JSON.stringify(CTL_DEF)); })();
+const saveCtl = () => { try { localStorage.setItem('br2_ctl', JSON.stringify(ctl)); } catch(e){} };
+const NAME2CODE = {}; for (const c in KEYNAME) NAME2CODE[KEYNAME[c]] = +c;
+function ejsControls(){
+  // el emulador compara con keyCode numérico (los controles guardados no se vuelven a convertir)
+  const out = {0:{}, 1:{}, 2:{}, 3:{}};
+  for (const p of [0, 1]) for (let i = 0; i < 16; i++) {
+    const n = ctl[p][i]; out[p][i] = {value: n && NAME2CODE[n] != null ? NAME2CODE[n] : -1, value2: PADNAME[i]};
+  }
+  const sticks = ['LEFT_STICK_X:+1','LEFT_STICK_X:-1','LEFT_STICK_Y:+1','LEFT_STICK_Y:-1','RIGHT_STICK_X:+1','RIGHT_STICK_X:-1','RIGHT_STICK_Y:+1','RIGHT_STICK_Y:-1'];
+  sticks.forEach((v, k) => { out[0][16 + k] = {value:-1, value2:v}; out[1][16 + k] = {value:-1, value2:v}; });
+  return out;
+}
+function keyLabel(n){
+  if (!n) return '— sin tecla —';
+  const sp = {'up arrow':'↑','down arrow':'↓','left arrow':'←','right arrow':'→','space':'Espacio','enter':'Enter','shift':'Shift','ctrl':'Ctrl',
+    'alt':'Alt','tab':'Tab','backspace':'Borrar','semi-colon':'Ñ / ;','comma':',','period':'.','dash':'-','decimal point':'Num .'};
+  if (sp[n]) return sp[n];
+  if (n.startsWith('numpad ')) return 'Num ' + n.slice(7);
+  return n.length === 1 ? n.toUpperCase() : n;
+}
+let ctlP = 0, waiting = null;
+function renderCtl(){
+  $('ctlList').innerHTML = ACTIONS.map(([i, lab]) => {
+    const n = ctl[ctlP][i], w = waiting && waiting.i === i;
+    return '<div class="li"><div class="nm">' + lab + '</div><button class="ck' + (w ? ' wait' : n ? '' : ' none') + '" data-ck="' + i + '">' +
+      (w ? 'Presiona…' : esc(keyLabel(n))) + '</button></div>';
+  }).join('');
+}
+$('ctlList').addEventListener('click', e => {
+  const b = e.target.closest('[data-ck]'); if (!b) return;
+  waiting = {p:ctlP, i:+b.dataset.ck}; renderCtl();
+});
+addEventListener('keydown', e => {
+  if (!waiting) return;
+  e.preventDefault(); e.stopPropagation();
+  if (e.keyCode === 27) { waiting = null; renderCtl(); return; }
+  const name = KEYNAME[e.keyCode];
+  if (!name) { toast('Esa tecla no se puede usar'); return; }
+  // si la tecla ya estaba en otro botón (de cualquier jugador), se la quitamos
+  for (const p of [0, 1]) for (const k in ctl[p]) if (ctl[p][k] === name) ctl[p][k] = '';
+  ctl[waiting.p][waiting.i] = name; waiting = null; saveCtl(); renderCtl();
+}, true);
+segInit('ctlP', v => { ctlP = +v; waiting = null; renderCtl(); });
+$('ctlReset').onclick = () => { ctl = JSON.parse(JSON.stringify(CTL_DEF)); saveCtl(); waiting = null; renderCtl(); toast('Teclas restauradas'); };
+if (!matchMedia('(pointer:coarse)').matches) renderCtl(); else $('tabCtl').style.display = 'none';   // en el celular no hace falta
+
+$('appV').textContent = APP_V; $('hudVer').textContent = APP_V;
+document.title = 'Bloody Roar 2 ' + APP_V + ' · Club Campestre';
+
+// ============ ARRANQUE ============
+document.querySelectorAll('.tab').forEach(t => t.onclick = () => show(t.dataset.s));
+segInit('rRes', v => selRes = v);
+segInit('rSc', v => selSc = v);
+$('bReport').onclick = sendReport;
+$('bLogin').onclick = doLogin;
+$('lgPass').onkeydown = e => { if (e.key === 'Enter') doLogin(); };
+document.addEventListener('click', e => {
+  const b = e.target.closest('button'); if (!b) return;
+  if (b.dataset.ok) { b.disabled = true; confirmMatch(b.dataset.ok); }
+  else if (b.dataset.no) rejectMatch(b.dataset.no);
+  else if (b.dataset.cancel) cancelMatch(b.dataset.cancel);
+});
+setInterval(() => { if (me) { renderReport(); renderHist(); } }, 60000);   // refresca los "hace X min"
+
+(async () => {
+  refreshRom();
+  if (!await loadFirebase()) { show('sLogin'); $('lgErr').textContent = 'No se pudo conectar con Firebase. Revisa tu internet.'; return; }
+  firebase.initializeApp(firebaseConfig);
+  db = firebase.database(); fauth = firebase.auth();
+  fauth.onAuthStateChanged(onUser);
+})();
+</script>
+</body>
+</html>
