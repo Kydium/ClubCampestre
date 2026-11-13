@@ -321,7 +321,7 @@ const firebaseConfig = {
   messagingSenderId: "180444249462",
   appId: "1:180444249462:web:bdf189d171d908a0274e57"
 };
-const APP_V = 'v4.5';   // versión de la página: súbela en cada cambio
+const APP_V = 'v4.6';   // versión de la página: súbela en cada cambio
 const ACC_DOMAIN = 'clubcampestre.app';
 const P_PLAYERS = 'br2_players', P_MATCHES = 'br2_matches';
 const EJS_DATA = 'https://cdn.emulatorjs.org/stable/data/';
@@ -1569,6 +1569,7 @@ function detectTick(){
   else {
     // el juego confirmó quién ganó el round: ¿coincide con lo que vi en el KO?
     if (watch.koSide === (p1wonRound ? 1 : 2)) hpHit++;
+    else if (watch.koSide === 0) { /* no vi ese KO a tiempo: no es un error, el contador del juego ya lo cubrió */ }
     else { hpMiss++; if (hpMiss >= 2 && hpMiss * 3 > hpHit) forgetHp(memCfg.ko ? 'La calibración del KO no era correcta: toca 🎯 para calibrar de nuevo.' : 'La "vida" que aprendí no era correcta: la vuelvo a aprender.'); }
   }
   watch.k1 = r1; watch.k2 = r2;                               // el contador del juego manda: corrige si el KO se equivocó
