@@ -327,7 +327,7 @@ const firebaseConfig = {
   messagingSenderId: "180444249462",
   appId: "1:180444249462:web:bdf189d171d908a0274e57"
 };
-const APP_V = 'v5.3';   // versión de la página: súbela en cada cambio
+const APP_V = 'v5.4';   // versión de la página: súbela en cada cambio
 const ACC_DOMAIN = 'clubcampestre.app';
 const P_PLAYERS = 'br2_players', P_MATCHES = 'br2_matches';
 const EJS_DATA = 'https://cdn.emulatorjs.org/stable/data/';
@@ -930,10 +930,19 @@ async function startHostPc(){
   dc.onclose = releaseGuest;
   const vs = canvas.captureStream(60);
   const vt = vs.getVideoTracks()[0];
-  try { vt.contentHint = 'detail'; } catch(e){}   // que no baje la resolución
+  try { vt.contentHint = 'motion'; } catch(e){}   // en un juego de pelea importa más la fluidez que el detalle
   const ms = new MediaStream([vt]);
   const at = hostAudio(); if (at) ms.addTrack(at);
   ms.getTracks().forEach(t => pc.addTrack(t, ms));
+  // H264 primero: casi todas las PCs lo codifican con la tarjeta de video (mucho más rápido y sin tirones)
+  try {
+    const caps = RTCRtpSender.getCapabilities && RTCRtpSender.getCapabilities('video');
+    const tv = pc.getTransceivers().find(t => t.sender && t.sender.track === vt);
+    if (caps && tv && tv.setCodecPreferences) {
+      const rank = c => /h264/i.test(c.mimeType) ? 0 : /vp8/i.test(c.mimeType) ? 1 : /vp9/i.test(c.mimeType) ? 2 : 3;
+      tv.setCodecPreferences(caps.codecs.slice().sort((a, b) => rank(a) - rank(b)));
+    }
+  } catch(e){ console.warn('codec', e); }
   watchState(pc, on.room && on.room.gn || 'tu rival');
   pc.onicecandidate = e => { if (e.candidate) sref.child('hc').push(e.candidate.toJSON()); };
   const offer = await pc.createOffer();
@@ -946,8 +955,10 @@ async function startHostPc(){
     try {
       await pc.setRemoteDescription(a); flushCands(pc);
       const snd = pc.getSenders().find(x => x.track && x.track.kind === 'video');
-      if (snd) { const p = snd.getParameters(); p.degradationPreference = 'balanced';
-        if (p.encodings && p.encodings[0]) { p.encodings[0].maxBitrate = 10000000; p.encodings[0].scaleResolutionDownBy = 1; p.encodings[0].maxFramerate = 60; }
+      if (snd) { const p = snd.getParameters(); p.degradationPreference = 'maintain-framerate';   // nunca saltarse cuadros
+        // el juego es 320x240: mandar más de ~960 px de ancho solo hace más lento el envío
+        const sc = Math.max(1, (canvas.width || 960) / 960);
+        if (p.encodings && p.encodings[0]) { p.encodings[0].maxBitrate = 6000000; p.encodings[0].scaleResolutionDownBy = sc; p.encodings[0].maxFramerate = 60; }
         snd.setParameters(p).catch(() => {}); }
     } catch(e){ console.warn(e); }
   });
