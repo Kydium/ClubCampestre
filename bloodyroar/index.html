@@ -321,7 +321,7 @@ const firebaseConfig = {
   messagingSenderId: "180444249462",
   appId: "1:180444249462:web:bdf189d171d908a0274e57"
 };
-const APP_V = 'v4.1';   // versión de la página: súbela en cada cambio
+const APP_V = 'v4.2';   // versión de la página: súbela en cada cambio
 const ACC_DOMAIN = 'clubcampestre.app';
 const P_PLAYERS = 'br2_players', P_MATCHES = 'br2_matches';
 const EJS_DATA = 'https://cdn.emulatorjs.org/stable/data/';
@@ -1332,6 +1332,9 @@ const u16 = (d, k) => d[k] | (d[k + 1] << 8), s16 = v => (v << 16) >> 16;
 //   modo 0 = vida que baja: el que perdió llegó a 0, el que ganó nunca;  modo 1 = daño que sube hasta un tope fijo.
 const learn = {on:false, from:0,
   mn16:new Int16Array(RAM_N / 2), mx16:new Uint16Array(RAM_N / 2), mn8:new Uint8Array(RAM_N), mx8:new Uint8Array(RAM_N),
+  st16:new Uint16Array(RAM_N / 2), st8:new Uint8Array(RAM_N),          // valor al empezar a mirar el round
+  z16:new Uint8Array(RAM_N / 2), z8:new Uint8Array(RAM_N),              // ¿ya llegó a 0?
+  mp16:new Uint16Array(RAM_N / 2), mp8:new Uint8Array(RAM_N),           // máximo ANTES de llegar a 0 (después se rellena para el round siguiente)
   // por jugador (0 = J1, 1 = J2) y por tipo: aciertos/fallos y tope del daño
   ok16:[[new Uint8Array(RAM_N / 2), new Uint8Array(RAM_N / 2)], [new Uint8Array(RAM_N / 2), new Uint8Array(RAM_N / 2)]],
   bad16:[[new Uint8Array(RAM_N / 2), new Uint8Array(RAM_N / 2)], [new Uint8Array(RAM_N / 2), new Uint8Array(RAM_N / 2)]],
@@ -1346,22 +1349,30 @@ function learnSample(d){
   const fresh = !L.on, end = Math.min(d.length - 1, SKIP + RAM_N);
   for (let k = SKIP, i = 0; k < end; k += 2, i++){
     const v = d[k] | (d[k + 1] << 8), sv = (v << 16) >> 16;
-    if (fresh) { L.mn16[i] = sv; L.mx16[i] = v; } else { if (sv < L.mn16[i]) L.mn16[i] = sv; if (v > L.mx16[i]) L.mx16[i] = v; }
+    if (fresh) { L.mn16[i] = sv; L.mx16[i] = v; L.z16[i] = 0; L.st16[i] = sv > 0 ? v : 0; L.mp16[i] = sv > 0 ? v : 0; }
+    else if (!L.mp16[i]) { if (sv > 0) { L.st16[i] = v; L.mp16[i] = v; } }         // aún no tenía vida: empieza cuando la tenga
+    else if (!L.z16[i]) { if (sv <= 0) L.z16[i] = 1; else if (v > L.mp16[i]) L.mp16[i] = v; }
+    if (fresh) {} else { if (sv < L.mn16[i]) L.mn16[i] = sv; if (v > L.mx16[i]) L.mx16[i] = v; }
   }
   for (let k = SKIP, i = 0; k < end; k++, i++){
     const v = d[k];
-    if (fresh) { L.mn8[i] = v; L.mx8[i] = v; } else { if (v < L.mn8[i]) L.mn8[i] = v; if (v > L.mx8[i]) L.mx8[i] = v; }
+    if (fresh) { L.mn8[i] = v; L.mx8[i] = v; L.z8[i] = 0; L.st8[i] = v; L.mp8[i] = v; }
+    else if (!L.mp8[i]) { if (v > 0) { L.st8[i] = v; L.mp8[i] = v; } }
+    else if (!L.z8[i]) { if (v === 0) L.z8[i] = 1; else if (v > L.mp8[i]) L.mp8[i] = v; }
+    if (fresh) {} else { if (v < L.mn8[i]) L.mn8[i] = v; if (v > L.mx8[i]) L.mx8[i] = v; }
   }
   L.on = true;
 }
-function judge(ok, bad, top, mn, mx, n, lose){
-  // mn/mx: mínimo (con signo si es de 2 bytes) y máximo vistos en el round
+function judge(ok, bad, top, mn, mx, st, mp, zf, n, lose, w){
+  // mn/mx: mínimo (con signo si es de 2 bytes) y máximo del round; st: valor al empezar; mp: máximo antes de llegar a 0
   for (let i = 0; i < n; i++){
-    const m = mn[i], M = mx[i];
+    const m = mn[i], M = mx[i], S = st[i], Ss = w === 2 ? (S << 16) >> 16 : S;
     for (const pl of [0, 1]){
       const lost = pl === lose;
-      const down = lost ? (m <= 0 && M > 0) : m > 0;
+      // vida que baja: desde que tiene vida, el que pierde llega a 0 y el que gana nunca
+      const down = mp[i] > 0 && (lost ? zf[i] === 1 : zf[i] === 0);
       if (down) ok[pl][0][i]++; else if (bad[pl][0][i] < 250) bad[pl][0][i]++;
+      // daño que sube: el que pierde llega a un tope fijo; el que gana se queda por debajo
       let up = false;
       if (lost) { if (M > (m < 0 ? 0 : m)) { if (!top[pl][i]) top[pl][i] = M; up = top[pl][i] === M; } }
       else up = M < (top[pl][i] || 65535);
@@ -1373,16 +1384,16 @@ function learnRound(p1won){
   const L = learn;
   if (!L.on || hpReady()) { L.on = false; return; }
   const lose = p1won ? 1 : 0;
-  judge(L.ok16, L.bad16, L.top16, L.mn16, L.mx16, RAM_N / 2, lose);
-  judge(L.ok8, L.bad8, L.top8, L.mn8, L.mx8, RAM_N, lose);
+  judge(L.ok16, L.bad16, L.top16, L.mn16, L.mx16, L.st16, L.mp16, L.z16, RAM_N / 2, lose, 2);
+  judge(L.ok8, L.bad8, L.top8, L.mn8, L.mx8, L.st8, L.mp8, L.z8, RAM_N, lose, 1);
   L.on = false; L.n++;
   if (p1won) { L.wins[0]++; L.losses[1]++; } else { L.wins[1]++; L.losses[0]++; }
   if (!L.wins[0] || !L.losses[0] || !L.wins[1] || !L.losses[1] || L.n < 3) return;
   // los contadores de rounds se parecen a la "vida" del rival: se excluyen
   const cnt = new Set(); [...memCfg.p1, ...memCfg.p2].forEach(([k]) => { cnt.add(k); cnt.add(k - 1); });
-  const pick = (pl, w) => {
+  const pick = (pl, w, mode) => {
     const out = [], ok = w === 2 ? L.ok16 : L.ok8, bad = w === 2 ? L.bad16 : L.bad8, top = w === 2 ? L.top16 : L.top8, n = w === 2 ? RAM_N / 2 : RAM_N;
-    for (const mode of [0, 1]) for (let i = 0; i < n; i++)
+    for (let i = 0; i < n; i++)
       if (ok[pl][mode][i] === L.n && !bad[pl][mode][i] && (!mode || top[pl][i])) {
         const k = SKIP + i * w; if (cnt.has(k) || cnt.has(k + w - 1)) continue;
         out.push([k, mode, mode ? top[pl][i] : 0, w]);
@@ -1395,19 +1406,46 @@ function learnRound(p1won){
     const a1 = new Set(h1.map(x => x[0])), a2 = new Set(h2.map(x => x[0]));
     return [h1.filter(x => k2.has(key(x)) && !a2.has(x[0])), h2.filter(x => k1.has(key(x)) && !a1.has(x[0]))];
   };
-  // primero números de 2 bytes; si no hay, de 1 byte
-  let [h1, h2] = pair(pick(0, 2), pick(1, 2));
-  if (!h1.length || !h2.length) [h1, h2] = pair(pick(0, 1), pick(1, 1));
+  // orden de preferencia: vida que baja de 2 bytes, de 1 byte; luego daño que sube de 2 bytes, de 1 byte
+  let h1 = [], h2 = [], best = null;
+  for (const [w, mode] of [[2, 0], [1, 0], [2, 1], [1, 1]]) {
+    const [a, b] = pair(pick(0, w, mode), pick(1, w, mode));
+    if (!a.length || !b.length) continue;
+    if (!best) best = [a, b];
+    if (a.length <= 16 && b.length <= 16) { best = [a, b]; break; }
+  }
+  if (best) [h1, h2] = best;
   console.log('[BR2 vida]', {rounds:L.n, j1:h1.length, j2:h2.length});
   L.last = {j1:h1.length, j2:h2.length};
-  if (!h1.length || !h2.length || h1.length > 12 || h2.length > 12) return;   // aún no: sigue aprendiendo
+  learnSave(cnt);
+  if (!h1.length || !h2.length || h1.length > 16 || h2.length > 16) return;   // aún no: sigue aprendiendo
   const hp = {v:HP_V, p1:h1, p2:h2}; hpHit = hpMiss = 0;
   memCfg.hp = hp;
   db.ref(P_MEM + '/hp').set(hp).catch(() => {});
   try { localStorage.setItem('br2_mem', JSON.stringify(memCfg)); } catch(e){}
+  try { localStorage.removeItem('br2_hplearn'); } catch(e){}
   toast('❤️ Aprendí dónde está la vida: desde ahora el punto se cuenta en el KO', 6000);
 }
-const HP_V = 3;   // versión de la vida aprendida (las anteriores se descartan y se vuelve a aprender)
+// avance del aprendizaje: cuando ya quedan pocas opciones se guarda, para no perderlo al recargar
+function learnSave(){
+  const L = learn, out = [];
+  for (const [ok, bad, top, n, w] of [[L.ok16, L.bad16, L.top16, RAM_N / 2, 2], [L.ok8, L.bad8, L.top8, RAM_N, 1]])
+    for (const pl of [0, 1]) for (const mode of [0, 1]) for (let i = 0; i < n; i++)
+      if (ok[pl][mode][i] === L.n && !bad[pl][mode][i]) { out.push([pl, mode, w, i, mode ? top[pl][i] : 0]); if (out.length > 20000) return; }
+  try { localStorage.setItem('br2_hplearn', JSON.stringify({v:HP_V, n:L.n, wins:L.wins, losses:L.losses, c:out, last:L.last})); } catch(e){}
+}
+function learnLoad(){
+  try {
+    const sv = JSON.parse(localStorage.getItem('br2_hplearn') || 'null');
+    if (!sv || sv.v !== HP_V || !sv.c) return;
+    const L = learn; L.n = sv.n; L.wins = sv.wins; L.losses = sv.losses; L.last = sv.last;
+    sv.c.forEach(([pl, mode, w, i, top]) => {
+      if (w === 2) { L.ok16[pl][mode][i] = sv.n; if (mode) L.top16[pl][i] = top; }
+      else { L.ok8[pl][mode][i] = sv.n; if (mode) L.top8[pl][i] = top; }
+    });
+  } catch(e){}
+}
+const HP_V = 6;   // versión de la vida aprendida (las anteriores se descartan y se vuelve a aprender)
 const hpReady = () => !!(memCfg && memCfg.hp && memCfg.hp.v === HP_V && memCfg.hp.p1 && memCfg.hp.p1.length && memCfg.hp.p2 && memCfg.hp.p2.length);
 let hpHit = 0, hpMiss = 0;
 function forgetHp(why){
@@ -1418,8 +1456,10 @@ function forgetHp(why){
   L.top16.forEach(x => x.fill(0)); L.top8.forEach(x => x.fill(0));
   db.ref(P_MEM + '/hp').remove().catch(() => {});
   try { localStorage.setItem('br2_mem', JSON.stringify(memCfg)); } catch(e){}
+  try { localStorage.removeItem('br2_hplearn'); } catch(e){}
   if (why) toast(why, 6000);
 }
+setTimeout(learnLoad, 0);
 function koState(d){
   // 1 = cayó la izquierda, 2 = cayó la derecha, 3 = los dos, 0 = nadie
   const dead = list => {
@@ -1444,7 +1484,8 @@ function showRounds(){
   const hpOk = hpReady();
   if (!watch.armed) { hr.textContent = '🎯 Izq ? - ? Der'; return; }
   const [c1, c2] = watch.cur.split(':').map(Number);
-  hr.textContent = (hpOk ? '❤️' : '🎯') + ' Izq ' + Math.max(c1, watch.k1) + ' - ' + Math.max(c2, watch.k2) + ' Der';
+  const prog = !hpOk && learn.last ? ' · 🧠 ' + Math.max(learn.last.j1, learn.last.j2).toLocaleString('es') : '';
+  hr.textContent = (hpOk ? '❤️' : '🎯') + ' Izq ' + Math.max(c1, watch.k1) + ' - ' + Math.max(c2, watch.k2) + ' Der' + prog;
   if (before && hr.textContent !== before && /[1-9]/.test(hr.textContent)) { hr.classList.remove('flash'); void hr.offsetWidth; hr.classList.add('flash'); }
 }
 function detectTick(){
@@ -1509,7 +1550,7 @@ function detectTick(){
   watch.cur = key; watch.at = now;
   const p1wonRound = r1 === c1 + 1;
   if (!hpOk) {
-    if (c1 + c2 === 0) { learn.on = false; learn.from = now + 3000; }   // terminó el round 1: el round 2 se mira desde 3 s después
+    if (c1 + c2 === 0) { learn.on = false; learn.from = now + 1500; }   // terminó el round 1: el round 2 se mira desde 1.5 s después
     else { learnRound(p1wonRound); learn.from = 0; }                     // terminó el round 2: se aprende de él
   }
   else {
