@@ -321,7 +321,7 @@ const firebaseConfig = {
   messagingSenderId: "180444249462",
   appId: "1:180444249462:web:bdf189d171d908a0274e57"
 };
-const APP_V = 'v4.8';   // versión de la página: súbela en cada cambio
+const APP_V = 'v4.9';   // versión de la página: súbela en cada cambio
 const ACC_DOMAIN = 'clubcampestre.app';
 const P_PLAYERS = 'br2_players', P_MATCHES = 'br2_matches';
 const EJS_DATA = 'https://cdn.emulatorjs.org/stable/data/';
@@ -1486,15 +1486,18 @@ function koState(d){
 // en la sesión (3 copias). Cuando sube en 1, ese lado ganó la pelea: no hace falta calibrar ni marcar nada.
 const WINS = {n:4456472, p1:[1896023, 1905075, 1914127], p2:[1895759, 1904811, 1913863]};
 const readW = (d, l) => (d[l[1]] === d[l[0]] && d[l[2]] === d[l[0]]) ? d[l[0]] : -1;
+function reportResult(p1won, sc){
+  const side = p1won ? 'IZQUIERDA' : 'DERECHA', now = Date.now();
+  if (!on || !on.room || !on.room.g) { toast('🏆 Ganó el de la ' + side + ' (' + sc + ')', 7000); return; }   // jugando en este equipo: solo aviso
+  if (now - lastGuestIn > 300000) { toast('🏆 Ganó el de la ' + side + ' · no cuenta: tu rival no estaba jugando', 6000); return; }
+  const r = on.room;
+  processRoomResult(r.rn || 1, r, {w: p1won ? r.h : r.g, sc, auto:true});
+}
 function fightOver(p1won, sc){
   if (watch.reported) return;                       // esta pelea ya se informó
   watch.reported = true;
   watch.armed = false;
-  const side = p1won ? 'IZQUIERDA' : 'DERECHA', now = Date.now();
-  if (!on || !on.room || !on.room.g) { toast('🏆 Ganó el de la ' + side + ' (' + sc + ')', 7000); return; }   // jugando en este equipo: solo aviso
-  if (now - lastGuestIn > 120000) { toast('🏆 Ganó el de la ' + side + ' · no cuenta: tu rival no estaba jugando', 6000); return; }
-  const r = on.room;
-  processRoomResult(r.rn || 1, r, {w: p1won ? r.h : r.g, sc, auto:true});
+  reportResult(p1won, sc);
 }
 let lastShownRounds = '';
 function showRounds(){
@@ -1519,25 +1522,25 @@ function detectTick(){
   const r1 = voteSteps(memCfg.p1, d), r2 = voteSteps(memCfg.p2, d);
   const key = r1 + ':' + r2, now = Date.now();
   const hpOk = hpReady();
-  // --- peleas ganadas (sin calibrar) ---
+  // --- peleas perdidas de cada lado (el juego lo anota al cargar la pelea siguiente) ---
+  // Sirve para saber quién ganó la pelea anterior cuando iba 1-1 (el contador de rounds no anota el último).
   if (watch.armed) { watch.liveAt = now; watch.lastCur = watch.cur.split(':').map(Number); }
   const w1 = d.length === WINS.n ? readW(d, WINS.p1) : -1, w2 = d.length === WINS.n ? readW(d, WINS.p2) : -1;
   watch.wNow = w1 + '-' + w2;
   if (w1 >= 0 && w2 >= 0) {
     const wk = w1 + ':' + w2;
     if (wk !== watch.wKey) { watch.wKey = wk; watch.wSame = 1; } else watch.wSame++;
-    if (watch.wSame === 2) {
-      if (watch.w && !watch.reported && watch.lastCur && now - (watch.liveAt || 0) < 25000) {
+    if (watch.wSame >= 2 && watch.armed) {
+      const pd = watch.pending;
+      if (watch.w && pd) {
         const d1 = w1 - watch.w[0], d2 = w2 - watch.w[1];
-        if ((d1 === 1 && d2 === 0) || (d2 === 1 && d1 === 0)) {
-          const p1won = d1 === 1, [c1, c2] = watch.lastCur;
-          if ((p1won ? c1 : c2) >= 1) {                               // el ganador ya tenía un round: pelea real
-            watch.k1 = p1won ? 2 : c1; watch.k2 = p1won ? c2 : 2; showRounds();
-            fightOver(p1won, '2-' + Math.min(1, p1won ? c2 : c1));
-          }
+        if (!pd.reported && now - pd.at < 60000 && ((d1 === 1 && d2 === 0) || (d2 === 1 && d1 === 0))) {
+          const p1won = d2 === 1, [c1, c2] = pd.cur;                  // sube el número del que PERDIÓ
+          if ((p1won ? c1 : c2) >= 1) reportResult(p1won, '2-' + Math.min(1, p1won ? c2 : c1));
         }
+        watch.pending = null;
       }
-      if (watch.armed || watch.reported) watch.w = [w1, w2];
+      watch.w = [w1, w2];
     }
   }
   diagRec(d, r1, r2);
@@ -1576,7 +1579,9 @@ function detectTick(){
       else if (c1 === 1 && c2 === 1) toast('No vi quién ganó el último round (aún estoy aprendiendo dónde está la vida).', 6000);
     }
     if (!watch.armed || watch.cur !== '0:0') {
-      Object.assign(watch, {armed:true, cur:'0:0', at:now, k1:0, k2:0, roundOver:true, koKey:-1, koSame:0, koSide:0, reported:false, w:null, wKey:'', wSame:0});
+      // la pelea anterior queda "pendiente": si nadie la informó, se resuelve con las peleas perdidas
+      watch.pending = watch.lastCur ? {cur:watch.lastCur, reported:!!watch.reported || (watch.lastCur[0] + watch.lastCur[1] === 0), at:watch.liveAt || 0} : null;
+      Object.assign(watch, {armed:true, cur:'0:0', at:now, k1:0, k2:0, roundOver:true, koKey:-1, koSame:0, koSide:0, reported:false});
       learn.on = false; learn.from = 0;                         // pelea nueva: aún no se aprende (round 1)
     }
     showRounds();
