@@ -327,7 +327,7 @@ const firebaseConfig = {
   messagingSenderId: "180444249462",
   appId: "1:180444249462:web:bdf189d171d908a0274e57"
 };
-const APP_V = 'v5.4';   // versión de la página: súbela en cada cambio
+const APP_V = 'v5.5';   // versión de la página: súbela en cada cambio
 const ACC_DOMAIN = 'clubcampestre.app';
 const P_PLAYERS = 'br2_players', P_MATCHES = 'br2_matches';
 const EJS_DATA = 'https://cdn.emulatorjs.org/stable/data/';
@@ -1683,36 +1683,52 @@ function scrRead(){
     return '?';
   };
   const k = [...LIGHTS.l.map(kind), ...LIGHTS.r.map(kind)];
-  scr.seen = k.join('');
-  if (k.includes('?')) return null;
+  // además, las barras de vida tienen que estar ahí (amarillo / azul / negro): así un menú no se confunde con una pelea
+  const bar = fx => {
+    const x = Math.round(gx + fx * gw), y = Math.round(gy + 0.130 * gh);
+    const px = scr.ctx.getImageData(x - 2, y - 2, 5, 5).data;
+    let R = 0, G = 0, B = 0, n = 0; for (let i = 0; i < px.length; i += 4) { R += px[i]; G += px[i + 1]; B += px[i + 2]; n++; }
+    R /= n; G /= n; B /= n;
+    return (R > 150 && G > 110 && B < 90) || (B > 90 && B > R * 1.2) || (R + G + B < 90);
+  };
+  const bars = [0.10, 0.20, 0.30, 0.40, 0.60, 0.70, 0.80, 0.90].filter(bar).length;
+  scr.seen = k.join('') + ' barras ' + bars + '/8';
+  if (k.includes('?') || bars < 6) return null;
   return [k.slice(0, 2).filter(x => x === 'r').length, k.slice(2).filter(x => x === 'r').length];
 }
 function scrTick(){
   if (!started || (on && on.role !== 'h') || !emuReady() || !scrSetup()) { if ($('hudRounds')) $('hudRounds').style.display = 'none'; return; }
   const st = scrRead(), now = Date.now();
   if (!st) {
+    // entre rounds la pantalla se funde a negro o pasan textos: NO se olvida el marcador por eso
     if (!scr.invalidSince) scr.invalidSince = now;
-    if (now - scr.invalidSince > 4000) { scr.armed = false; scr.rect = null; }
+    if (now - scr.invalidSince > 4000) scr.rect = null;           // por si cambió el tamaño de la ventana
     if (!scr.armed) { $('hudRounds').style.display = ''; $('hudRounds').textContent = '👁 esperando pelea…'; }
     return;
   }
   scr.invalidSince = 0;
   const key = st.join(':');
   if (key !== scr.last) { scr.last = key; scr.same = 1; return; }
-  if (++scr.same !== 2) return;                                   // la misma lectura 2 veces seguidas
+  if (++scr.same !== 3) return;                                   // la misma lectura 3 veces seguidas (~0.45 s)
   const [a, b] = st;
   if (a === 0 && b === 0) { scr.armed = true; scr.cur = [0, 0]; scr.reported = false; scrHud(); return; }
-  if (!scr.armed) { $('hudRounds').style.display = ''; $('hudRounds').textContent = '👁 esperando pelea…'; return; }
+  if (!scr.armed) {
+    // empezó a mirar con la pelea ya empezada (por ejemplo, tras recargar): se toma el marcador que se ve
+    if (a < 2 && b < 2) { scr.armed = true; scr.cur = [a, b]; scr.reported = false; scrHud(); }
+    return;
+  }
   const [c1, c2] = scr.cur;
   if (a === c1 && b === c2) return;
-  const oneUp = (a === c1 + 1 && b === c2) || (b === c2 + 1 && a === c1);
-  if (!oneUp) { scr.armed = false; return; }                     // salto raro: no se cuenta
+  if (a < c1 || b < c2) {                                         // bajó sin pasar por 0-0: es otra pelea
+    if (a < 2 && b < 2) { scr.cur = [a, b]; scr.reported = false; scrHud(); }
+    return;
+  }
   scr.cur = [a, b]; scrHud();
-  if ((a >= 2 || b >= 2) && !scr.reported) {
+  if ((a >= 2) !== (b >= 2) && !scr.reported) {                   // uno llegó a 2 (si los dos, es una lectura rara)
     scr.reported = true;
     const p1won = a >= 2;
-    watch.reported = true; watch.armed = false;                 // que el método viejo no la cuente otra vez
-    reportResult(p1won, '2-' + (p1won ? b : a));
+    watch.reported = true; watch.armed = false;
+    reportResult(p1won, '2-' + Math.min(1, p1won ? b : a));
   }
 }
 function scrHud(){
