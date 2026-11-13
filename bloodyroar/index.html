@@ -321,7 +321,7 @@ const firebaseConfig = {
   messagingSenderId: "180444249462",
   appId: "1:180444249462:web:bdf189d171d908a0274e57"
 };
-const APP_V = 'v5.1';   // versión de la página: súbela en cada cambio
+const APP_V = 'v5.2';   // versión de la página: súbela en cada cambio
 const ACC_DOMAIN = 'clubcampestre.app';
 const P_PLAYERS = 'br2_players', P_MATCHES = 'br2_matches';
 const EJS_DATA = 'https://cdn.emulatorjs.org/stable/data/';
@@ -1614,7 +1614,7 @@ function detectTick(){
   if (!hpOk && (r1 >= 2 || r2 >= 2)) { const p1won = r1 >= 2; fightOver(p1won, '2-' + (p1won ? r2 : r1)); }
 }
 // con la vida aprendida se mira 4 veces por segundo (el punto aparece ~0.5 s después del KO)
-(function detectLoop(){ try { detectTick(); } catch(e){ console.warn(e); } setTimeout(detectLoop, 250); })();
+// (el detector antiguo por memoria quedó apagado: ahora todo se detecta mirando la pantalla)
 
 // ============ DETECCIÓN POR PANTALLA (las luces de round ganado) ============
 // Debajo de cada barra de vida hay 2 luces: azules apagadas, ROJAS cuando ese lado gana un round.
@@ -1632,15 +1632,29 @@ function scrSetup(){
     return true;
   } catch(e){ console.warn('pantalla', e); return false; }
 }
+function scrRect(W, H){
+  const now = Date.now();
+  if (scr.rect && scr.rect.W === W && scr.rect.H === H && now - scr.rect.t < 3000) return scr.rect;
+  const px = scr.ctx.getImageData(0, 0, W, H).data, lit = (x, y) => { const i = (y * W + x) * 4; return px[i] + px[i + 1] + px[i + 2] > 40; };
+  let x0 = W, x1 = -1, y0 = H, y1 = -1;
+  for (let y = 0; y < H; y += 2) for (let x = 0; x < W; x += 2) if (lit(x, y)) { if (x < x0) x0 = x; if (x > x1) x1 = x; if (y < y0) y0 = y; if (y > y1) y1 = y; }
+  let r = null;
+  if (x1 > x0 && y1 > y0) { const w = x1 - x0 + 2, h = y1 - y0 + 2, a = w / h; if (a > 1.22 && a < 1.45 && w > W * 0.3) r = {x:x0, y:y0, w, h}; }
+  if (!r && scr.rect && scr.rect.W === W && scr.rect.H === H) r = scr.rect;
+  if (!r) { let gh = H, gw = H * 4 / 3; if (gw > W) { gw = W; gh = W * 3 / 4; } r = {x:(W - gw) / 2, y:(H - gh) / 2, w:gw, h:gh}; }
+  scr.rect = {x:r.x, y:r.y, w:r.w, h:r.h, W, H, t:now};
+  return scr.rect;
+}
 function scrRead(){
   // devuelve [rojas izq, rojas der] o null si las luces no están en pantalla (menús, selección, etc.)
   const v = scr.v; if (!v || !v.videoWidth) return null;
   const W = 800, H = Math.max(1, Math.round(800 * v.videoHeight / v.videoWidth));   // misma proporción que la imagen real
   if (scr.cv.width !== W || scr.cv.height !== H) { scr.cv.width = W; scr.cv.height = H; }
   scr.ctx.drawImage(v, 0, 0, W, H);
-  // la imagen del juego es 4:3 centrada dentro del lienzo (con franjas negras a los lados o arriba/abajo)
-  let gh = H, gw = H * 4 / 3; if (gw > W) { gw = W; gh = W * 3 / 4; }
-  const gx = (W - gw) / 2, gy = (H - gh) / 2, rad = Math.max(1, Math.round(gw * LIGHTS.rad));
+  // dónde está la imagen del juego dentro del lienzo (cambia con el tamaño de la ventana): se busca el
+  // rectángulo que no es negro; si no sale 4:3, se usa el último bueno o uno 4:3 centrado
+  const R = scrRect(W, H);
+  const gx = R.x, gy = R.y, gw = R.w, gh = R.h, rad = Math.max(1, Math.round(gw * LIGHTS.rad));
   const kind = fx => {
     const x = Math.round(gx + fx * gw), y = Math.round(gy + LIGHTS.y * gh);
     const px = scr.ctx.getImageData(x - rad, y - rad, rad * 2 + 1, rad * 2 + 1).data;
@@ -1656,16 +1670,21 @@ function scrRead(){
   return [k.slice(0, 2).filter(x => x === 'r').length, k.slice(2).filter(x => x === 'r').length];
 }
 function scrTick(){
-  if (!started || (on && on.role !== 'h') || !emuReady() || !scrSetup()) return;
+  if (!started || (on && on.role !== 'h') || !emuReady() || !scrSetup()) { if ($('hudRounds')) $('hudRounds').style.display = 'none'; return; }
   const st = scrRead(), now = Date.now();
-  if (!st) { if (!scr.invalidSince) scr.invalidSince = now; if (now - scr.invalidSince > 4000) scr.armed = false; return; }
+  if (!st) {
+    if (!scr.invalidSince) scr.invalidSince = now;
+    if (now - scr.invalidSince > 4000) { scr.armed = false; scr.rect = null; }
+    if (!scr.armed) { $('hudRounds').style.display = ''; $('hudRounds').textContent = '👁 esperando pelea…'; }
+    return;
+  }
   scr.invalidSince = 0;
   const key = st.join(':');
   if (key !== scr.last) { scr.last = key; scr.same = 1; return; }
   if (++scr.same !== 2) return;                                   // la misma lectura 2 veces seguidas
   const [a, b] = st;
   if (a === 0 && b === 0) { scr.armed = true; scr.cur = [0, 0]; scr.reported = false; scrHud(); return; }
-  if (!scr.armed) return;                                         // no vimos el 0-0 de esta pelea
+  if (!scr.armed) { $('hudRounds').style.display = ''; $('hudRounds').textContent = '👁 esperando pelea…'; return; }
   const [c1, c2] = scr.cur;
   if (a === c1 && b === c2) return;
   const oneUp = (a === c1 + 1 && b === c2) || (b === c2 + 1 && a === c1);
@@ -1700,7 +1719,7 @@ function diagRec(d, r1, r2){
 $('hudDiag').onclick = () => {
   if (!memCfg) return;
   const d = diag.last, near = k => d ? Array.from(d.slice(k - 8, k + 9)).map(v => v.toString(16).padStart(2, '0')).join(' ') : '';
-  const txt = 'BR2DIAG ' + JSON.stringify({ver:APP_V, pantalla:{luces:scr.seen, marcador:scr.cur, armado:scr.armed, video:scr.v ? scr.v.videoWidth + 'x' + scr.v.videoHeight : null}, ko:memCfg.ko || null, hp:memCfg.hp || null, hpCheck:{bien:hpHit, mal:hpMiss}, aprendiendo:{rounds:learn.n, ganados:learn.wins, perdidos:learn.losses, opciones:learn.last || null}, n:memCfg.n, p1:memCfg.p1, p2:memCfg.p2,
+  const txt = 'BR2DIAG ' + JSON.stringify({ver:APP_V, pantalla:{luces:scr.seen, marcador:scr.cur, armado:scr.armed, video:scr.v ? scr.v.videoWidth + 'x' + scr.v.videoHeight : null, juego:scr.rect ? [scr.rect.x, scr.rect.y, scr.rect.w, scr.rect.h, scr.rect.W, scr.rect.H].map(Math.round) : null}, ko:memCfg.ko || null, hp:memCfg.hp || null, hpCheck:{bien:hpHit, mal:hpMiss}, aprendiendo:{rounds:learn.n, ganados:learn.wins, perdidos:learn.losses, opciones:learn.last || null}, n:memCfg.n, p1:memCfg.p1, p2:memCfg.p2,
     cerca:{p1:memCfg.p1.map(x => near(x[0])), p2:memCfg.p2.map(x => near(x[0]))}, log:diag.log});
   (navigator.clipboard ? navigator.clipboard.writeText(txt) : Promise.reject()).then(() => toast('Diagnóstico copiado: pégamelo en el chat', 5000))
     .catch(() => prompt('Copia este texto:', txt));
