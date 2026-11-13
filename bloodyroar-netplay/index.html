@@ -327,7 +327,7 @@ const firebaseConfig = {
   messagingSenderId: "180444249462",
   appId: "1:180444249462:web:bdf189d171d908a0274e57"
 };
-const APP_V = 'NP-0.2';   // versión de la página: súbela en cada cambio
+const APP_V = 'NP-0.3';   // versión de la página: súbela en cada cambio
 const ACC_DOMAIN = 'clubcampestre.app';
 const P_PLAYERS = 'br2_players', P_MATCHES = 'br2_matches';
 const EJS_DATA = 'https://cdn.emulatorjs.org/stable/data/';
@@ -980,7 +980,7 @@ const NP = {
       emuPause(true); await sleep(80);
       const st = EJS_emulator.gameManager.getState();
       const rtt = this.rtt || 60;
-      const D = Math.max(2, Math.min(8, Math.ceil((rtt / 2) / 16.7) + 2));   // retraso según la conexión
+      const D = Math.max(4, Math.min(10, Math.ceil((rtt / 2) / 16.7) + 3));  // retraso según la conexión (con margen para que no tenga que esperar)
       this.send({t:'sh', size:st.length, D, why});
       for (let i = 0; i < st.length; i += 16000) {
         while (this.dc.bufferedAmount > 1 << 20) await sleep(10);
@@ -1028,6 +1028,7 @@ const NP = {
     let m; try { m = JSON.parse(data); } catch(e){ return; }
     if (m.t === 'i') { for (const [f, b] of m.v) this.remote[f] = b; this.tick(); }
     else if (m.t === 'ping') this.send({t:'pong'});
+    else if (m.t === 'fps') this.remoteFps = m.fps;
     else if (m.t === 'pong') { this.rtt = performance.now() - this.pingT; setTimeout(() => this.ping(), 2000); }
     else if (m.t === 'sh') {                                             // el anfitrión empieza a mandar la foto
       this.on = false;                                                   // (no se pausa aquí: el juego del invitado puede estar arrancando)
@@ -1056,10 +1057,11 @@ const NP = {
     const done = gm.getFrameNum() - this.base;                          // cuadros ya corridos desde el arranque
     if (done > this.n) {
       if (done > this.n + 1) console.warn('[netplay] se saltaron cuadros', done - this.n);
+      this.stats.frames += done - this.n;
       this.n = done;
       // control de sincronía cada 10 s: huella de la memoria del juego en el mismo cuadro
       if (this.n % 600 === 0 && this.n > 0) {
-        try { const h = hashRam(gm.getState()); this.lastHash[this.n] = h; this.send({t:'hash', f:this.n, h});
+        try { const h = quickHash(); this.lastHash[this.n] = h; this.send({t:'hash', f:this.n, h});
           const r = this.lastHash[this.n + '_r']; if (r !== undefined && r !== h && on.role === 'h') { this.on = false; this.hostSync('desync'); return; } } catch(e){}
       }
     }
@@ -1074,11 +1076,11 @@ const NP = {
     const L = this.local[next], R = this.remote[next];
     if (L === undefined || R === undefined) {                          // falta el del rival: se espera
       emuPause(true);
-      if (!this.waitSince) this.waitSince = performance.now();
+      if (!this.waitSince) { this.waitSince = performance.now(); this.stats.wait++; }
       else if (performance.now() - this.waitSince > 1500) setTag('Sala ' + on.code + ' · esperando a tu rival…');
       return;
     }
-    if (this.waitSince) { if (performance.now() - this.waitSince > 1500) setTag('Sala ' + on.code + ' · netplay · retraso ' + this.D); this.waitSince = 0; }
+    if (this.waitSince) { this.stats.waitMs = (this.stats.waitMs || 0) + performance.now() - this.waitSince; this.waitSince = 0; }
     const p0 = this.me() === 0 ? L : R, p1 = this.me() === 0 ? R : L;
     applyBits(0, p0); applyBits(1, p1);
     delete this.local[next - 30]; delete this.remote[next - 30];
@@ -1098,6 +1100,17 @@ function applyBits(player, bits){
 function releaseAll(){ try { const f = EJS_emulator.gameManager.functions; for (const p of [0, 1]) for (let i = 0; i < 16; i++) f.simulateInput(p, i, 0); } catch(e){} }
 let npPaused = false;
 function emuPause(v){ if (npPaused === v) return; npPaused = v; try { EJS_emulator.gameManager.functions.toggleMainLoop(v ? 0 : 1); } catch(e){} }
+// huella de la memoria del juego leyéndola directo (sin copiar 4 MB): no se nota en el juego
+let ramPtr = null;
+function quickHash(){
+  const gm = EJS_emulator.gameManager, M = gm.Module;
+  if (ramPtr === null) {
+    ramPtr = 0;
+    try { const r = M.cwrap('get_memory_data', 'string', ['string'])('RETRO_MEMORY_SYSTEM_RAM'); const [sz, ptr] = String(r).split('|').map(Number); if (sz > 0 && ptr > 0) ramPtr = [ptr, sz]; } catch(e){}
+  }
+  if (ramPtr) { const H = M.HEAPU8, end = ramPtr[0] + ramPtr[1]; let h = 2166136261; for (let i = ramPtr[0]; i < end; i += 4) { h ^= H[i] | (H[i + 1] << 8) | (H[i + 2] << 16); h = Math.imul(h, 16777619); } return h >>> 0; }
+  return hashRam(gm.getState());          // si no se puede leer directo, la forma lenta
+}
 function hashRam(st){ let h = 2166136261; const end = Math.min(st.length, SKIP + 0x200000); for (let i = SKIP; i < end; i++) { h ^= st[i]; h = Math.imul(h, 16777619); } return h >>> 0; }   // huella de toda la memoria del juego
 async function waitEmu(){
   // que el emulador exista y el juego ya esté corriendo (no solo cargando)
@@ -1125,6 +1138,14 @@ async function waitEmu(){
     };
   }, 300);
 })();
+// cada segundo: cuántos cuadros corrió el juego y cuántas veces tuvo que esperar al rival
+setInterval(() => {
+  if (!NP.on || !on) return;
+  const st = NP.stats, fps = st.frames, w = st.wait, ms = Math.round(st.waitMs || 0);
+  NP.stats = {wait:0, frames:0, waitMs:0};
+  NP.send({t:'fps', fps});
+  setTag('Sala ' + on.code + ' · retraso ' + NP.D + ' · ' + fps + ' fps' + (NP.remoteFps != null ? ' (rival ' + NP.remoteFps + ')' : '') + (w ? ' · esperó ' + ms + ' ms' : ''));
+}, 1000);
 // el reloj del netplay: revisa muchas veces por cuadro
 (function npLoop(){ try { NP.tick(); } catch(e){ console.warn(e); } requestAnimationFrame(npLoop); })();
 setInterval(() => { try { NP.tick(); } catch(e){} }, 4);
