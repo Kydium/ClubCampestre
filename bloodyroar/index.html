@@ -135,6 +135,8 @@
   .ck.wait{border-color:var(--orange);color:var(--orange);animation:blink 1s infinite}
   .ck.none{color:var(--mut)}
   @keyframes blink{50%{opacity:.45}}
+  /* cosas que ya no se usan (la detección por pantalla lo hace todo) */
+  #hudCal,#hudDiag,#hudRes,#abFlip,#calRow,#optTimeRow,.tab[data-s="sReport"]{display:none!important}
   .code{font-family:var(--display);letter-spacing:.2em;text-transform:uppercase;text-align:center}
   .drop{border:2px dashed var(--line);border-radius:16px;padding:18px;text-align:center;margin-bottom:12px}
   .drop b{color:#fff}
@@ -180,12 +182,12 @@
       <input type="file" id="romFile" hidden multiple accept=".chd,.pbp,.zip,.7z,.rar,.cue,.bin,.iso,.img,.m3u,.ecm">
       <div id="romBtns"></div>
       <div class="li small" id="calRow" style="border:0;gap:10px"><span class="nm" id="calInfo"></span><button class="btn alt" id="bCopyCal" style="width:auto;padding:8px 12px;display:none">📋 Copiar calibración</button></div>
-      <label class="li small" style="cursor:pointer;gap:10px;border:0"><input type="checkbox" id="optTime" style="width:20px;height:20px;accent-color:#ff3b3b"> <span><b>⏱️ Tiempo infinito</b> en las peleas (sin límite de tiempo)</span></label>
+      <label class="li small" id="optTimeRow" style="cursor:pointer;gap:10px;border:0"><input type="checkbox" id="optTime" style="width:20px;height:20px;accent-color:#ff3b3b"> <span><b>⏱️ Tiempo infinito</b> en las peleas (sin límite de tiempo)</span></label>
       <ul class="tips mut small">
         <li>Usa <b>tu propia copia</b> del juego. El archivo se queda en este dispositivo: nunca se sube a internet.</li>
         <li>Elige el archivo <b>grande</b> del juego: el <b>.bin</b> (unos 400–600 MB), o el <b>.zip</b> tal cual lo descargaste. También sirven .chd, .pbp o .iso. El .cue solo no sirve.</li>
-        <li>2 jugadores en el mismo equipo: dos mandos, o el teclado con las teclas del Jugador 1 y 2 (abajo). En el celular aparece un mando táctil.</li>
-        <li>Al terminar la pelea, ve a <b>Reportar</b> para sumar MMR.</li>
+        <li>2 jugadores en el mismo equipo: dos mandos, o el teclado (mira la pestaña <b>Controles</b>). En el celular aparece un mando táctil.</li>
+        <li>Las peleas son con <b>tiempo infinito</b> y el ganador se detecta solo al terminar.</li>
       </ul>
     </div>
     <div class="card">
@@ -200,19 +202,10 @@
       </div>
       <div class="err" id="onErr"></div>
       <ul class="tips mut small">
-        <li><b>Resultado automático:</b> el anfitrión toca <b>🎯 Calibrar</b> una sola vez (se juega una pelea) y desde ahí el ganador se detecta solo. Si algo falla, queda el botón <b>🏁 Resultado</b>.</li>
         <li>El anfitrión juega sin retraso; el invitado ve la imagen un poquito tarde. Túrnense.</li>
-        <li>Invitado: táctil en el celular; en PC usa las teclas del <b>Jugador 1</b> de “Controles” o un mando.</li>
+        <li>Invitado: táctil en el celular; en PC usa las teclas del <b>Jugador 1</b> de la pestaña Controles, o un mando.</li>
         <li>El anfitrión debe dejar la página abierta y en primer plano.</li>
       </ul>
-    </div>
-    <div class="card" id="ctlCard" style="display:none">
-      <h2>🎮 CONTROLES (PC)</h2>
-      <div class="seg" id="ctlP"><button data-v="0" class="on">Jugador 1</button><button data-v="1">Jugador 2</button></div>
-      <div id="ctlList" style="margin-top:8px"></div>
-      <div class="gap"></div>
-      <button class="btn alt" id="ctlReset">Restaurar teclas por defecto</button>
-      <p class="mut small" style="margin-top:10px">Toca un botón y presiona la tecla que quieras (Esc cancela). Los mandos USB/Bluetooth funcionan solos. En online, el invitado usa las teclas del Jugador 1.</p>
     </div>
   </section>
 
@@ -245,6 +238,18 @@
     </div>
   </section>
 
+  <!-- CONTROLES -->
+  <section class="screen" id="sCtl">
+    <div class="card" id="ctlCard">
+      <h2>🎮 CONTROLES (PC)</h2>
+      <div class="seg" id="ctlP"><button data-v="0" class="on">Jugador 1</button><button data-v="1">Jugador 2</button></div>
+      <div id="ctlList" style="margin-top:8px"></div>
+      <div class="gap"></div>
+      <button class="btn alt" id="ctlReset">Restaurar teclas por defecto</button>
+      <p class="mut small" style="margin-top:10px">Toca un botón y presiona la tecla que quieras (Esc cancela). Los mandos USB/Bluetooth funcionan solos. En online, el invitado usa las teclas del Jugador 1.</p>
+    </div>
+  </section>
+
   <!-- RANKING -->
   <section class="screen" id="sRank">
     <div class="card">
@@ -271,6 +276,7 @@
   <button class="tab" data-s="sReport"><span>📝</span>Reportar<i class="bdg" id="bdg"></i></button>
   <button class="tab" data-s="sRank"><span>🏆</span>Ranking</button>
   <button class="tab" data-s="sHist"><span>📜</span>Historial</button>
+  <button class="tab" data-s="sCtl" id="tabCtl"><span>⌨️</span>Controles</button>
 </nav>
 
 <div id="gameBox"><div id="game"></div></div>
@@ -321,7 +327,7 @@ const firebaseConfig = {
   messagingSenderId: "180444249462",
   appId: "1:180444249462:web:bdf189d171d908a0274e57"
 };
-const APP_V = 'v5.2';   // versión de la página: súbela en cada cambio
+const APP_V = 'v5.3';   // versión de la página: súbela en cada cambio
 const ACC_DOMAIN = 'clubcampestre.app';
 const P_PLAYERS = 'br2_players', P_MATCHES = 'br2_matches';
 const EJS_DATA = 'https://cdn.emulatorjs.org/stable/data/';
@@ -924,7 +930,7 @@ async function startHostPc(){
   dc.onclose = releaseGuest;
   const vs = canvas.captureStream(60);
   const vt = vs.getVideoTracks()[0];
-  try { vt.contentHint = 'motion'; } catch(e){}
+  try { vt.contentHint = 'detail'; } catch(e){}   // que no baje la resolución
   const ms = new MediaStream([vt]);
   const at = hostAudio(); if (at) ms.addTrack(at);
   ms.getTracks().forEach(t => pc.addTrack(t, ms));
@@ -940,8 +946,9 @@ async function startHostPc(){
     try {
       await pc.setRemoteDescription(a); flushCands(pc);
       const snd = pc.getSenders().find(x => x.track && x.track.kind === 'video');
-      if (snd) { const p = snd.getParameters(); p.degradationPreference = 'maintain-framerate';
-        if (p.encodings && p.encodings[0]) p.encodings[0].maxBitrate = 3000000; snd.setParameters(p).catch(() => {}); }
+      if (snd) { const p = snd.getParameters(); p.degradationPreference = 'balanced';
+        if (p.encodings && p.encodings[0]) { p.encodings[0].maxBitrate = 10000000; p.encodings[0].scaleResolutionDownBy = 1; p.encodings[0].maxFramerate = 60; }
+        snd.setParameters(p).catch(() => {}); }
     } catch(e){ console.warn(e); }
   });
   listen(sref.child('gc'), 'child_added', s => addCand(pc, s.val()));
@@ -1802,7 +1809,7 @@ async function flipLast(r){
 // ----- tiempo infinito en las peleas (código GameShark de la versión USA) -----
 const CHEAT_TIME = '80151356 2400';
 let timeApplied = false;
-function wantInfTime(){ try { return localStorage.getItem('br2_inftime') !== '0'; } catch(e){ return true; } }
+function wantInfTime(){ return true; }   // en el 1 vs 1 siempre es tiempo infinito
 function applyInfTime(){
   const em = window.EJS_emulator;
   if (!em || !em.gameManager || !em.gameManager.functions || !em.gameManager.functions.setCheat) return false;
@@ -1883,7 +1890,7 @@ addEventListener('keydown', e => {
 }, true);
 segInit('ctlP', v => { ctlP = +v; waiting = null; renderCtl(); });
 $('ctlReset').onclick = () => { ctl = JSON.parse(JSON.stringify(CTL_DEF)); saveCtl(); waiting = null; renderCtl(); toast('Teclas restauradas'); };
-if (!matchMedia('(pointer:coarse)').matches) { $('ctlCard').style.display = ''; renderCtl(); }
+if (!matchMedia('(pointer:coarse)').matches) renderCtl(); else $('tabCtl').style.display = 'none';   // en el celular no hace falta
 
 $('appV').textContent = APP_V; $('hudVer').textContent = APP_V;
 document.title = 'Bloody Roar 2 ' + APP_V + ' · Club Campestre';
