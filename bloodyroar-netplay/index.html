@@ -298,7 +298,7 @@
   <div id="npwRv">⏳ Rival: esperando…</div>
   <p class="mut small" style="margin-top:12px">La pelea empieza sola cuando los dos terminen de cargar.</p>
 </div></div>
-<div id="hud"><span class="hb" id="hudVer" style="cursor:default;opacity:.7"></span><span id="hudRounds" class="hb" style="display:none;cursor:default"></span><span id="hudTag"></span><button class="hb" id="hudVs" title="VSync">VSync: no</button><button class="hb" id="hudInv" style="display:none">📨 Invitar</button><button class="hb" id="hudCal" style="display:none">🎯 Calibrar</button><button class="hb" id="hudDiag" style="display:none" title="Copiar diagnóstico">📋</button><button class="hb" id="hudRes" style="display:none">🏁 Resultado</button><button class="hb" id="hudExit">✕ Salir</button></div>
+<div id="hud"><span class="hb" id="hudVer" style="cursor:default;opacity:.7"></span><span id="hudRounds" class="hb" style="display:none;cursor:default"></span><span id="hudTag"></span><button class="hb" id="hudDl" title="Retraso de botones (lo elige el anfitrión)">Retraso: auto</button><button class="hb" id="hudLt" title="Dibuja 1 de cada 2 cuadros (el juego sigue a 60)">Ligero: no</button><button class="hb" id="hudVs" title="VSync">VSync: no</button><button class="hb" id="hudInv" style="display:none">📨 Invitar</button><button class="hb" id="hudCal" style="display:none">🎯 Calibrar</button><button class="hb" id="hudDiag" style="display:none" title="Copiar diagnóstico">📋</button><button class="hb" id="hudRes" style="display:none">🏁 Resultado</button><button class="hb" id="hudExit">✕ Salir</button></div>
 <div id="calib"><b>🎯 RESULTADO AUTOMÁTICO</b><div id="calStep" class="small"></div><div id="calDots" class="mut small"></div>
   <button class="hb" id="calDone" style="display:none;margin-top:6px;width:100%">✓ Terminar ya con lo encontrado</button>
   <div class="row" style="margin-top:8px"><button class="hb" id="calCancel">Cancelar</button><button class="btn" id="calMark" style="padding:9px">MARCAR</button></div></div>
@@ -335,7 +335,7 @@ const firebaseConfig = {
   messagingSenderId: "180444249462",
   appId: "1:180444249462:web:bdf189d171d908a0274e57"
 };
-const APP_V = 'NP-0.7';   // versión de la página: súbela en cada cambio
+const APP_V = 'NP-0.8';   // versión de la página: súbela en cada cambio
 const ACC_DOMAIN = 'clubcampestre.app';
 const P_PLAYERS = 'br2_players', P_MATCHES = 'br2_matches';
 const EJS_DATA = 'https://cdn.emulatorjs.org/stable/data/';
@@ -1005,7 +1005,8 @@ const NP = {
       emuPause(true); await sleep(80);
       const st = EJS_emulator.gameManager.getState();
       const rtt = this.rtt || 60;
-      const D = Math.max(4, Math.min(10, Math.ceil((rtt / 2) / 16.7) + 3));  // retraso según la conexión (con margen para que no tenga que esperar)
+      const auto = Math.max(2, Math.min(6, Math.ceil((rtt / 2) / 16.7) + 2));    // retraso según la conexión (2 en la misma red)
+      const D = this.forceD || auto;
       const sid = (this.syncId || 0) + 1;
       this.send({t:'sh', size:st.length, D, why, sid});
       for (let i = 0; i < st.length; i += 16000) {
@@ -1038,6 +1039,7 @@ const NP = {
     setTag('Sala ' + on.code + ' · netplay · retraso ' + D);
     emuPause(false);
     if (NP.vsync !== undefined) setVsync(NP.vsync);
+    if (on && on.role === 'h' && NP.lite) setLite(true);
   },
   msg(data){
     if (data instanceof ArrayBuffer) {                                  // pedazo de la foto de la partida
@@ -1071,7 +1073,12 @@ const NP = {
       if (on.role === 'h' && this.readyMe) this.hostSync('inicio');
     }
     else if (m.t === 'fps') this.remoteFps = m.fps;
-    else if (m.t === 'pong') { this.rtt = performance.now() - this.pingT; setTimeout(() => this.ping(), 2000); }
+    else if (m.t === 'lite') setLite(!!m.v, true);
+    else if (m.t === 'pong') {
+      // se guarda la MEJOR medición reciente: mientras el juego carga la PC está ocupada y la medición sale inflada
+      const r = performance.now() - this.pingT; this.rtts = (this.rtts || []).concat(r).slice(-8);
+      this.rtt = Math.min.apply(null, this.rtts); setTimeout(() => this.ping(), 1000);
+    }
     else if (m.t === 'sh') {                                             // el anfitrión empieza a mandar la foto
       this.on = false;                                                   // (no se pausa aquí: el juego del invitado puede estar arrancando)
       setTag('Sala ' + on.code + ' · sincronizando 0%');
@@ -1182,6 +1189,31 @@ function npFail(why){
 }
 function npWaitShow(){ $('npWait').classList.add('on'); }
 function npWaitSet(who, txt){ const el = $(who === 'me' ? 'npwMe' : 'npwRv'); if (el) el.textContent = txt; }
+// ---- ajustes para probar (los decide el anfitrión y se aplican en las dos PCs) ----
+const DL_OPTS = [0, 1, 2, 3, 4, 5, 6, 8];   // 0 = automático
+function showDl(){ $('hudDl').textContent = 'Retraso: ' + (NP.forceD ? NP.forceD : 'auto' + (NP.on ? ' (' + NP.D + ')' : '')); }
+$('hudDl').onclick = () => {
+  if (!on || on.role !== 'h') { toast('El retraso lo elige el anfitrión'); return; }
+  const i = DL_OPTS.indexOf(NP.forceD || 0);
+  NP.forceD = DL_OPTS[(i + 1) % DL_OPTS.length] || 0;
+  showDl();
+  if (NP.on) { NP.on = false; NP.hostSync('ajuste'); }       // se re-sincroniza con el retraso nuevo (1 segundo)
+};
+function setLite(v, fromRemote){
+  NP.lite = v;
+  try {
+    const f = EJS_emulator.gameManager.functions;
+    f.setVariable('pcsx_rearmed_frameskip_type', v ? 'fixed_interval' : 'disabled');
+    f.setVariable('pcsx_rearmed_frameskip_interval', '1');
+  } catch(e){ console.warn('lite', e); }
+  $('hudLt').textContent = 'Ligero: ' + (v ? 'sí' : 'no');
+  if (!fromRemote) NP.send({t:'lite', v});
+}
+$('hudLt').onclick = () => {
+  if (on && on.role !== 'h') { toast('El modo ligero lo elige el anfitrión'); return; }
+  setLite(!NP.lite);
+};
+setInterval(showDl, 1000);
 function setVsync(v){
   NP.vsync = v;
   try { EJS_emulator.gameManager.functions.setVSync(v ? 1 : 0); } catch(e){}
