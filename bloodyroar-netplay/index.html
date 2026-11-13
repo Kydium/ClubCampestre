@@ -335,7 +335,7 @@ const firebaseConfig = {
   messagingSenderId: "180444249462",
   appId: "1:180444249462:web:bdf189d171d908a0274e57"
 };
-const APP_V = 'NP-0.5';   // versión de la página: súbela en cada cambio
+const APP_V = 'NP-0.6';   // versión de la página: súbela en cada cambio
 const ACC_DOMAIN = 'clubcampestre.app';
 const P_PLAYERS = 'br2_players', P_MATCHES = 'br2_matches';
 const EJS_DATA = 'https://cdn.emulatorjs.org/stable/data/';
@@ -982,9 +982,17 @@ const NP = {
   async boot(){
     npWaitShow(); npWaitSet('me', '⏳ Tu juego: cargando…'); npWaitSet('rv', '⏳ Rival: cargando…');
     if (!started) startGame(savedRom);
+    clearInterval(this.pct);
+    this.pct = setInterval(() => {                                       // porcentaje de carga (el que muestra el emulador)
+      if (this.readyMe) { clearInterval(this.pct); return; }
+      const m = (($('game') || {}).innerText || '').match(/(\d{1,3})\s*%/);
+      const p = m ? Math.min(99, +m[1]) : null;
+      npWaitSet('me', '⏳ Tu juego: cargando' + (p != null ? ' ' + p + '%' : '…'));
+      if (p != null && p !== this.lastPct) { this.lastPct = p; this.send({t:'pct', p}); }
+    }, 300);
     try { await waitEmu(); } catch(e){ npFail('al cargar: ' + e.message); return; }
     emuPause(true);                                                     // listo, pero quieto hasta que el otro termine
-    this.readyMe = true; npWaitSet('me', '✅ Tu juego: listo');
+    this.readyMe = true; clearInterval(this.pct); npWaitSet('me', '✅ Tu juego: listo (100%)');
     this.send({t:'ready'});
     if (on.role === 'h' && this.readyRemote) this.hostSync('inicio');
   },
@@ -998,12 +1006,14 @@ const NP = {
       const st = EJS_emulator.gameManager.getState();
       const rtt = this.rtt || 60;
       const D = Math.max(4, Math.min(10, Math.ceil((rtt / 2) / 16.7) + 3));  // retraso según la conexión (con margen para que no tenga que esperar)
-      this.send({t:'sh', size:st.length, D, why});
+      const sid = (this.syncId || 0) + 1;
+      this.send({t:'sh', size:st.length, D, why, sid});
       for (let i = 0; i < st.length; i += 16000) {
         while (this.dc.bufferedAmount > 1 << 20) await sleep(10);
         this.dc.send(st.slice(i, i + 16000));
+        if (i % 480000 === 0) npWaitSet('rv', '🔄 Enviando la partida al rival: ' + Math.floor(i * 100 / st.length) + '%');
       }
-      this.pendingState = st; this.pendingD = D;                          // se carga cuando el invitado confirme
+      this.pendingState = st; this.pendingD = D; this.pendingSid = sid;   // se carga cuando el invitado confirme
       setTag('Sala ' + on.code + ' · esperando que tu rival cargue la partida…');
       clearTimeout(this.wd);
       this.wd = setTimeout(() => {                                        // si en 25 s no confirma, se reintenta
@@ -1014,12 +1024,13 @@ const NP = {
       }, 25000);
     } catch(e){ console.warn('sync', e); this.syncing = false; emuPause(false); npFail('anfitrión: ' + (e && e.message || e)); }
   },
-  async loadAndStart(st, D){
+  async loadAndStart(st, D, sid){
     emuPause(true);
     EJS_emulator.gameManager.loadState(st);
     await sleep(120);
     this.D = D; this.base = EJS_emulator.gameManager.getFrameNum(); this.n = 0;
-    this.local = {}; this.remote = {}; this.applied = [0, 0]; this.lastHash = {};
+    this.syncId = sid; this.local = {}; this.applied = [0, 0]; this.lastHash = {};
+    this.remote = (this.early && this.early[sid]) || {}; this.early = {};   // botones del rival que llegaron antes de terminar de cargar
     for (let f = 1; f <= D; f++) { this.local[f] = 0; this.remote[f] = 0; }   // los primeros D cuadros sin botones
     releaseAll();
     $('npWait').classList.remove('on');
@@ -1039,17 +1050,24 @@ const NP = {
         (async () => {
           setTag('Sala ' + on.code + ' · esperando que arranque tu juego…');
           await waitEmu();
-          try { await this.loadAndStart(rx.buf, rx.D); this.send({t:'ok'}); }
+          try { await this.loadAndStart(rx.buf, rx.D, rx.sid); this.send({t:'ok'}); }
           catch(e){ npFail('invitado: ' + (e && e.message || e)); this.send({t:'fail', why:String(e && e.message || e)}); }
         })();
       }
       return;
     }
     let m; try { m = JSON.parse(data); } catch(e){ return; }
-    if (m.t === 'i') { for (const [f, b] of m.v) this.remote[f] = b; this.tick(); }
+    if (m.t === 'i') {
+      if (m.s === this.syncId && this.on) { for (const [f, b] of m.v) this.remote[f] = b; this.tick(); }
+      else if (m.s > (this.syncId || 0)) {                               // de una sincronización que aquí aún no terminó de cargar
+        this.early = this.early || {}; const e = this.early[m.s] || (this.early[m.s] = {});
+        for (const [f, b] of m.v) e[f] = b;
+      }
+    }
     else if (m.t === 'ping') this.send({t:'pong'});
+    else if (m.t === 'pct') { if (!this.readyRemote) npWaitSet('rv', '⏳ Rival: cargando ' + m.p + '%'); }
     else if (m.t === 'ready') {
-      this.readyRemote = true; npWaitSet('rv', '✅ Rival: listo');
+      this.readyRemote = true; npWaitSet('rv', '✅ Rival: listo (100%)');
       if (on.role === 'h' && this.readyMe) this.hostSync('inicio');
     }
     else if (m.t === 'fps') this.remoteFps = m.fps;
@@ -1057,14 +1075,14 @@ const NP = {
     else if (m.t === 'sh') {                                             // el anfitrión empieza a mandar la foto
       this.on = false;                                                   // (no se pausa aquí: el juego del invitado puede estar arrancando)
       setTag('Sala ' + on.code + ' · sincronizando 0%');
-      this.rx = {size:m.size, got:0, buf:new Uint8Array(m.size), D:m.D};
+      this.rx = {size:m.size, got:0, buf:new Uint8Array(m.size), D:m.D, sid:m.sid};
       if (m.why === 'desync') toast('Se desincronizó: re-sincronizando…', 2500);
     }
     else if (m.t === 'fail') npFail('rival: ' + m.why);
     else if (m.t === 'ok' && on.role === 'h' && this.pendingState) {     // el invitado ya cargó: el anfitrión carga la misma
       clearTimeout(this.wd);
       const st = this.pendingState; this.pendingState = null;
-      this.loadAndStart(st, this.pendingD).catch(e => npFail('anfitrión al cargar: ' + (e && e.message || e)));
+      this.loadAndStart(st, this.pendingD, this.pendingSid).catch(e => npFail('anfitrión al cargar: ' + (e && e.message || e)));
       this.send({t:'go'});
     }
     else if (m.t === 'hash') {
@@ -1107,11 +1125,16 @@ const NP = {
     if (this.local[mine] === undefined) {
       this.local[mine] = this.myBits;
       const out = []; for (let f = mine - 4; f <= mine; f++) if (this.local[f] !== undefined) out.push([f, this.local[f]]);
-      this.send({t:'i', v:out});                                         // se reenvían los últimos por si acaso
+      this.send({t:'i', s:this.syncId, v:out});                          // se reenvían los últimos por si acaso
     }
     const L = this.local[next], R = this.remote[next];
     if (L === undefined || R === undefined) {                          // falta el del rival: se espera
-      if (!this.waitSince) { this.waitSince = performance.now(); this.stats.wait++; }
+      if (!this.waitSince) { this.waitSince = performance.now(); this.stats.wait++; this.resendAt = 0; }
+      if (performance.now() - (this.resendAt || 0) > 250) {
+        this.resendAt = performance.now();
+        const out = []; for (let f = next; f <= next + this.D + 2; f++) if (this.local[f] !== undefined) out.push([f, this.local[f]]);
+        if (out.length) this.send({t:'i', s:this.syncId, v:out});
+      }
       else if (performance.now() - this.waitSince > 1500) setTag('Sala ' + on.code + ' · esperando a tu rival…');
       return false;
     }
