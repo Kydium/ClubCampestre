@@ -321,7 +321,7 @@ const firebaseConfig = {
   messagingSenderId: "180444249462",
   appId: "1:180444249462:web:bdf189d171d908a0274e57"
 };
-const APP_V = 'v4.7';   // versión de la página: súbela en cada cambio
+const APP_V = 'v4.8';   // versión de la página: súbela en cada cambio
 const ACC_DOMAIN = 'clubcampestre.app';
 const P_PLAYERS = 'br2_players', P_MATCHES = 'br2_matches';
 const EJS_DATA = 'https://cdn.emulatorjs.org/stable/data/';
@@ -1565,11 +1565,11 @@ function detectTick(){
   if (++watch.same !== 2) return;
   if (r1 < 0 || r2 < 0) {
     // lectura rara (fin de pelea / selección de personaje). Si iba 1-0 y aún no sé dónde está la vida: ganó ese 2-0
-    if (watch.armed && !hpOk) { const [c1, c2] = watch.cur.split(':').map(Number); if (c1 + c2 === 1) { fightOver(c1 === 1, '2-0'); } }
+    if (watch.armed) { const [c1, c2] = watch.cur.split(':').map(Number); if (c1 + c2 === 1) { fightOver(c1 === 1, '2-0'); } }
     watch.armed = false; showRounds(); return;
   }
   if (r1 === 0 && r2 === 0) {                               // 0-0: empieza una pelea
-    if (watch.armed && watch.cur !== '0:0' && !hpOk) {
+    if (watch.armed && watch.cur !== '0:0') {
       // la pelea terminó sin que el contador marcara el último round: si iba 1-0, ganó ese mismo 2-0
       const [c1, c2] = watch.cur.split(':').map(Number);
       if (c1 + c2 === 1) { watch.armed = false; fightOver(c1 === 1, '2-0'); }
