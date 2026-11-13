@@ -335,7 +335,7 @@ const firebaseConfig = {
   messagingSenderId: "180444249462",
   appId: "1:180444249462:web:bdf189d171d908a0274e57"
 };
-const APP_V = 'NP-0.6';   // versión de la página: súbela en cada cambio
+const APP_V = 'NP-0.7';   // versión de la página: súbela en cada cambio
 const ACC_DOMAIN = 'clubcampestre.app';
 const P_PLAYERS = 'br2_players', P_MATCHES = 'br2_matches';
 const EJS_DATA = 'https://cdn.emulatorjs.org/stable/data/';
@@ -1145,7 +1145,25 @@ const NP = {
     return true;
   }
 };
-// se instala el enganche en el emulador (Module.preMainLoop corre antes de cada cuadro)
+// El enganche "antes de cada cuadro" (preMainLoop) el emulador lo lee UNA sola vez, al crearse.
+// Por eso se mete en las opciones con las que EmulatorJS crea el núcleo (EJS_Runtime), antes de que exista.
+(function hookRuntime(){
+  let real;
+  try {
+    Object.defineProperty(window, 'EJS_Runtime', {configurable:true, get(){ return real; }, set(fn){
+      real = typeof fn !== 'function' ? fn : function(opts){
+        opts = opts || {}; opts.__np = true;   // (así el respaldo de abajo no lo engancha dos veces)
+        const prev = opts.preMainLoop;
+        opts.preMainLoop = function(){
+          if (prev && prev.apply(this, arguments) === false) return false;
+          try { return NP.pre() !== false; } catch(e){ console.warn(e); return true; }
+        };
+        return fn.apply(this, [opts].concat([].slice.call(arguments, 1)));
+      };
+    }});
+  } catch(e){ console.warn('hookRuntime', e); }
+})();
+// (respaldo para versiones viejas del emulador que sí leen Module.preMainLoop en cada cuadro)
 (function hookFrames(){
   const t = setInterval(() => {
     const M = window.EJS_emulator && EJS_emulator.gameManager && EJS_emulator.gameManager.Module;
