@@ -321,7 +321,7 @@ const firebaseConfig = {
   messagingSenderId: "180444249462",
   appId: "1:180444249462:web:bdf189d171d908a0274e57"
 };
-const APP_V = 'v4.6';   // versión de la página: súbela en cada cambio
+const APP_V = 'v4.7';   // versión de la página: súbela en cada cambio
 const ACC_DOMAIN = 'clubcampestre.app';
 const P_PLAYERS = 'br2_players', P_MATCHES = 'br2_matches';
 const EJS_DATA = 'https://cdn.emulatorjs.org/stable/data/';
@@ -1482,7 +1482,13 @@ function koState(d){
   };
   return (dead(memCfg.hp.p1) ? 1 : 0) + (dead(memCfg.hp.p2) ? 2 : 0);
 }
+// PELEAS GANADAS: justo al lado del contador de rounds el juego guarda cuántas peleas lleva ganadas cada lado
+// en la sesión (3 copias). Cuando sube en 1, ese lado ganó la pelea: no hace falta calibrar ni marcar nada.
+const WINS = {n:4456472, p1:[1896023, 1905075, 1914127], p2:[1895759, 1904811, 1913863]};
+const readW = (d, l) => (d[l[1]] === d[l[0]] && d[l[2]] === d[l[0]]) ? d[l[0]] : -1;
 function fightOver(p1won, sc){
+  if (watch.reported) return;                       // esta pelea ya se informó
+  watch.reported = true;
   watch.armed = false;
   const side = p1won ? 'IZQUIERDA' : 'DERECHA', now = Date.now();
   if (!on || !on.room || !on.room.g) { toast('🏆 Ganó el de la ' + side + ' (' + sc + ')', 7000); return; }   // jugando en este equipo: solo aviso
@@ -1513,6 +1519,27 @@ function detectTick(){
   const r1 = voteSteps(memCfg.p1, d), r2 = voteSteps(memCfg.p2, d);
   const key = r1 + ':' + r2, now = Date.now();
   const hpOk = hpReady();
+  // --- peleas ganadas (sin calibrar) ---
+  if (watch.armed) { watch.liveAt = now; watch.lastCur = watch.cur.split(':').map(Number); }
+  const w1 = d.length === WINS.n ? readW(d, WINS.p1) : -1, w2 = d.length === WINS.n ? readW(d, WINS.p2) : -1;
+  watch.wNow = w1 + '-' + w2;
+  if (w1 >= 0 && w2 >= 0) {
+    const wk = w1 + ':' + w2;
+    if (wk !== watch.wKey) { watch.wKey = wk; watch.wSame = 1; } else watch.wSame++;
+    if (watch.wSame === 2) {
+      if (watch.w && !watch.reported && watch.lastCur && now - (watch.liveAt || 0) < 25000) {
+        const d1 = w1 - watch.w[0], d2 = w2 - watch.w[1];
+        if ((d1 === 1 && d2 === 0) || (d2 === 1 && d1 === 0)) {
+          const p1won = d1 === 1, [c1, c2] = watch.lastCur;
+          if ((p1won ? c1 : c2) >= 1) {                               // el ganador ya tenía un round: pelea real
+            watch.k1 = p1won ? 2 : c1; watch.k2 = p1won ? c2 : 2; showRounds();
+            fightOver(p1won, '2-' + Math.min(1, p1won ? c2 : c1));
+          }
+        }
+      }
+      if (watch.armed || watch.reported) watch.w = [w1, w2];
+    }
+  }
   diagRec(d, r1, r2);
   if (watch.armed && !hpOk) learnSample(d);
 
@@ -1549,7 +1576,7 @@ function detectTick(){
       else if (c1 === 1 && c2 === 1) toast('No vi quién ganó el último round (aún estoy aprendiendo dónde está la vida).', 6000);
     }
     if (!watch.armed || watch.cur !== '0:0') {
-      Object.assign(watch, {armed:true, cur:'0:0', at:now, k1:0, k2:0, roundOver:true, koKey:-1, koSame:0, koSide:0});
+      Object.assign(watch, {armed:true, cur:'0:0', at:now, k1:0, k2:0, roundOver:true, koKey:-1, koSame:0, koSide:0, reported:false, w:null, wKey:'', wSame:0});
       learn.on = false; learn.from = 0;                         // pelea nueva: aún no se aprende (round 1)
     }
     showRounds();
@@ -1589,7 +1616,7 @@ function diagRec(d, r1, r2){
   const sig = v1.join(',') + '|' + v2.join(',') + '|' + (watch.armed ? 'A' : '-');
   if (sig === diag.lastSig) return;
   diag.lastSig = sig;
-  if (diag.log.length < 900) diag.log.push(Math.round((Date.now() - diag.t0) / 1000) + 's J1[' + v1.join(',') + '] J2[' + v2.join(',') + '] => ' + r1 + '-' + r2 + ' ko ' + watch.k1 + '-' + watch.k2 + (watch.armed ? ' armado' : ''));
+  if (diag.log.length < 900) diag.log.push(Math.round((Date.now() - diag.t0) / 1000) + 's J1[' + v1.join(',') + '] J2[' + v2.join(',') + '] => ' + r1 + '-' + r2 + ' ko ' + watch.k1 + '-' + watch.k2 + ' w ' + watch.wNow + (watch.armed ? ' armado' : ''));
 }
 $('hudDiag').onclick = () => {
   if (!memCfg) return;
