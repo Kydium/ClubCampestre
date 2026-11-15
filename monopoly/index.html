@@ -1564,6 +1564,26 @@ a.chip.clubb:active{transform:translateY(2px);box-shadow:0 1px 0 #0a1b55}
 .dvq .dvd:nth-child(4){--f:rotateY(-90deg) translateZ(calc(var(--u)*9));filter:brightness(.82)}
 .dvq .dvd:nth-child(5){--f:rotateX(90deg) translateZ(calc(var(--u)*9));filter:brightness(1.12)}
 .dvq .dvd:nth-child(6){--f:rotateX(-90deg) translateZ(calc(var(--u)*9));filter:brightness(.7)}
+
+/* ===== v3.56 ===== */
+.cam3d.fx3 .tok span{height:calc(var(--u)*8.3)}
+.cam3d.fx3 .tok span em.ly{bottom:calc(var(--u)*-1.75)}
+.cam3d.fx3 .tok span s{bottom:calc(var(--u)*(3.15 - 7*var(--yb)))}
+.cam3d.fx3 .tok b{box-shadow:0 0 calc(var(--u)*1.2) calc(var(--u)*.5) #0008}
+.cam3d #dl{transform-style:preserve-3d}
+.cam3d .d3{perspective:none;transform-style:preserve-3d}
+.cam3d .dsh{filter:blur(calc(var(--u)*.7));opacity:.4;height:var(--ds)}
+.b3{display:none}
+.cam3d.fx3 .b3{display:block;position:absolute;width:calc(var(--u)*var(--w));height:calc(var(--u)*var(--d));transform:translate(-50%,-50%);transform-style:preserve-3d;--hh:calc(var(--u)*var(--h));pointer-events:none}
+.b3>*{position:absolute;display:block}
+.b3 .t{inset:0;transform:translateZ(var(--hh));background:var(--rf)}
+.b3 .s{left:0;bottom:0;width:100%;height:var(--hh);transform-origin:50% 100%;transform:rotateX(-90deg);background:var(--c)}
+.b3 .n{left:0;top:0;width:100%;height:var(--hh);transform-origin:50% 0;transform:rotateX(90deg);background:linear-gradient(#0003,#0003),var(--c)}
+.b3 .w{left:0;top:0;width:var(--hh);height:100%;transform-origin:0 50%;transform:rotateY(-90deg);background:linear-gradient(#0002,#0002),var(--c)}
+.b3 .e{right:0;top:0;width:var(--hh);height:100%;transform-origin:100% 50%;transform:rotateY(90deg);background:linear-gradient(#0005,#0005),var(--c)}
+.b3.hse{--c:#2fc455;--rf:#178a33}
+.b3.htl{--c:#e23b28;--rf:#a81a0e}
+.cam3d.fx3 .band .hw{visibility:hidden}
 </style>
 </head>
 <body>
@@ -1660,14 +1680,14 @@ window.BOOT=(function(){
 <button id="emoB" type="button" aria-label="Reacciones y chat">😊<span class="bd" id="emoBd"></span></button>
 <script>
 'use strict';
-const VERSION='3.55.0';
+const VERSION='3.56.0';
 /* Firebase (mismo proyecto que Wolvevilles). Los datos van en el nodo "monopoly/" */
 const FBCFG={apiKey:"AIzaSyBfrs6B-j22O67pnUb5DYq5CevrIg0dtEs",authDomain:"project-349e4491-0828-4f64-bb5.firebaseapp.com",databaseURL:"https://project-349e4491-0828-4f64-bb5-default-rtdb.firebaseio.com",projectId:"project-349e4491-0828-4f64-bb5",storageBucket:"project-349e4491-0828-4f64-bb5.firebasestorage.app",messagingSenderId:"180444249462",appId:"1:180444249462:web:bdf189d171d908a0274e57"};
 
 /*LOGIC_START*/
 const GC={brown:'#8b5a2b',lblue:'#7fd1f5',pink:'#e85da0',orange:'#f5922b',red:'#e03a3a',yellow:'#f5d532',green:'#2e9e5b',dblue:'#2b4fbf',rr:'#555',util:'#999'};
 const GN={brown:'Marrón',lblue:'Celeste',pink:'Rosa',orange:'Naranja',red:'Rojo',yellow:'Amarillo',green:'Verde',dblue:'Azul',rr:'Terminales',util:'Servicios'};
-const TOKS=[{e:'🚗',c:'#ff5d5d',s:'punta'},{e:'🎩',c:'#4f8cff',s:'ovalo'},{e:'🐕',c:'#2ecc71',s:'rombo'},{e:'🚢',c:'#f5c242',s:'corona'},{e:'👢',c:'#c77dff',s:'ondas'},{e:'🐈',c:'#ff9f43',s:'trapecio'},{e:'🦙',c:'#1cc7c0',s:'flecha'},{e:'🛵',c:'#ff6fb5',s:'pildora'},{e:'🚀',c:'#b5c4d9',s:'picos'},{e:'🦁',c:'#c97b3c',s:'rampa'},{e:'🐧',c:'#7be0ff',s:'cruz'},{e:'⚽',c:'#f1f1f1',s:'doble'}];
+const TOKS=[{e:'🚗',c:'#ff5d5d',s:'punta'},{e:'🎩',c:'#4f8cff',s:'ovalo'},{e:'🐕',c:'#2ecc71',s:'rombo'},{e:'🚢',c:'#f5c242',s:'corona'},{e:'👢',c:'#c77dff',s:'ondas'},{e:'🐈',c:'#ff9f43',s:'trapecio'},{e:'🐧',c:'#1cc7c0',s:'flecha'},{e:'🦆',c:'#ff6fb5',s:'pildora'},{e:'🦖',c:'#b5c4d9',s:'picos'},{e:'💰',c:'#c97b3c',s:'rampa'},{e:'🐎',c:'#7be0ff',s:'cruz'},{e:'🚂',c:'#f1f1f1',s:'doble'}];
 const TOK=TOKS.map(x=>x.e);
 /* Color y figura geométrica: definidos por el puesto del jugador (1.º a 6.º), no por la pieza. La pieza (emoji) solo es el dibujo de la ficha. */
 const SLOTS=TOKS.slice(0,6).map(x=>({c:x.c,s:x.s}));
@@ -3786,8 +3806,21 @@ function dnbHTML(){
   }
   return h;
 }
+function houses3D(){
+  let h='';
+  for(let i=0;i<40;i++){
+    const n=S.houses[i]||0;if(!n||i%10===0)continue;
+    const sd=sideOf(i),[r,c]=boardPos(i),cx=cenU(c),cy=cenU(r),hw=cwU(c)/2,hr=cwU(r)/2,o=1.45;
+    const hz=sd==='side-b'||sd==='side-t';
+    const bx=sd==='side-l'?cx+hw-o:sd==='side-r'?cx-hw+o:cx,by=sd==='side-b'?cy-hr+o:sd==='side-t'?cy+hr-o:cy;
+    const box=(x,y,w,d,hh,cl)=>`<div class="b3 ${cl}" style="left:${x.toFixed(2)}%;top:${y.toFixed(2)}%;--w:${hz?w:d};--d:${hz?d:w};--h:${hh}"><b class="t"></b><b class="s"></b><b class="n"></b><b class="w"></b><b class="e"></b></div>`;
+    if(n===5)h+=box(bx,by,4.4,2,2.6,'htl');
+    else for(let j=0;j<n;j++){const t=(j-(n-1)/2)*1.75;h+=box(bx+(hz?t:0),by+(hz?0:t),1.35,1.7,1.5,'hse');}
+  }
+  return h;
+}
 function ownersHTML(){
-  let h='<div id="owl">';
+  let h='<div id="owl">'+(camOn()?houses3D():'');
   const L=FRU*.88,T=3.4;
   for(let i=0;i<40;i++){
     const o=S.owner[i];if(o===undefined||i%10===0)continue;
@@ -4040,9 +4073,10 @@ function applyDice(){
   const ds=d0.offsetWidth;
   D.b.forEach((b,i)=>{
     const d=$('d'+i),s=$('s'+i);if(!d||!s)return;
-    d.style.transform=`translate3d(${b.x-ds/2}px,${b.y-ds/2-b.z*.55}px,0) scale(${1+b.z/ds*.3})`;
+    const r3=ui.cam3d&&camOn();
+    d.style.transform=r3?`translate3d(${b.x-ds/2}px,${b.y-ds/2}px,${(b.z+ds/2).toFixed(1)}px)`:`translate3d(${b.x-ds/2}px,${b.y-ds/2-b.z*.55}px,0) scale(${1+b.z/ds*.3})`;
     d.firstElementChild.style.transform=`rotateZ(${b.rz}deg) rotateX(${b.rx}deg) rotateY(${b.ry}deg)`;
-    s.style.transform=`translate3d(${b.x-ds/2}px,${b.y+ds*.15}px,0) scale(${1+b.z/ds*.25})`;
+    s.style.transform=r3?`translate3d(${b.x-ds/2}px,${b.y-ds*.27}px,0) scale(${1.15+b.z/ds*.25})`:`translate3d(${b.x-ds/2}px,${b.y+ds*.15}px,0) scale(${1+b.z/ds*.25})`;
     s.style.opacity=Math.max(.15,.55-b.z/ds*.45);
   });
 }
