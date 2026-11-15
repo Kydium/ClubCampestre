@@ -1524,21 +1524,46 @@ a.chip.clubb:active{transform:translateY(2px);box-shadow:0 1px 0 #0a1b55}
 .hzz{display:none}
 .cam3d .hzz{display:block;position:absolute;left:0;right:0;top:0;height:42%;pointer-events:none;background:linear-gradient(#d6efffcc 0,#d6efff66 45%,#d6efff00 100%);opacity:0}
 
-/* ===== v3.54 objetos fijos en 3D: la cámara es la que se mueve ===== */
+/* ===== v3.55 objetos 3D fijos: la cámara es la que se mueve ===== */
 .tok span em{font-style:normal;box-shadow:none;background:none;border:0;padding:0;margin:0;border-radius:0;text-shadow:none;min-width:0}
-.tok span em+em{display:none}
+.tok span em.ly{display:none}
 .cam3d.fx3 .tok{--cz:var(--tz,0deg);--cs:-90deg}
-.cam3d.fx3 .tok span{font-size:0;filter:none;transform-style:preserve-3d;transition:transform .3s}
-.cam3d.fx3 .tok span em{display:block;position:absolute;left:0;right:0;bottom:0;text-align:center;line-height:1;font-size:calc(var(--u)*7);backface-visibility:visible;
-  filter:grayscale(1) sepia(.42) hue-rotate(178deg) saturate(1.25) contrast(1.1) brightness(1.22)}
-.cam3d.fx3 .tok span em.l1{transform:translateZ(calc(var(--u)*-.3));filter:grayscale(1) sepia(.42) hue-rotate(178deg) brightness(.95)}
-.cam3d.fx3 .tok span em.l2{transform:translateZ(calc(var(--u)*-.6));filter:grayscale(1) sepia(.42) hue-rotate(178deg) brightness(.8)}
-.cam3d.fx3 .tok span em.l3{transform:translateZ(calc(var(--u)*-.9));filter:grayscale(1) sepia(.42) hue-rotate(178deg) brightness(1.05)}
-.cam3d.fx3 .tok span em.x{transform:translateZ(calc(var(--u)*-.45)) rotateY(90deg);filter:grayscale(1) sepia(.42) hue-rotate(178deg) brightness(.9)}
+.cam3d.fx3 .tok span{filter:none;transform-style:preserve-3d;transition:transform .3s}
+.cam3d.fx3 .tok span em:first-child{filter:grayscale(1) sepia(.42) hue-rotate(178deg) brightness(1.1)}
+.cam3d.fx3 .tok span.ti em:first-child{display:none}
+.cam3d.fx3 .tok span em.ly{display:block;position:absolute;left:50%;bottom:calc(var(--u)*-1.4);width:calc(var(--u)*9.8);height:calc(var(--u)*9.8);margin-left:calc(var(--u)*-4.9);background-size:100% 100%;transform-origin:50% 80%;transform:translateZ(calc(var(--u)*var(--z))) scale(var(--s))}
+.tok span s{display:none}
+.cam3d.fx3 .tok span s{display:block;position:absolute;left:50%;width:calc(var(--u)*1.5);margin-left:calc(var(--u)*(7*var(--x) - .75));bottom:calc(var(--u)*(3.5 - 7*var(--yb)));height:calc(var(--u)*7*var(--h));transform:rotateY(90deg);background:#8d96a8}
 .cam3d.fx3 .dnb.stand{--cz:var(--tz,0deg);--cs:-90deg}
+.cam3d.fx3 .dnb.stand .dns{transform-style:preserve-3d}
+.cam3d.fx3 .dnb.stand .dni{backface-visibility:hidden;-webkit-backface-visibility:hidden;position:absolute;inset:0;box-sizing:border-box}
+.cam3d.fx3 .dnb.stand .dni.bk{display:flex;transform:rotateY(180deg)!important;animation:none!important}
+.cam3d.fx3 .dnb.stand .dns{height:calc(var(--u)*11);top:calc(var(--u)*-11)}
 .cam3d.fx3 .cty i{transform:translate(-50%,-100%) rotateZ(var(--r,25deg)) rotateX(-90deg)}
-.cty i.x2{display:none}
+.cty i.x2,.cty .bx{display:none}
 .cam3d.fx3 .cty i.x2{display:block;--r:115deg}
+.cam3d.fx3 .cty i.em,.cam3d.fx3 .cty u{display:none}
+.cam3d.fx3 .cty .bx{display:block;position:absolute;width:calc(var(--u)*var(--w));height:calc(var(--u)*var(--d));transform:translate(-50%,-50%) rotateZ(var(--r,0deg));transform-style:preserve-3d;--hh:calc(var(--u)*var(--h));
+  --wl:repeating-linear-gradient(90deg,#0000 0 calc(var(--u)*.45),#ffffff8c calc(var(--u)*.45) calc(var(--u)*1.05),#0000 calc(var(--u)*1.05) calc(var(--u)*1.5)),repeating-linear-gradient(0deg,#0000 0 calc(var(--u)*.45),var(--c) calc(var(--u)*.45) calc(var(--u)*.75),#0000 calc(var(--u)*.75) calc(var(--u)*1.5))}
+.cty .bx>*{position:absolute;display:block}
+.cty .bx .t{inset:0;transform:translateZ(var(--hh));background:var(--rf);box-shadow:inset 0 0 0 calc(var(--u)*.35) #0003}
+.cty .bx .s{left:0;bottom:0;width:100%;height:var(--hh);transform-origin:50% 100%;transform:rotateX(-90deg);background:var(--wl),var(--c)}
+.cty .bx .n{left:0;top:0;width:100%;height:var(--hh);transform-origin:50% 0;transform:rotateX(90deg);background:linear-gradient(#0003,#0003),var(--wl),var(--c)}
+.cty .bx .w{left:0;top:0;width:var(--hh);height:100%;transform-origin:0 50%;transform:rotateY(-90deg);background:linear-gradient(#00000018,#00000018),var(--wl),var(--c)}
+.cty .bx .e{right:0;top:0;width:var(--hh);height:100%;transform-origin:100% 50%;transform:rotateY(90deg);background:linear-gradient(#0005,#0005),var(--wl),var(--c)}
+/* dados 3D en pantalla */
+.dvr{perspective:calc(var(--u)*120);gap:calc(var(--u)*11)}
+.dvc{width:calc(var(--u)*18);height:calc(var(--u)*18);transform-style:preserve-3d;transform:rotateX(-24deg) rotateY(30deg)}
+.dvc:nth-child(2){transform:rotateX(-20deg) rotateY(-28deg)}
+.dvq{position:absolute;inset:0;transform-style:preserve-3d;transform:var(--r);animation:dvSpin .8s cubic-bezier(.2,.7,.3,1) both}
+@keyframes dvSpin{from{transform:var(--r) rotateX(-620deg) rotateY(-440deg) rotateZ(180deg)}to{transform:var(--r)}}
+.dvq .dvd{position:absolute;inset:0;width:auto;height:auto;border-radius:16%;box-shadow:inset 0 0 0 calc(var(--u)*.5) #ffe7b8aa,inset 0 0 calc(var(--u)*3) #7a4a1088;transform:var(--f)!important;backface-visibility:hidden}
+.dvq .dvd:nth-child(1){--f:translateZ(calc(var(--u)*9))}
+.dvq .dvd:nth-child(2){--f:rotateY(180deg) translateZ(calc(var(--u)*9))}
+.dvq .dvd:nth-child(3){--f:rotateY(90deg) translateZ(calc(var(--u)*9));filter:brightness(.82)}
+.dvq .dvd:nth-child(4){--f:rotateY(-90deg) translateZ(calc(var(--u)*9));filter:brightness(.82)}
+.dvq .dvd:nth-child(5){--f:rotateX(90deg) translateZ(calc(var(--u)*9));filter:brightness(1.12)}
+.dvq .dvd:nth-child(6){--f:rotateX(-90deg) translateZ(calc(var(--u)*9));filter:brightness(.7)}
 </style>
 </head>
 <body>
@@ -1635,7 +1660,7 @@ window.BOOT=(function(){
 <button id="emoB" type="button" aria-label="Reacciones y chat">😊<span class="bd" id="emoBd"></span></button>
 <script>
 'use strict';
-const VERSION='3.54.0';
+const VERSION='3.55.0';
 /* Firebase (mismo proyecto que Wolvevilles). Los datos van en el nodo "monopoly/" */
 const FBCFG={apiKey:"AIzaSyBfrs6B-j22O67pnUb5DYq5CevrIg0dtEs",authDomain:"project-349e4491-0828-4f64-bb5.firebaseapp.com",databaseURL:"https://project-349e4491-0828-4f64-bb5-default-rtdb.firebaseio.com",projectId:"project-349e4491-0828-4f64-bb5",storageBucket:"project-349e4491-0828-4f64-bb5.firebasestorage.app",messagingSenderId:"180444249462",appId:"1:180444249462:web:bdf189d171d908a0274e57"};
 
@@ -2519,14 +2544,14 @@ const CAM={
   tOv:40,        /* vista general: el tablero se inclina 40° → la cámara mira 50° hacia abajo, al centro */
   tTurn:60,      /* esperando los dados: la cámara baja un poco (43° hacia abajo) */
   tFol:67,       /* siguiendo a la ficha: va baja y por detrás, inclinada 35° hacia abajo */
-  tAct:40,       /* al caer en una casilla: 50° hacia abajo */
+  tAct:61,       /* al caer en una casilla: 50° hacia abajo */
   lean:12,       /* fichas y números parados: cuánto se inclinan hacia atrás respecto a la pantalla */
   pw:2.2,        /* distancia de la cámara en anchos de tablero (perspectiva suave) */
   mg:.04,        /* margen de la vista general a cada lado */
-  zTurn:1.5,zFol:2.5,zAct:1.9,fT:.45,   /* acercamientos respecto a la vista general: turno / siguiendo / casilla de acción */
+  zTurn:1.5,zFol:2.5,zAct:2.4,fT:.45,   /* acercamientos respecto a la vista general: turno / siguiendo / casilla de acción */
   axT:-.06,ayT:.1,axF:-.12,ayF:.2,axA:-.23,ayA:.3,   /* dónde queda la ficha en pantalla (fracción del ancho del tablero): un poco a la izquierda y abajo, para ver el camino que viene */
-  look:4,   /* cuántas casillas hacia adelante mira la cámara para girar la mesa */
-  out:28,           /* la cámara se corre un poco hacia afuera de la ficha: mira hacia el interior del tablero (grados) */
+  look:1,   /* cuántas casillas hacia adelante mira la cámara para girar la mesa */
+  out:42,           /* la cámara se corre un poco hacia afuera de la ficha: mira hacia el interior del tablero (grados) */
   k:5.5,kYaw:2.8,yMax:30,     /* amortiguación exponencial 1-exp(-k·dt), aplicada dos veces: arranca y frena suave (el giro de la mesa es un poco más lento y nunca pasa de ~240°/s) */
   step:360,pause:500,dive:900,hold:900,ovHold:600,
   glMin:.6,glMax:1,glK:.45,ease:'cubic-bezier(.45,0,.2,1)',   /* saltos largos (cárcel, cartas): la ficha se desliza entre .6 y 1 s con ease-in-out */
@@ -3737,7 +3762,7 @@ function dnbHTML(){
   if(!ui.dn)return'';
   const fresh=!ui.dn.seen;ui.dn.seen=true;
   let h='';
-  const stand=(cls,x,y,d,i)=>{const q=SQ[i]||{};const tz=sideAng(i%10===0?i+39:i);const fx=q.t==='prop'?`<i class="dnx" style="background:${GC[q.g]||'#999'}"></i>`:`<i class="dnx e">${q.i||''}</i>`;return`<div class="${cls}" style="left:${x.toFixed(2)}%;top:${y.toFixed(2)}%;--c:${ui.dn.col};--tz:${tz}deg"><i class="dnf"></i><div class="dns"><div class="dni"><span>${d}</span>${fx}</div></div></div>`;};
+  const stand=(cls,x,y,d,i)=>{const q=SQ[i]||{};const tz=sideAng(i%10===0?i+39:i)+SGN;const fx=q.t==='prop'?`<i class="dnx" style="background:${GC[q.g]||'#999'}"></i>`:`<i class="dnx e">${q.i||''}</i>`;return`<div class="${cls}" style="left:${x.toFixed(2)}%;top:${y.toFixed(2)}%;--c:${ui.dn.col};--tz:${tz}deg"><i class="dnf"></i><div class="dns"><div class="dni"><span>${d}</span>${fx}</div><div class="dni bk"><span>${d}</span>${fx}</div></div></div>`;};
   for(let d=1;d<=12;d++){
     const i=(ui.dn.pos+d)%40,ht=ui.dn.hit;
     const st=(ht===d?' hit':'')+((ht&&ht!==d)?' gone':'');
@@ -3776,16 +3801,41 @@ function ownersHTML(){
   }
   return h+dnbHTML()+'</div>';
 }
-const sideAng=i=>[-90,0,90,180][Math.floor((((i%40)+40)%40)/10)];
+const SGN=180;
+const sideAng=i=>[0,90,180,270][Math.floor((((i%40)+40)%40)/10)];
 function tokAng(pid){
   ui.tang=ui.tang||{};const i=ui.tcur&&ui.tcur[pid]!==undefined?ui.tcur[pid]:((P(S,pid)||{}).pos||0);
   const b=sideAng(i),pv=ui.tang[pid];const a=pv===undefined?b:pv+wrap180(b-pv);ui.tang[pid]=a;return a;
 }
+const TKL=[-5,-4,-3,-2,-1,1,2,3,4,5].map(k=>{const n=Math.abs(k),a=n/5;return[`--z:${(k*.24).toFixed(2)};--s:${(1-.24*a*a).toFixed(3)}`,n===5?' fc':n===4?' l':n<=1?' d':''];});
+const TKC={};
+function tokModel(e){   /* la figura se dibuja una vez en un lienzo: cara de metal + silueta para el relleno, y su perfil para que sea maciza */
+  if(TKC[e])return TKC[e];
+  const R={cls:'',prof:[]};
+  try{
+    const N=96,W=Math.round(N*1.4),c=document.createElement('canvas');c.width=c.height=W;const x=c.getContext('2d',{willReadFrequently:true});
+    x.font=N+'px '+getComputedStyle(document.body).fontFamily;x.textAlign='center';x.textBaseline='middle';x.fillText(e,W/2,W/2);
+    const im=x.getImageData(0,0,W,W),d=im.data,al=(px,py)=>d[(py*W+px)*4+3]>110;
+    let x0=W,x1=0;for(let px=0;px<W;px++)for(let py=0;py<W;py+=2)if(al(px,py)){if(px<x0)x0=px;if(px>x1)x1=px;}
+    if(x1>x0){
+      const K=6;for(let j=0;j<K;j++){const px=Math.round(x0+(x1-x0)*(j+.5)/K);let t=-1,b=-1;for(let py=0;py<W;py++)if(al(px,py)){if(t<0)t=py;b=py;}
+        if(t>=0&&b-t>4)R.prof.push([(px-W/2)/N,(t-W/2)/N+.09,(b-W/2)/N-.02]);}
+      const mk=f=>{const o=x.createImageData(W,W),q=o.data;for(let i=0;i<d.length;i+=4){const v=f(.3*d[i]+.59*d[i+1]+.11*d[i+2]);q[i]=v*.9;q[i+1]=v*.96;q[i+2]=Math.min(255,v*1.08);q[i+3]=d[i+3];}
+        const c2=document.createElement('canvas');c2.width=c2.height=W;c2.getContext('2d').putImageData(o,0,0);return c2.toDataURL();};
+      const idx=Math.max(0,TOKS.findIndex(T=>T.e===e)),k='tk'+idx,sel='.cam3d.fx3 .tok span.'+k+' em.ly';
+      let st=document.getElementById('tkcss');if(!st){st=document.createElement('style');st.id='tkcss';document.head.appendChild(st);}
+      st.textContent+=`${sel}{background-image:url(${mk(()=>150)})}${sel}.d{background-image:url(${mk(()=>118)})}${sel}.l{background-image:url(${mk(()=>190)})}${sel}.fc{background-image:url(${mk(l=>95+l*.72)})}`;
+      R.cls=k+' ti';
+    }
+  }catch(err){}
+  return TKC[e]=R;
+}
+const tokBody=e=>{const M=tokModel(e);return`<em>${e}</em>`+(M.cls?TKL.map(L=>`<em class="ly${L[1]}" style="${L[0]}"></em>`).join('')+M.prof.map(q=>`<s style="--x:${q[0].toFixed(3)};--h:${(q[2]-q[1]).toFixed(3)};--yb:${q[2].toFixed(3)}"></s>`).join(''):'');};
 function tokensHTML(){
   const cp=S.phase==='play'?curP(S):null;
   return'<div id="tkl">'+S.players.filter(p=>!p.bankrupt).map(p=>{const q=tokXY(p.id);
     const J=ui.jail[p.id],jailed=(p.jail||0)>0&&!(J&&J.stage!=='done');
-    return`<div class="tok${cp&&cp.id===p.id?' cur':''}${jailed?' jailed':''}" data-tk="${p.id}" style="--c:${p.col};--tz:${tokAng(p.id)}deg;left:${q.x}%;top:${q.y}%"><b></b><span><em>${p.tk}</em><em class="l1">${p.tk}</em><em class="l2">${p.tk}</em><em class="l3">${p.tk}</em><em class="x">${p.tk}</em></span></div>`;}).join('')+'</div>';
+    return`<div class="tok${cp&&cp.id===p.id?' cur':''}${jailed?' jailed':''}" data-tk="${p.id}" style="--c:${p.col};--tz:${tokAng(p.id)}deg;left:${q.x}%;top:${q.y}%"><b></b><span class="${tokModel(p.tk).cls}">${tokBody(p.tk)}</span></div>`;}).join('')+'</div>';
 }
 function tickTokens(){
   if(!S||S.phase==='lobby'){return;}
@@ -4014,8 +4064,10 @@ function diceBanner(){
   const [a,b]=S.dice,dbl=a===b&&S.sub!=='order';
   const pips=n=>{const on={1:[4],2:[0,8],3:[0,4,8],4:[0,2,6,8],5:[0,2,4,6,8],6:[0,2,3,5,6,8]}[n]||[4];return Array.from({length:9},(_,i)=>`<i class="${on.includes(i)?'on':''}"></i>`).join('');};
   const o=document.createElement('div');o.id='dvo';o.className=dbl?'dbl':'';
-  o.innerHTML=`<div class="dvb"></div><div class="dvr"><div class="dvd">${pips(a)}</div><div class="dvd">${pips(b)}</div></div>${dbl?'<div class="dvt">DOBLE</div>':''}`;
-  w.appendChild(o);setTimeout(()=>{o.classList.add('out');setTimeout(()=>o.remove(),450);},1400);
+  const R={1:'rotateY(0deg)',6:'rotateY(180deg)',3:'rotateY(-90deg)',4:'rotateY(90deg)',2:'rotateX(-90deg)',5:'rotateX(90deg)'};
+  const cube=n=>`<div class="dvc"><div class="dvq" style="--r:${R[n]||R[1]}">${[1,6,3,4,2,5].map(f=>`<div class="dvd">${pips(f)}</div>`).join('')}</div></div>`;
+  o.innerHTML=`<div class="dvb"></div><div class="dvr">${cube(a)}${cube(b)}</div>${dbl?'<div class="dvt">DOBLE</div>':''}`;
+  w.appendChild(o);setTimeout(()=>{o.classList.add('out');setTimeout(()=>o.remove(),450);},1900);
 }
 function markHit(){diceBanner();
   if(S&&S.sub!=='order'&&ui.dn){const sum=S.dice[0]+S.dice[1];ui.dn.hit=sum;document.querySelectorAll('.dnb,.dn').forEach(x=>{const h=+x.textContent===sum;x.classList.remove('fresh');x.classList.toggle('hit',h);x.classList.toggle('dim',!h);});}
@@ -4240,7 +4292,7 @@ function gameParts(){
   return{top:topHTML(),flat:!!ui.flat,tiles:b.tiles,ctr:b.ctr,owl:b.owl,tkl:b.tkl,act:'',landL:L,landR:R,landK:kind,pl:playersHTML(),bar:barHTML()};
 }
 function gameFull(G){
-  return`<div class="wrap"><div class="top" id="topbar">${G.top}</div><div id="boardwrap" class="${G.flat?'flat':''}${camOn()?' cam':''}"><div id="stage"><div id="board">${G.tiles.join('')}${G.ctr}${G.owl}${G.tkl}${DICE_LAYER}<i class="bfb"></i><div class="cty"><u style="left:10%;top:10%;--s:8"></u><u style="left:20%;top:8%;--s:5"></u><u style="left:8%;top:21%;--s:6.5"></u><u style="left:90%;top:10%;--s:8"></u><u style="left:80%;top:8%;--s:5"></u><u style="left:92%;top:21%;--s:6.5"></u><u style="left:10%;top:90%;--s:7.5"></u><u style="left:8%;top:79%;--s:5"></u><u style="left:21%;top:92%;--s:5.5"></u><u style="left:90%;top:90%;--s:8"></u><u style="left:92%;top:79%;--s:5"></u><u style="left:79%;top:92%;--s:6"></u><u style="left:50%;top:7%;--s:5"></u><u style="left:37%;top:8%;--s:4.5"></u><u style="left:63%;top:8%;--s:4.5"></u><u style="left:50%;top:93%;--s:7"></u><u style="left:36%;top:92%;--s:4.5"></u><u style="left:64%;top:92%;--s:4.5"></u><u style="left:7%;top:50%;--s:6"></u><u style="left:8%;top:37%;--s:4.5"></u><u style="left:8%;top:63%;--s:4.5"></u><u style="left:93%;top:50%;--s:8"></u><u style="left:92%;top:37%;--s:4.5"></u><u style="left:92%;top:63%;--s:4.5"></u><i style="left:10%;top:10%;--s:8">🏢</i><i style="left:20%;top:8%;--s:5">🌳</i><i style="left:8%;top:21%;--s:6.5">🏬</i><i style="left:90%;top:10%;--s:8">🏨</i><i style="left:80%;top:8%;--s:5">🌴</i><i style="left:92%;top:21%;--s:6.5">🏦</i><i style="left:10%;top:90%;--s:7.5">🏛️</i><i style="left:8%;top:79%;--s:5">🌳</i><i style="left:21%;top:92%;--s:5.5">🏠</i><i style="left:90%;top:90%;--s:8">🏰</i><i style="left:92%;top:79%;--s:5">🌴</i><i style="left:79%;top:92%;--s:6">⛪</i><i style="left:50%;top:7%;--s:5">⛲</i><i style="left:37%;top:8%;--s:4.5">🌳</i><i style="left:63%;top:8%;--s:4.5">🌲</i><i style="left:50%;top:93%;--s:7">🎡</i><i style="left:36%;top:92%;--s:4.5">🌲</i><i style="left:64%;top:92%;--s:4.5">🌳</i><i style="left:7%;top:50%;--s:6">🏤</i><i style="left:8%;top:37%;--s:4.5">🌴</i><i style="left:8%;top:63%;--s:4.5">🌳</i><i style="left:93%;top:50%;--s:8">🗼</i><i style="left:92%;top:37%;--s:4.5">🌲</i><i style="left:92%;top:63%;--s:4.5">🌴</i><i class="x2" style="left:10%;top:10%;--s:8">🏢</i><i class="x2" style="left:20%;top:8%;--s:5">🌳</i><i class="x2" style="left:8%;top:21%;--s:6.5">🏬</i><i class="x2" style="left:90%;top:10%;--s:8">🏨</i><i class="x2" style="left:80%;top:8%;--s:5">🌴</i><i class="x2" style="left:92%;top:21%;--s:6.5">🏦</i><i class="x2" style="left:10%;top:90%;--s:7.5">🏛️</i><i class="x2" style="left:8%;top:79%;--s:5">🌳</i><i class="x2" style="left:21%;top:92%;--s:5.5">🏠</i><i class="x2" style="left:90%;top:90%;--s:8">🏰</i><i class="x2" style="left:92%;top:79%;--s:5">🌴</i><i class="x2" style="left:79%;top:92%;--s:6">⛪</i><i class="x2" style="left:50%;top:7%;--s:5">⛲</i><i class="x2" style="left:37%;top:8%;--s:4.5">🌳</i><i class="x2" style="left:63%;top:8%;--s:4.5">🌲</i><i class="x2" style="left:50%;top:93%;--s:7">🎡</i><i class="x2" style="left:36%;top:92%;--s:4.5">🌲</i><i class="x2" style="left:64%;top:92%;--s:4.5">🌳</i><i class="x2" style="left:7%;top:50%;--s:6">🏤</i><i class="x2" style="left:8%;top:37%;--s:4.5">🌴</i><i class="x2" style="left:8%;top:63%;--s:4.5">🌳</i><i class="x2" style="left:93%;top:50%;--s:8">🗼</i><i class="x2" style="left:92%;top:37%;--s:4.5">🌲</i><i class="x2" style="left:92%;top:63%;--s:4.5">🌴</i></div></div></div><div id="landov" class="${(G.landL||G.landR)?'on':''}${G.landK==='gen'?' gen':''}${G.landK==='ord'?' ord':''}"><div class="lrow${G.landR?'':' solo'}"><div id="landL">${G.landL}</div><div id="landR">${G.landR}</div></div></div></div><div id="actp">${G.act}</div><div id="pkl">${G.pl}</div></div><div class="bar" id="botbar">${G.bar}</div>`;
+  return`<div class="wrap"><div class="top" id="topbar">${G.top}</div><div id="boardwrap" class="${G.flat?'flat':''}${camOn()?' cam':''}"><div id="stage"><div id="board">${G.tiles.join('')}${G.ctr}${G.owl}${G.tkl}${DICE_LAYER}<i class="bfb"></i><div class="cty"><u style="left:10%;top:10%;--s:8"></u><u style="left:20%;top:8%;--s:5"></u><u style="left:8%;top:21%;--s:6.5"></u><u style="left:90%;top:10%;--s:8"></u><u style="left:80%;top:8%;--s:5"></u><u style="left:92%;top:21%;--s:6.5"></u><u style="left:10%;top:90%;--s:7.5"></u><u style="left:8%;top:79%;--s:5"></u><u style="left:21%;top:92%;--s:5.5"></u><u style="left:90%;top:90%;--s:8"></u><u style="left:92%;top:79%;--s:5"></u><u style="left:79%;top:92%;--s:6"></u><u style="left:50%;top:7%;--s:5"></u><u style="left:37%;top:8%;--s:4.5"></u><u style="left:63%;top:8%;--s:4.5"></u><u style="left:50%;top:93%;--s:7"></u><u style="left:36%;top:92%;--s:4.5"></u><u style="left:64%;top:92%;--s:4.5"></u><u style="left:7%;top:50%;--s:6"></u><u style="left:8%;top:37%;--s:4.5"></u><u style="left:8%;top:63%;--s:4.5"></u><u style="left:93%;top:50%;--s:8"></u><u style="left:92%;top:37%;--s:4.5"></u><u style="left:92%;top:63%;--s:4.5"></u><i class="em" style="left:10%;top:10%;--s:8">🏢</i><div class="bx" style="left:10%;top:10%;--w:5.0;--d:4.0;--h:7.6;--c:#e8c9a0;--rf:#b5523a;--r:12deg"><b class="t"></b><b class="s"></b><b class="n"></b><b class="w"></b><b class="e"></b></div><i style="left:20%;top:8%;--s:5">🌳</i><i class="x2" style="left:20%;top:8%;--s:5">🌳</i><i class="em" style="left:8%;top:21%;--s:6.5">🏬</i><div class="bx" style="left:8%;top:21%;--w:4.0;--d:3.2;--h:6.2;--c:#cfd8e6;--rf:#5d6f8c;--r:-1deg"><b class="t"></b><b class="s"></b><b class="n"></b><b class="w"></b><b class="e"></b></div><i class="em" style="left:90%;top:10%;--s:8">🏨</i><i class="em" style="left:80%;top:8%;--s:5">🌴</i><i class="em" style="left:92%;top:21%;--s:6.5">🏦</i><div class="bx" style="left:92%;top:21%;--w:4.0;--d:3.2;--h:6.2;--c:#e6b7b0;--rf:#8a3b3b;--r:23deg"><b class="t"></b><b class="s"></b><b class="n"></b><b class="w"></b><b class="e"></b></div><i class="em" style="left:10%;top:90%;--s:7.5">🏛️</i><div class="bx" style="left:10%;top:90%;--w:4.7;--d:3.8;--h:7.1;--c:#d9d2ee;--rf:#6a58a8;--r:10deg"><b class="t"></b><b class="s"></b><b class="n"></b><b class="w"></b><b class="e"></b></div><i style="left:8%;top:79%;--s:5">🌳</i><i class="x2" style="left:8%;top:79%;--s:5">🌳</i><i class="em" style="left:21%;top:92%;--s:5.5">🏠</i><i class="em" style="left:90%;top:90%;--s:8">🏰</i><div class="bx" style="left:90%;top:90%;--w:5.0;--d:4.0;--h:7.6;--c:#e8c9a0;--rf:#b5523a;--r:-16deg"><b class="t"></b><b class="s"></b><b class="n"></b><b class="w"></b><b class="e"></b></div><i class="em" style="left:92%;top:79%;--s:5">🌴</i><i class="em" style="left:79%;top:92%;--s:6">⛪</i><div class="bx" style="left:79%;top:92%;--w:3.7;--d:3.0;--h:5.7;--c:#cfd8e6;--rf:#5d6f8c;--r:21deg"><b class="t"></b><b class="s"></b><b class="n"></b><b class="w"></b><b class="e"></b></div><i class="em" style="left:50%;top:7%;--s:5">⛲</i><i style="left:37%;top:8%;--s:4.5">🌳</i><i class="x2" style="left:37%;top:8%;--s:4.5">🌳</i><i class="em" style="left:63%;top:8%;--s:4.5">🌲</i><i class="em" style="left:50%;top:93%;--s:7">🎡</i><div class="bx" style="left:50%;top:93%;--w:4.3;--d:3.5;--h:6.6;--c:#e6b7b0;--rf:#8a3b3b;--r:-5deg"><b class="t"></b><b class="s"></b><b class="n"></b><b class="w"></b><b class="e"></b></div><i style="left:36%;top:92%;--s:4.5">🌲</i><i class="x2" style="left:36%;top:92%;--s:4.5">🌲</i><i class="em" style="left:64%;top:92%;--s:4.5">🌳</i><i class="em" style="left:7%;top:50%;--s:6">🏤</i><div class="bx" style="left:7%;top:50%;--w:3.7;--d:3.0;--h:5.7;--c:#d9d2ee;--rf:#6a58a8;--r:-18deg"><b class="t"></b><b class="s"></b><b class="n"></b><b class="w"></b><b class="e"></b></div><i style="left:8%;top:37%;--s:4.5">🌴</i><i class="x2" style="left:8%;top:37%;--s:4.5">🌴</i><i class="em" style="left:8%;top:63%;--s:4.5">🌳</i><i class="em" style="left:93%;top:50%;--s:8">🗼</i><i style="left:92%;top:37%;--s:4.5">🌲</i><i class="x2" style="left:92%;top:37%;--s:4.5">🌲</i><i class="em" style="left:92%;top:63%;--s:4.5">🌴</i></div></div></div><div id="landov" class="${(G.landL||G.landR)?'on':''}${G.landK==='gen'?' gen':''}${G.landK==='ord'?' ord':''}"><div class="lrow${G.landR?'':' solo'}"><div id="landL">${G.landL}</div><div id="landR">${G.landR}</div></div></div></div><div id="actp">${G.act}</div><div id="pkl">${G.pl}</div></div><div class="bar" id="botbar">${G.bar}</div>`;
 }
 function gameHTML(){return gameFull(gameParts());}
 const tpl=document.createElement('template');
