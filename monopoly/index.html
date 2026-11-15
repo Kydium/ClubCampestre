@@ -1441,8 +1441,8 @@ a.chip.clubb:active{transform:translateY(2px);box-shadow:0 1px 0 #0a1b55}
 .cam #stage{height:calc(var(--u)*90);overflow:hidden;border-radius:calc(var(--u)*3);background:radial-gradient(120% 95% at 50% 42%,#1b4f8f55 0,#0b244d33 62%,#06143055 100%);box-shadow:inset 0 0 0 1px #ffffff1c,inset 0 calc(var(--u)*1) calc(var(--u)*5) #0006}
 .cam .tok span{transform:rotateZ(var(--cz,0deg)) rotateX(var(--cs,0deg));transform-origin:50% 100%}
 .cam .tok.cur span{animation:none}
-.cam .tok{transition:left .36s linear,top .36s linear}
-.cam .tok.hop span{animation:camhop .36s ease-out!important}
+.cam .tok{transition:left .44s cubic-bezier(.3,0,.5,1),top .44s cubic-bezier(.3,0,.5,1)}
+.cam .tok.hop span{animation:camhop .44s ease-out!important}
 @keyframes camhop{50%{transform:rotateZ(var(--cz,0deg)) rotateX(var(--cs,0deg)) translateY(calc(var(--u)*-2.6)) scaleY(1.1)}}
 /* números parados: salen de la misma franja de color de la carta y miran a la cámara */
 .dnb.stand{display:none;position:absolute;width:0;height:0;transform:none;pointer-events:none;z-index:auto}
@@ -1708,7 +1708,7 @@ window.BOOT=(function(){
 <button id="emoB" type="button" aria-label="Reacciones y chat">😊<span class="bd" id="emoBd"></span></button>
 <script>
 'use strict';
-const VERSION='3.58.0';
+const VERSION='3.59.0';
 /* Firebase (mismo proyecto que Wolvevilles). Los datos van en el nodo "monopoly/" */
 const FBCFG={apiKey:"AIzaSyBfrs6B-j22O67pnUb5DYq5CevrIg0dtEs",authDomain:"project-349e4491-0828-4f64-bb5.firebaseapp.com",databaseURL:"https://project-349e4491-0828-4f64-bb5-default-rtdb.firebaseio.com",projectId:"project-349e4491-0828-4f64-bb5",storageBucket:"project-349e4491-0828-4f64-bb5.firebasestorage.app",messagingSenderId:"180444249462",appId:"1:180444249462:web:bdf189d171d908a0274e57"};
 
@@ -2596,12 +2596,12 @@ const CAM={
   lean:12,       /* fichas y números parados: cuánto se inclinan hacia atrás respecto a la pantalla */
   pw:2.7,        /* distancia de la cámara en anchos de tablero (perspectiva suave) */
   mg:.04,        /* margen de la vista general a cada lado */
-  zTurn:1.4,zFol:1.85,zAct:2.1,fT:.45,   /* acercamientos respecto a la vista general: turno / siguiendo / casilla de acción */
+  zOv:1.14,zTurn:1.62,zFol:2.1,zAct:2.3,fT:.45,   /* acercamientos respecto a la vista general: turno / siguiendo / casilla de acción */
   axT:-.06,ayT:.1,axF:-.12,ayF:.2,axA:-.23,ayA:.3,   /* dónde queda la ficha en pantalla (fracción del ancho del tablero): un poco a la izquierda y abajo, para ver el camino que viene */
   look:1,   /* cuántas casillas hacia adelante mira la cámara para girar la mesa */
   out:36,           /* la cámara se corre un poco hacia afuera de la ficha: mira hacia el interior del tablero (grados) */
   k:4.2,kYaw:2.4,yMax:30,     /* amortiguación exponencial 1-exp(-k·dt), aplicada dos veces: arranca y frena suave (el giro de la mesa es un poco más lento y nunca pasa de ~240°/s) */
-  step:360,pause:500,dive:900,hold:900,ovHold:150,
+  step:470,pause:500,dive:900,hold:900,ovHold:150,
   glMin:.6,glMax:1,glK:.45,ease:'cubic-bezier(.45,0,.2,1)',   /* saltos largos (cárcel, cartas): la ficha se desliza entre .6 y 1 s con ease-in-out */
   swT:.55,swZ:.55,swP:.005    /* balanceo en reposo: cabeceo, giro y desplazamiento (casi imperceptible) */
 };
@@ -2705,7 +2705,7 @@ function camYaw(pos,L,cw,ch){
   return -Math.atan2(vx,-vy)*180/Math.PI;
 }
 function camGoal(pl,cw,ch,W,sh){
-  const g={fx:0,fy:0,z:1,t:CAM.tOv,ay:0,ax:0,yw:0};
+  const g={fx:0,fy:0,z:CAM.zOv,t:CAM.tOv,ay:0,ax:0,yw:0};
   if(pl.m==='ov')return g;
   let tk;
   if(ui.glide&&ui.glide.pid===pl.pid&&Date.now()<ui.glide.end&&P(S,pl.pid)){   /* deslizamiento: la cámara apunta un poco adelante de la ficha, justo lo que compensa su amortiguación */
@@ -2892,7 +2892,7 @@ const SND={
   },
   clack(i){i=Math.max(.15,Math.min(1,i||.7));this.plastic(nR(1700,2500),.34*i,0);this.wood(nR(250,360),.26*i,.002);},
   wall(sp){if(sp<.12||!this.gate('wall',70))return;const i=Math.min(1,sp*1.4);this.wood(nR(170,230),.28*i,0);this.thud(105,.2*i,0,.1);},
-  step(n){const f=780+(n%10)*20;this.plastic(f,.17,0,{pan:0,wet:.05});this.thud(190,.08,0,.06);},
+  step(n){const f=640+(n%10)*16;this.plastic(f,.2,0,{pan:0,wet:.05});this.thud(150,.16,0,.09);},
   warp(){this.paper(.34,.14,0,500,{f2:4200,wet:.25});this.tone(260,.3,'sine',.06,0,800,{wet:.2});},
   doubles(){[1047,1319,1568,2093].forEach((f,i)=>{this.bell(f,.1,i*.075,.7);this.bell(f*2,.03,i*.075,.35);});},
   chargeTick(p){this.plastic(1100+900*p,.03+.06*p,0,{pan:0,wet:.02});},
@@ -3938,7 +3938,7 @@ function tickTokens(){
       ui.tcur[p.id]=(d>14)?target:(cur+1)%40;ch=true;
       if(d>14&&camOn()&&ui.cam3d)(ui.warpIds=ui.warpIds||[]).push(p.id);
       if(d<=14&&!(J&&J.stage==='arrest'))ui.hopIds.push(p.id);
-      if(d>14)SND.warp();else{ui.stepN=(Date.now()-(ui.stepT||0)>700)?0:(ui.stepN||0)+1;ui.stepT=Date.now();SND.step(ui.stepN);}
+      if(d>14)SND.warp();else{ui.stepN=(Date.now()-(ui.stepT||0)>900)?0:(ui.stepN||0)+1;ui.stepT=Date.now();const sn=ui.stepN;if(camOn())setTimeout(()=>SND.step(sn),400);else SND.step(sn);}
     }
   });
   if(!ch)return;
@@ -3949,7 +3949,7 @@ function tickTokens(){
     const q=tokXY(p.id);
     if(ui.warpIds&&ui.warpIds.includes(p.id))camSlide(el,q,p.id);
     el.style.left=q.x+'%';el.style.top=q.y+'%';el.style.setProperty('--tz',tokAng(p.id)+'deg');
-    if(ui.hopIds.includes(p.id)){el.classList.remove('hop');void el.offsetWidth;el.classList.add('hop');setTimeout(()=>el.classList.remove('hop'),camOn()?400:260);}
+    if(ui.hopIds.includes(p.id)){el.classList.remove('hop');void el.offsetWidth;el.classList.add('hop');setTimeout(()=>el.classList.remove('hop'),camOn()?460:260);}
   });
   ui.hopIds=[];ui.warpIds=[];
 }
