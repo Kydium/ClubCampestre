@@ -1523,6 +1523,22 @@ a.chip.clubb:active{transform:translateY(2px);box-shadow:0 1px 0 #0a1b55}
 .cty u{position:absolute;width:calc(var(--u)*var(--s)*.9);height:calc(var(--u)*var(--s)*.34);transform:translate(-50%,-50%);border-radius:50%;background:radial-gradient(closest-side,#0005,#0000)}
 .hzz{display:none}
 .cam3d .hzz{display:block;position:absolute;left:0;right:0;top:0;height:42%;pointer-events:none;background:linear-gradient(#d6efffcc 0,#d6efff66 45%,#d6efff00 100%);opacity:0}
+
+/* ===== v3.54 objetos fijos en 3D: la cámara es la que se mueve ===== */
+.tok span em{font-style:normal;box-shadow:none;background:none;border:0;padding:0;margin:0;border-radius:0;text-shadow:none;min-width:0}
+.tok span em+em{display:none}
+.cam3d.fx3 .tok{--cz:var(--tz,0deg);--cs:-90deg}
+.cam3d.fx3 .tok span{font-size:0;filter:none;transform-style:preserve-3d;transition:transform .3s}
+.cam3d.fx3 .tok span em{display:block;position:absolute;left:0;right:0;bottom:0;text-align:center;line-height:1;font-size:calc(var(--u)*7);backface-visibility:visible;
+  filter:grayscale(1) sepia(.42) hue-rotate(178deg) saturate(1.25) contrast(1.1) brightness(1.22)}
+.cam3d.fx3 .tok span em.l1{transform:translateZ(calc(var(--u)*-.3));filter:grayscale(1) sepia(.42) hue-rotate(178deg) brightness(.95)}
+.cam3d.fx3 .tok span em.l2{transform:translateZ(calc(var(--u)*-.6));filter:grayscale(1) sepia(.42) hue-rotate(178deg) brightness(.8)}
+.cam3d.fx3 .tok span em.l3{transform:translateZ(calc(var(--u)*-.9));filter:grayscale(1) sepia(.42) hue-rotate(178deg) brightness(1.05)}
+.cam3d.fx3 .tok span em.x{transform:translateZ(calc(var(--u)*-.45)) rotateY(90deg);filter:grayscale(1) sepia(.42) hue-rotate(178deg) brightness(.9)}
+.cam3d.fx3 .dnb.stand{--cz:var(--tz,0deg);--cs:-90deg}
+.cam3d.fx3 .cty i{transform:translate(-50%,-100%) rotateZ(var(--r,25deg)) rotateX(-90deg)}
+.cty i.x2{display:none}
+.cam3d.fx3 .cty i.x2{display:block;--r:115deg}
 </style>
 </head>
 <body>
@@ -1619,7 +1635,7 @@ window.BOOT=(function(){
 <button id="emoB" type="button" aria-label="Reacciones y chat">😊<span class="bd" id="emoBd"></span></button>
 <script>
 'use strict';
-const VERSION='3.53.0';
+const VERSION='3.54.0';
 /* Firebase (mismo proyecto que Wolvevilles). Los datos van en el nodo "monopoly/" */
 const FBCFG={apiKey:"AIzaSyBfrs6B-j22O67pnUb5DYq5CevrIg0dtEs",authDomain:"project-349e4491-0828-4f64-bb5.firebaseapp.com",databaseURL:"https://project-349e4491-0828-4f64-bb5-default-rtdb.firebaseio.com",projectId:"project-349e4491-0828-4f64-bb5",storageBucket:"project-349e4491-0828-4f64-bb5.firebasestorage.app",messagingSenderId:"180444249462",appId:"1:180444249462:web:bdf189d171d908a0274e57"};
 
@@ -2527,7 +2543,7 @@ function camStart(){if(ui.camRaf)return;ui.camT=performance.now();ui.camRaf=requ
 function camRelease(){   /* suelta el tablero: vuelve a su inclinación de siempre */
   const bd=$('board');if(bd){bd.style.transform='';bd.style.transformOrigin='';bd.style.removeProperty('--cs');bd.style.removeProperty('--cz');}
   const st=$('stage');if(st){st.style.perspective='';st.style.perspectiveOrigin='';}
-  const w=$('boardwrap');if(w)w.classList.remove('cam3d');
+  const w=$('boardwrap');if(w){w.classList.remove('cam3d');w.classList.remove('fx3');}
   ui.cam3d=false;ui.camGo=false;ui.cs=null;ui.camStr='';ui.camCs=undefined;ui.camCz=undefined;ui.camEl=null;ui.camKey='';ui.camMode='';ui.camPendT=0;ui.calm=0;ui.swA=0;ui.glide=null;
 }
 function camStop(){if(ui.camRaf)cancelAnimationFrame(ui.camRaf);ui.camRaf=0;camRelease();}
@@ -2647,6 +2663,7 @@ function camLoop(now){
   const P=CAM.pw*W,po=.45,key=W+'|'+sh;
   if(ui.camKey!==key){ui.camKey=key;ui.camFit=camFitCalc(W,sh,po,P);st.style.perspective=P.toFixed(0)+'px';st.style.perspectiveOrigin='50% '+(po*100)+'%';}
   if(!w.classList.contains('cam3d')){w.classList.add('cam3d');ui.cam3d=true;}
+  if(w.classList.contains('fx3')!==!!ui.rot)w.classList.toggle('fx3',!!ui.rot);
   let bg=st.querySelector('.bgs');if(!bg){bg=document.createElement('div');bg.className='bgs';bg.innerHTML='<i></i><i></i><i></i><i></i><i></i><i></i>';st.insertBefore(bg,st.firstChild);}
   let hzE=st.querySelector('.hzz');if(!hzE){hzE=document.createElement('div');hzE.className='hzz';st.appendChild(hzE);}
   const F=ui.camFit,pl=camPlan(nw);if(pl.m==='ov'&&ui.camMode!=='ov')ui.camOvT0=nw;ui.camMode=pl.m;ui.camPid=pl.pid;
@@ -3720,7 +3737,7 @@ function dnbHTML(){
   if(!ui.dn)return'';
   const fresh=!ui.dn.seen;ui.dn.seen=true;
   let h='';
-  const stand=(cls,x,y,d,i)=>{const q=SQ[i]||{};const fx=q.t==='prop'?`<i class="dnx" style="background:${GC[q.g]||'#999'}"></i>`:`<i class="dnx e">${q.i||''}</i>`;return`<div class="${cls}" style="left:${x.toFixed(2)}%;top:${y.toFixed(2)}%;--c:${ui.dn.col}"><i class="dnf"></i><div class="dns"><div class="dni"><span>${d}</span>${fx}</div></div></div>`;};
+  const stand=(cls,x,y,d,i)=>{const q=SQ[i]||{};const tz=sideAng(i%10===0?i+39:i);const fx=q.t==='prop'?`<i class="dnx" style="background:${GC[q.g]||'#999'}"></i>`:`<i class="dnx e">${q.i||''}</i>`;return`<div class="${cls}" style="left:${x.toFixed(2)}%;top:${y.toFixed(2)}%;--c:${ui.dn.col};--tz:${tz}deg"><i class="dnf"></i><div class="dns"><div class="dni"><span>${d}</span>${fx}</div></div></div>`;};
   for(let d=1;d<=12;d++){
     const i=(ui.dn.pos+d)%40,ht=ui.dn.hit;
     const st=(ht===d?' hit':'')+((ht&&ht!==d)?' gone':'');
@@ -3759,11 +3776,16 @@ function ownersHTML(){
   }
   return h+dnbHTML()+'</div>';
 }
+const sideAng=i=>[-90,0,90,180][Math.floor((((i%40)+40)%40)/10)];
+function tokAng(pid){
+  ui.tang=ui.tang||{};const i=ui.tcur&&ui.tcur[pid]!==undefined?ui.tcur[pid]:((P(S,pid)||{}).pos||0);
+  const b=sideAng(i),pv=ui.tang[pid];const a=pv===undefined?b:pv+wrap180(b-pv);ui.tang[pid]=a;return a;
+}
 function tokensHTML(){
   const cp=S.phase==='play'?curP(S):null;
   return'<div id="tkl">'+S.players.filter(p=>!p.bankrupt).map(p=>{const q=tokXY(p.id);
     const J=ui.jail[p.id],jailed=(p.jail||0)>0&&!(J&&J.stage!=='done');
-    return`<div class="tok${cp&&cp.id===p.id?' cur':''}${jailed?' jailed':''}" data-tk="${p.id}" style="--c:${p.col};left:${q.x}%;top:${q.y}%"><b></b><span>${p.tk}</span></div>`;}).join('')+'</div>';
+    return`<div class="tok${cp&&cp.id===p.id?' cur':''}${jailed?' jailed':''}" data-tk="${p.id}" style="--c:${p.col};--tz:${tokAng(p.id)}deg;left:${q.x}%;top:${q.y}%"><b></b><span><em>${p.tk}</em><em class="l1">${p.tk}</em><em class="l2">${p.tk}</em><em class="l3">${p.tk}</em><em class="x">${p.tk}</em></span></div>`;}).join('')+'</div>';
 }
 function tickTokens(){
   if(!S||S.phase==='lobby'){return;}
@@ -3825,7 +3847,7 @@ function updateTokensPos(slow){
     const el=document.querySelector('[data-tk="'+p.id+'"]');if(!el)return;
     const q=tokXY(p.id);
     if(slow)el.style.transition='left .95s cubic-bezier(.45,0,.2,1),top .95s cubic-bezier(.45,0,.2,1)';
-    el.style.left=q.x+'%';el.style.top=q.y+'%';
+    el.style.left=q.x+'%';el.style.top=q.y+'%';el.style.setProperty('--tz',tokAng(p.id)+'deg');
     if(slow)setTimeout(()=>{el.style.transition='';},1100);
   });
 }
@@ -4218,7 +4240,7 @@ function gameParts(){
   return{top:topHTML(),flat:!!ui.flat,tiles:b.tiles,ctr:b.ctr,owl:b.owl,tkl:b.tkl,act:'',landL:L,landR:R,landK:kind,pl:playersHTML(),bar:barHTML()};
 }
 function gameFull(G){
-  return`<div class="wrap"><div class="top" id="topbar">${G.top}</div><div id="boardwrap" class="${G.flat?'flat':''}${camOn()?' cam':''}"><div id="stage"><div id="board">${G.tiles.join('')}${G.ctr}${G.owl}${G.tkl}${DICE_LAYER}<i class="bfb"></i><div class="cty"><u style="left:10%;top:10%;--s:8"></u><u style="left:20%;top:8%;--s:5"></u><u style="left:8%;top:21%;--s:6.5"></u><u style="left:90%;top:10%;--s:8"></u><u style="left:80%;top:8%;--s:5"></u><u style="left:92%;top:21%;--s:6.5"></u><u style="left:10%;top:90%;--s:7.5"></u><u style="left:8%;top:79%;--s:5"></u><u style="left:21%;top:92%;--s:5.5"></u><u style="left:90%;top:90%;--s:8"></u><u style="left:92%;top:79%;--s:5"></u><u style="left:79%;top:92%;--s:6"></u><u style="left:50%;top:7%;--s:5"></u><u style="left:37%;top:8%;--s:4.5"></u><u style="left:63%;top:8%;--s:4.5"></u><u style="left:50%;top:93%;--s:7"></u><u style="left:36%;top:92%;--s:4.5"></u><u style="left:64%;top:92%;--s:4.5"></u><u style="left:7%;top:50%;--s:6"></u><u style="left:8%;top:37%;--s:4.5"></u><u style="left:8%;top:63%;--s:4.5"></u><u style="left:93%;top:50%;--s:8"></u><u style="left:92%;top:37%;--s:4.5"></u><u style="left:92%;top:63%;--s:4.5"></u><i style="left:10%;top:10%;--s:8">🏢</i><i style="left:20%;top:8%;--s:5">🌳</i><i style="left:8%;top:21%;--s:6.5">🏬</i><i style="left:90%;top:10%;--s:8">🏨</i><i style="left:80%;top:8%;--s:5">🌴</i><i style="left:92%;top:21%;--s:6.5">🏦</i><i style="left:10%;top:90%;--s:7.5">🏛️</i><i style="left:8%;top:79%;--s:5">🌳</i><i style="left:21%;top:92%;--s:5.5">🏠</i><i style="left:90%;top:90%;--s:8">🏰</i><i style="left:92%;top:79%;--s:5">🌴</i><i style="left:79%;top:92%;--s:6">⛪</i><i style="left:50%;top:7%;--s:5">⛲</i><i style="left:37%;top:8%;--s:4.5">🌳</i><i style="left:63%;top:8%;--s:4.5">🌲</i><i style="left:50%;top:93%;--s:7">🎡</i><i style="left:36%;top:92%;--s:4.5">🌲</i><i style="left:64%;top:92%;--s:4.5">🌳</i><i style="left:7%;top:50%;--s:6">🏤</i><i style="left:8%;top:37%;--s:4.5">🌴</i><i style="left:8%;top:63%;--s:4.5">🌳</i><i style="left:93%;top:50%;--s:8">🗼</i><i style="left:92%;top:37%;--s:4.5">🌲</i><i style="left:92%;top:63%;--s:4.5">🌴</i></div></div></div><div id="landov" class="${(G.landL||G.landR)?'on':''}${G.landK==='gen'?' gen':''}${G.landK==='ord'?' ord':''}"><div class="lrow${G.landR?'':' solo'}"><div id="landL">${G.landL}</div><div id="landR">${G.landR}</div></div></div></div><div id="actp">${G.act}</div><div id="pkl">${G.pl}</div></div><div class="bar" id="botbar">${G.bar}</div>`;
+  return`<div class="wrap"><div class="top" id="topbar">${G.top}</div><div id="boardwrap" class="${G.flat?'flat':''}${camOn()?' cam':''}"><div id="stage"><div id="board">${G.tiles.join('')}${G.ctr}${G.owl}${G.tkl}${DICE_LAYER}<i class="bfb"></i><div class="cty"><u style="left:10%;top:10%;--s:8"></u><u style="left:20%;top:8%;--s:5"></u><u style="left:8%;top:21%;--s:6.5"></u><u style="left:90%;top:10%;--s:8"></u><u style="left:80%;top:8%;--s:5"></u><u style="left:92%;top:21%;--s:6.5"></u><u style="left:10%;top:90%;--s:7.5"></u><u style="left:8%;top:79%;--s:5"></u><u style="left:21%;top:92%;--s:5.5"></u><u style="left:90%;top:90%;--s:8"></u><u style="left:92%;top:79%;--s:5"></u><u style="left:79%;top:92%;--s:6"></u><u style="left:50%;top:7%;--s:5"></u><u style="left:37%;top:8%;--s:4.5"></u><u style="left:63%;top:8%;--s:4.5"></u><u style="left:50%;top:93%;--s:7"></u><u style="left:36%;top:92%;--s:4.5"></u><u style="left:64%;top:92%;--s:4.5"></u><u style="left:7%;top:50%;--s:6"></u><u style="left:8%;top:37%;--s:4.5"></u><u style="left:8%;top:63%;--s:4.5"></u><u style="left:93%;top:50%;--s:8"></u><u style="left:92%;top:37%;--s:4.5"></u><u style="left:92%;top:63%;--s:4.5"></u><i style="left:10%;top:10%;--s:8">🏢</i><i style="left:20%;top:8%;--s:5">🌳</i><i style="left:8%;top:21%;--s:6.5">🏬</i><i style="left:90%;top:10%;--s:8">🏨</i><i style="left:80%;top:8%;--s:5">🌴</i><i style="left:92%;top:21%;--s:6.5">🏦</i><i style="left:10%;top:90%;--s:7.5">🏛️</i><i style="left:8%;top:79%;--s:5">🌳</i><i style="left:21%;top:92%;--s:5.5">🏠</i><i style="left:90%;top:90%;--s:8">🏰</i><i style="left:92%;top:79%;--s:5">🌴</i><i style="left:79%;top:92%;--s:6">⛪</i><i style="left:50%;top:7%;--s:5">⛲</i><i style="left:37%;top:8%;--s:4.5">🌳</i><i style="left:63%;top:8%;--s:4.5">🌲</i><i style="left:50%;top:93%;--s:7">🎡</i><i style="left:36%;top:92%;--s:4.5">🌲</i><i style="left:64%;top:92%;--s:4.5">🌳</i><i style="left:7%;top:50%;--s:6">🏤</i><i style="left:8%;top:37%;--s:4.5">🌴</i><i style="left:8%;top:63%;--s:4.5">🌳</i><i style="left:93%;top:50%;--s:8">🗼</i><i style="left:92%;top:37%;--s:4.5">🌲</i><i style="left:92%;top:63%;--s:4.5">🌴</i><i class="x2" style="left:10%;top:10%;--s:8">🏢</i><i class="x2" style="left:20%;top:8%;--s:5">🌳</i><i class="x2" style="left:8%;top:21%;--s:6.5">🏬</i><i class="x2" style="left:90%;top:10%;--s:8">🏨</i><i class="x2" style="left:80%;top:8%;--s:5">🌴</i><i class="x2" style="left:92%;top:21%;--s:6.5">🏦</i><i class="x2" style="left:10%;top:90%;--s:7.5">🏛️</i><i class="x2" style="left:8%;top:79%;--s:5">🌳</i><i class="x2" style="left:21%;top:92%;--s:5.5">🏠</i><i class="x2" style="left:90%;top:90%;--s:8">🏰</i><i class="x2" style="left:92%;top:79%;--s:5">🌴</i><i class="x2" style="left:79%;top:92%;--s:6">⛪</i><i class="x2" style="left:50%;top:7%;--s:5">⛲</i><i class="x2" style="left:37%;top:8%;--s:4.5">🌳</i><i class="x2" style="left:63%;top:8%;--s:4.5">🌲</i><i class="x2" style="left:50%;top:93%;--s:7">🎡</i><i class="x2" style="left:36%;top:92%;--s:4.5">🌲</i><i class="x2" style="left:64%;top:92%;--s:4.5">🌳</i><i class="x2" style="left:7%;top:50%;--s:6">🏤</i><i class="x2" style="left:8%;top:37%;--s:4.5">🌴</i><i class="x2" style="left:8%;top:63%;--s:4.5">🌳</i><i class="x2" style="left:93%;top:50%;--s:8">🗼</i><i class="x2" style="left:92%;top:37%;--s:4.5">🌲</i><i class="x2" style="left:92%;top:63%;--s:4.5">🌴</i></div></div></div><div id="landov" class="${(G.landL||G.landR)?'on':''}${G.landK==='gen'?' gen':''}${G.landK==='ord'?' ord':''}"><div class="lrow${G.landR?'':' solo'}"><div id="landL">${G.landL}</div><div id="landR">${G.landR}</div></div></div></div><div id="actp">${G.act}</div><div id="pkl">${G.pl}</div></div><div class="bar" id="botbar">${G.bar}</div>`;
 }
 function gameHTML(){return gameFull(gameParts());}
 const tpl=document.createElement('template');
