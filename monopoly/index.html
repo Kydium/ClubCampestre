@@ -1584,6 +1584,23 @@ a.chip.clubb:active{transform:translateY(2px);box-shadow:0 1px 0 #0a1b55}
 .b3.hse{--c:#2fc455;--rf:#178a33}
 .b3.htl{--c:#e23b28;--rf:#a81a0e}
 .cam3d.fx3 .band .hw{visibility:hidden}
+
+/* ===== v3.57 ===== */
+.cg{display:none}
+.cam3d.fx3 .tok.jailed:after{display:none}
+.cam3d.fx3 .cg{display:block;position:absolute;left:0;top:0;width:calc(var(--u)*7.4);height:calc(var(--u)*7.4);transform:translate(-50%,-50%);transform-style:preserve-3d;--hh:calc(var(--u)*9.4);pointer-events:none;text-decoration:none;
+  --bv:repeating-linear-gradient(90deg,#39414f 0 calc(var(--u)*.5),#0000 calc(var(--u)*.5) calc(var(--u)*1.48));--bh:repeating-linear-gradient(0deg,#39414f 0 calc(var(--u)*.5),#0000 calc(var(--u)*.5) calc(var(--u)*1.48));
+  --rl:linear-gradient(#262c38,#262c38)}
+.cam3d.fx3 .cg.drop{animation:cgdrop .6s cubic-bezier(.55,0,.9,.5) both}
+@keyframes cgdrop{0%{transform:translate(-50%,-50%) translateZ(calc(var(--u)*45));opacity:0}15%{opacity:1}78%{transform:translate(-50%,-50%) translateZ(0)}88%{transform:translate(-50%,-50%) translateZ(calc(var(--u)*1.6))}100%{transform:translate(-50%,-50%) translateZ(0)}}
+.cg>*{position:absolute;display:block;text-decoration:none}
+.cg .t{inset:0;transform:translateZ(var(--hh));background:var(--bv);box-shadow:inset 0 0 0 calc(var(--u)*.55) #262c38}
+.cg .s,.cg .n{left:0;width:100%;height:var(--hh);background:var(--rl) 0 0/100% calc(var(--u)*.6) no-repeat,var(--rl) 0 100%/100% calc(var(--u)*.6) no-repeat,var(--bv)}
+.cg .s{bottom:0;transform-origin:50% 100%;transform:rotateX(-90deg)}
+.cg .n{top:0;transform-origin:50% 0;transform:rotateX(90deg)}
+.cg .w,.cg .e{top:0;width:var(--hh);height:100%;background:var(--rl) 0 0/calc(var(--u)*.6) 100% no-repeat,var(--rl) 100% 0/calc(var(--u)*.6) 100% no-repeat,var(--bh)}
+.cg .w{left:0;transform-origin:0 50%;transform:rotateY(-90deg)}
+.cg .e{right:0;transform-origin:100% 50%;transform:rotateY(90deg)}
 </style>
 </head>
 <body>
@@ -1680,7 +1697,7 @@ window.BOOT=(function(){
 <button id="emoB" type="button" aria-label="Reacciones y chat">😊<span class="bd" id="emoBd"></span></button>
 <script>
 'use strict';
-const VERSION='3.56.0';
+const VERSION='3.57.0';
 /* Firebase (mismo proyecto que Wolvevilles). Los datos van en el nodo "monopoly/" */
 const FBCFG={apiKey:"AIzaSyBfrs6B-j22O67pnUb5DYq5CevrIg0dtEs",authDomain:"project-349e4491-0828-4f64-bb5.firebaseapp.com",databaseURL:"https://project-349e4491-0828-4f64-bb5-default-rtdb.firebaseio.com",projectId:"project-349e4491-0828-4f64-bb5",storageBucket:"project-349e4491-0828-4f64-bb5.firebasestorage.app",messagingSenderId:"180444249462",appId:"1:180444249462:web:bdf189d171d908a0274e57"};
 
@@ -2562,18 +2579,18 @@ function processFx(){
 /* ===== v3.50 cámara por detrás de la ficha ===== */
 const CAM={
   tOv:40,        /* vista general: el tablero se inclina 40° → la cámara mira 50° hacia abajo, al centro */
-  tTurn:60,      /* esperando los dados: la cámara baja un poco (43° hacia abajo) */
-  tFol:67,       /* siguiendo a la ficha: va baja y por detrás, inclinada 35° hacia abajo */
-  tAct:61,       /* al caer en una casilla: 50° hacia abajo */
+  tTurn:55,      /* esperando los dados: la cámara baja un poco (43° hacia abajo) */
+  tFol:59,       /* siguiendo a la ficha: va baja y por detrás, inclinada 35° hacia abajo */
+  tAct:56,       /* al caer en una casilla: 50° hacia abajo */
   lean:12,       /* fichas y números parados: cuánto se inclinan hacia atrás respecto a la pantalla */
-  pw:2.2,        /* distancia de la cámara en anchos de tablero (perspectiva suave) */
+  pw:2.7,        /* distancia de la cámara en anchos de tablero (perspectiva suave) */
   mg:.04,        /* margen de la vista general a cada lado */
-  zTurn:1.5,zFol:2.5,zAct:2.4,fT:.45,   /* acercamientos respecto a la vista general: turno / siguiendo / casilla de acción */
+  zTurn:1.4,zFol:1.85,zAct:2.1,fT:.45,   /* acercamientos respecto a la vista general: turno / siguiendo / casilla de acción */
   axT:-.06,ayT:.1,axF:-.12,ayF:.2,axA:-.23,ayA:.3,   /* dónde queda la ficha en pantalla (fracción del ancho del tablero): un poco a la izquierda y abajo, para ver el camino que viene */
   look:1,   /* cuántas casillas hacia adelante mira la cámara para girar la mesa */
-  out:42,           /* la cámara se corre un poco hacia afuera de la ficha: mira hacia el interior del tablero (grados) */
-  k:5.5,kYaw:2.8,yMax:30,     /* amortiguación exponencial 1-exp(-k·dt), aplicada dos veces: arranca y frena suave (el giro de la mesa es un poco más lento y nunca pasa de ~240°/s) */
-  step:360,pause:500,dive:900,hold:900,ovHold:600,
+  out:36,           /* la cámara se corre un poco hacia afuera de la ficha: mira hacia el interior del tablero (grados) */
+  k:4.2,kYaw:2.4,yMax:30,     /* amortiguación exponencial 1-exp(-k·dt), aplicada dos veces: arranca y frena suave (el giro de la mesa es un poco más lento y nunca pasa de ~240°/s) */
+  step:360,pause:500,dive:900,hold:900,ovHold:150,
   glMin:.6,glMax:1,glK:.45,ease:'cubic-bezier(.45,0,.2,1)',   /* saltos largos (cárcel, cartas): la ficha se desliza entre .6 y 1 s con ease-in-out */
   swT:.55,swZ:.55,swP:.005    /* balanceo en reposo: cabeceo, giro y desplazamiento (casi imperceptible) */
 };
@@ -3779,11 +3796,17 @@ function tokXY(pid){
 /* marcas de dueño: salen hacia afuera del borde del tablero */
 /* v3.42 medios óvalos de distancia: sobre el borde superior de cada casilla (fuera de la casilla, para que no se recorten) */
 function dnbHTML(){
-  if(!ui.dn)return'';
+  if(!ui.dn){
+    const T=ui.dtg;if(!T||!camOn()||!S)return'';
+    const q=P(S,T.pid),cur=ui.tcur[T.pid],dst=(T.pos+T.d)%40;
+    if(!q||q.bankrupt||cur===dst||(q.pos!==dst&&cur===q.pos)||Date.now()-T.t>20000){ui.dtg=null;return'';}
+    ui.dn={pos:T.pos,hit:T.d,col:T.col,seen:true,only:T.d};const r=dnbHTML();ui.dn=null;return r;
+  }
   const fresh=!ui.dn.seen;ui.dn.seen=true;
   let h='';
-  const stand=(cls,x,y,d,i)=>{const q=SQ[i]||{};const tz=sideAng(i%10===0?i+39:i)+SGN;const fx=q.t==='prop'?`<i class="dnx" style="background:${GC[q.g]||'#999'}"></i>`:`<i class="dnx e">${q.i||''}</i>`;return`<div class="${cls}" style="left:${x.toFixed(2)}%;top:${y.toFixed(2)}%;--c:${ui.dn.col};--tz:${tz}deg"><i class="dnf"></i><div class="dns"><div class="dni"><span>${d}</span>${fx}</div><div class="dni bk"><span>${d}</span>${fx}</div></div></div>`;};
+  const stand=(cls,x,y,d,i)=>{const q=SQ[i]||{};const tz=sideAng(i%10===0?i+39:i)+SGN;const fx=q.t==='prop'?`<i class="dnx" style="background:${GC[q.g]||'#999'}"></i>`:`<i class="dnx e">${q.i||''}</i>`;return`<div class="${cls}" data-d="${d}" style="left:${x.toFixed(2)}%;top:${y.toFixed(2)}%;--c:${ui.dn.col};--tz:${tz}deg"><i class="dnf"></i><div class="dns"><div class="dni"><span>${d}</span>${fx}</div><div class="dni bk"><span>${d}</span>${fx}</div></div></div>`;};
   for(let d=1;d<=12;d++){
+    if(ui.dn.only&&d!==ui.dn.only)continue;
     const i=(ui.dn.pos+d)%40,ht=ui.dn.hit;
     const st=(ht===d?' hit':'')+((ht&&ht!==d)?' gone':'');
     if(i%10!==0){
@@ -3796,7 +3819,7 @@ function dnbHTML(){
       else if(k==='t'){x=cx;y=cy+hr;w=L;hh=T;}
       else if(k==='l'){x=cx+hw;y=cy;w=T;hh=L;}
       else{x=cx-hw;y=cy;w=T;hh=L;}
-      h+=`<div class="dnb edge dq${k}${fresh?' fresh':''}${d===1?' no1':''}${st}" style="left:${x.toFixed(2)}%;top:${y.toFixed(2)}%;width:${w.toFixed(2)}%;height:${hh.toFixed(2)}%;--c:${ui.dn.col};--k:${d}"><div class="dni"><span>${d}</span></div></div>`;
+      if(!ui.dn.only)h+=`<div class="dnb edge dq${k}${fresh?' fresh':''}${d===1?' no1':''}${st}" style="left:${x.toFixed(2)}%;top:${y.toFixed(2)}%;width:${w.toFixed(2)}%;height:${hh.toFixed(2)}%;--c:${ui.dn.col};--k:${d}"><div class="dni"><span>${d}</span></div></div>`;
       /* con la cámara cercana el mismo número se levanta desde el mismo punto de la franja */
       if(camOn())h+=stand('dnb stand'+(d===1?' no1':'')+st,x,y,d,i);
     }else if(camOn()){   /* esquinas: el mismo círculo de siempre (abajo a la derecha), pero parado */
@@ -3864,11 +3887,14 @@ function tokModel(e){   /* la figura se dibuja una vez en un lienzo: cara de met
   return TKC[e]=R;
 }
 const tokBody=e=>{const M=tokModel(e);return`<em>${e}</em>`+(M.cls?TKL.map(L=>`<em class="ly${L[1]}" style="${L[0]}"></em>`).join('')+M.prof.map(q=>`<s style="--x:${q[0].toFixed(3)};--h:${(q[2]-q[1]).toFixed(3)};--yb:${q[2].toFixed(3)}"></s>`).join(''):'');};
+function cage(pid){ui.cgT=ui.cgT||{};if(!ui.cgT[pid])ui.cgT[pid]=Date.now();
+  return`<u class="cg${Date.now()-ui.cgT[pid]<900?' drop':''}"><ins class="s"></ins><ins class="n"></ins><ins class="w"></ins><ins class="e"></ins><ins class="t"></ins></u>`;}
 function tokensHTML(){
+  if(ui.cgT)S.players.forEach(p=>{if(!(p.jail>0))delete ui.cgT[p.id];});
   const cp=S.phase==='play'?curP(S):null;
   return'<div id="tkl">'+S.players.filter(p=>!p.bankrupt).map(p=>{const q=tokXY(p.id);
     const J=ui.jail[p.id],jailed=(p.jail||0)>0&&!(J&&J.stage!=='done');
-    return`<div class="tok${cp&&cp.id===p.id?' cur':''}${jailed?' jailed':''}" data-tk="${p.id}" style="--c:${p.col};--tz:${tokAng(p.id)}deg;left:${q.x}%;top:${q.y}%"><b></b><span class="${tokModel(p.tk).cls}">${tokBody(p.tk)}</span></div>`;}).join('')+'</div>';
+    return`<div class="tok${cp&&cp.id===p.id?' cur':''}${jailed?' jailed':''}" data-tk="${p.id}" style="--c:${p.col};--tz:${tokAng(p.id)}deg;left:${q.x}%;top:${q.y}%"><b></b><span class="${tokModel(p.tk).cls}">${tokBody(p.tk)}</span>${jailed?cage(p.id):''}</div>`;}).join('')+'</div>';
 }
 function tickTokens(){
   if(!S||S.phase==='lobby'){return;}
@@ -3909,7 +3935,7 @@ function tickTokens(){
     const el=document.querySelector('[data-tk="'+p.id+'"]');if(!el)return;
     const q=tokXY(p.id);
     if(ui.warpIds&&ui.warpIds.includes(p.id))camSlide(el,q,p.id);
-    el.style.left=q.x+'%';el.style.top=q.y+'%';
+    el.style.left=q.x+'%';el.style.top=q.y+'%';el.style.setProperty('--tz',tokAng(p.id)+'deg');
     if(ui.hopIds.includes(p.id)){el.classList.remove('hop');void el.offsetWidth;el.classList.add('hop');setTimeout(()=>el.classList.remove('hop'),camOn()?400:260);}
   });
   ui.hopIds=[];ui.warpIds=[];
@@ -4104,7 +4130,8 @@ function diceBanner(){
   w.appendChild(o);setTimeout(()=>{o.classList.add('out');setTimeout(()=>o.remove(),450);},1900);
 }
 function markHit(){diceBanner();
-  if(S&&S.sub!=='order'&&ui.dn){const sum=S.dice[0]+S.dice[1];ui.dn.hit=sum;document.querySelectorAll('.dnb,.dn').forEach(x=>{const h=+x.textContent===sum;x.classList.remove('fresh');x.classList.toggle('hit',h);x.classList.toggle('dim',!h);});}
+  if(S&&S.sub!=='order'&&ui.dn&&S.dice){const q=S.players.find(p=>p.col===ui.dn.col);if(q)ui.dtg={pid:q.id,pos:ui.dn.pos,d:S.dice[0]+S.dice[1],col:ui.dn.col,t:Date.now()};}
+  if(S&&S.sub!=='order'&&ui.dn){const sum=S.dice[0]+S.dice[1];ui.dn.hit=sum;document.querySelectorAll('.dnb,.dn').forEach(x=>{const h=+(x.dataset.d||x.textContent)===sum;x.classList.remove('fresh');x.classList.toggle('hit',h);x.classList.toggle('dim',!h);});}
 }
 function stepDice(now){
   const D=ui.dice;if(!D.anim)return;
