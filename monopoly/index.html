@@ -1619,6 +1619,21 @@ body.camfull #app,body.camfull #app>.wrap,body.camfull #app>.wrap>#boardwrap.cam
 #hbt.end{background:linear-gradient(#8ff0a8,#27b455);color:#063d17;box-shadow:0 4px 0 #0c6b2b,0 8px 16px #0007}
 #hbt:active{transform:translateX(-50%) translateY(3px);box-shadow:0 1px 0 #a85a00}
 @keyframes hbtP{50%{transform:translateX(-50%) scale(1.05)}}
+
+/* ===== v3.61 ===== */
+.cam3d .d3,.cam3d .dsh{--k2:0;--k3:1}
+.cam3d .dsh{filter:none;background:radial-gradient(closest-side,#000a,#0000);opacity:.5}
+body.camfull #topbar{display:none}
+.cam3d .cplate,.cam3d .thint{display:none!important}
+.cam3d #ctr{position:relative}
+.cam3d .banner{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);margin:0;white-space:nowrap}
+.cam3d #tray{position:absolute;inset:calc(var(--u)*5)}
+.cam3d .dvr{animation:none}
+#boardwrap.cam3d{aspect-ratio:auto}
+.cam3d #dvo{top:38%}
+.cam3d .dvb{animation-delay:.3s}
+.cam3d .dvt{animation-delay:.42s}
+.cam3d.fx3 .tok span s{width:calc(var(--u)*3.6);margin-left:calc(var(--u)*(7*var(--x) - 1.8))}
 </style>
 </head>
 <body>
@@ -1715,7 +1730,7 @@ window.BOOT=(function(){
 <button id="emoB" type="button" aria-label="Reacciones y chat">😊<span class="bd" id="emoBd"></span></button>
 <script>
 'use strict';
-const VERSION='3.60.0';
+const VERSION='3.61.0';
 /* Firebase (mismo proyecto que Wolvevilles). Los datos van en el nodo "monopoly/" */
 const FBCFG={apiKey:"AIzaSyBfrs6B-j22O67pnUb5DYq5CevrIg0dtEs",authDomain:"project-349e4491-0828-4f64-bb5.firebaseapp.com",databaseURL:"https://project-349e4491-0828-4f64-bb5-default-rtdb.firebaseio.com",projectId:"project-349e4491-0828-4f64-bb5",storageBucket:"project-349e4491-0828-4f64-bb5.firebasestorage.app",messagingSenderId:"180444249462",appId:"1:180444249462:web:bdf189d171d908a0274e57"};
 
@@ -2603,7 +2618,7 @@ const CAM={
   lean:12,       /* fichas y números parados: cuánto se inclinan hacia atrás respecto a la pantalla */
   pw:2.7,        /* distancia de la cámara en anchos de tablero (perspectiva suave) */
   mg:.04,        /* margen de la vista general a cada lado */
-  zOv:1.37,zTurn:1.94,zFol:2.4,zAct:2.6,fT:.45,   /* acercamientos respecto a la vista general: turno / siguiendo / casilla de acción */
+  zOv:1.37,zDice:1.55,tDice:43,show:1700,zTurn:1.94,zFol:2.2,zAct:2.35,fT:.45,   /* acercamientos respecto a la vista general: turno / siguiendo / casilla de acción */
   axT:-.06,ayT:.1,axF:-.12,ayF:.2,axA:-.23,ayA:.3,   /* dónde queda la ficha en pantalla (fracción del ancho del tablero): un poco a la izquierda y abajo, para ver el camino que viene */
   look:1,   /* cuántas casillas hacia adelante mira la cámara para girar la mesa */
   out:36,           /* la cámara se corre un poco hacia afuera de la ficha: mira hacia el interior del tablero (grados) */
@@ -2632,7 +2647,7 @@ function camRelease(){
   ui.cam3d=false;hudBtn();   /* suelta el tablero: vuelve a su inclinación de siempre */
   const bd=$('board');if(bd){bd.style.transform='';bd.style.transformOrigin='';bd.style.removeProperty('--cs');bd.style.removeProperty('--cz');}
   const st=$('stage');if(st){st.style.perspective='';st.style.perspectiveOrigin='';st.style.width='';st.style.height='';}
-  const w=$('boardwrap');if(w){w.classList.remove('cam3d');w.classList.remove('fx3');w.style.removeProperty('--bx');w.style.removeProperty('--by');}document.body.classList.remove('camfull');
+  const w=$('boardwrap');if(w){w.classList.remove('cam3d');w.classList.remove('fx3');w.style.removeProperty('--bx');w.style.height='';ui.camBH=0;w.style.removeProperty('--by');}document.body.classList.remove('camfull');
   ui.cam3d=false;ui.camGo=false;ui.cs=null;ui.camStr='';ui.camCs=undefined;ui.camCz=undefined;ui.camEl=null;ui.camKey='';ui.camMode='';ui.camPendT=0;ui.calm=0;ui.swA=0;ui.glide=null;
 }
 function camStop(){if(ui.camRaf)cancelAnimationFrame(ui.camRaf);ui.camRaf=0;camRelease();}
@@ -2687,6 +2702,7 @@ function camSlide(el,q,pid){
 function camPlan(nw){
   const cp=S.phase==='play'?curP(S):null;
   if(!cp||cp.bankrupt||S.sub==='order')return{m:'ov'};
+  if(ui.chg||ui.dice.anim||nw<(ui.dvUntil||0))return{m:'dice'};
   const mv=S.players.find(p=>!p.bankrupt&&ui.tcur[p.id]!==undefined&&ui.tcur[p.id]!==p.pos);
   const free=!ui.dice.anim&&nw>=(ui.cardHold||0);
   if(!mv||!free)ui.camPendT=0;else if(!ui.camPendT)ui.camPendT=nw;
@@ -2723,6 +2739,7 @@ function camYaw(pos,L,cw,ch){
 function camGoal(pl,cw,ch,W,sh){
   const g={fx:0,fy:0,z:CAM.zOv,t:CAM.tOv,ay:0,ax:0,yw:0};
   if(pl.m==='ov')return g;
+  if(pl.m==='dice'){g.z=CAM.zDice;g.t=CAM.tDice;g.ay=-.04;return g;}
   let tk;
   if(ui.glide&&ui.glide.pid===pl.pid&&Date.now()<ui.glide.end&&P(S,pl.pid)){   /* deslizamiento: la cámara apunta un poco adelante de la ficha, justo lo que compensa su amortiguación */
     const gl=ui.glide,u=(Date.now()-gl.t0)/(gl.dur*1000),e=camEase(u),kT=CAM.k*gl.dur,w=u>=1?1:e[0]+2*e[1]/kT+e[2]/(kT*kT);
@@ -2746,7 +2763,8 @@ function camLoop(now){
   const dt=Math.min(.1,Math.max(.001,(now-(ui.camT||now))/1000));ui.camT=now;
   const bd=$('board'),st=$('stage'),w=$('boardwrap');
   if(!bd||!st||!w||!S||(S.phase!=='play'&&S.phase!=='end')||ui.flat){if(ui.cam3d)camRelease();return;}
-  const W=bd.offsetWidth,cw=bd.clientWidth,ch=bd.clientHeight,sh=Math.round(W*.9);if(!W||!sh)return;
+  const W=bd.offsetWidth,cw=bd.clientWidth,ch=bd.clientHeight,VH0=window.innerHeight,sh=Math.round(Math.max(.9*W,Math.min(1.3*W,VH0-300)));if(!W||!sh)return;
+  if(ui.camBH!==sh){ui.camBH=sh;w.style.height=Math.round(sh+W*.045)+'px';}
   const wr=w.getBoundingClientRect(),bx=Math.round(wr.left),by0=Math.round(wr.top),oy=by0+W/100,VW=document.documentElement.clientWidth,VH=window.innerHeight;
   const nw=Date.now();
   if(ui.camEl!==bd){ui.camEl=bd;ui.camStr='';ui.camKey='';ui.camCs=undefined;ui.camCz=undefined;}
@@ -2760,6 +2778,7 @@ function camLoop(now){
   const F=ui.camFit,pl=camPlan(nw);if(pl.m==='ov'&&ui.camMode!=='ov')ui.camOvT0=nw;ui.camMode=pl.m;ui.camPid=pl.pid;
   const g=camGoal(pl,cw,ch,W,sh);
   if(pl.m==='ov'&&ui.rot&&ui.cs)g.yw=Math.round(ui.cs.b.yw/90)*90;
+  if(pl.m==='dice'&&ui.cs)g.yw=ui.cs.b.yw;
   if(!ui.cs){const i={fx:0,fy:0,z:1/F.s,t:16,ay:0,ax:0,yw:0};ui.cs={a:Object.assign({},i),b:Object.assign({},i)};}   /* entra deslizándose desde la vista de siempre */
   const A=ui.cs.a,B=ui.cs.b,k=1-Math.exp(-CAM.k*dt),kY=1-Math.exp(-CAM.kYaw*dt);
   g.yw=B.yw+wrap180(g.yw-B.yw);   /* la mesa gira siempre por el camino más corto */
@@ -2781,8 +2800,9 @@ function camLoop(now){
   const str=`translate(${(B.ax*W+sx).toFixed(2)}px,${(F.cy+B.ay*W+sy).toFixed(2)}px) rotateX(${t.toFixed(3)}deg) rotateZ(${yw.toFixed(3)}deg) scale(${s.toFixed(4)}) translate(${(-B.fx*W).toFixed(2)}px,${(-B.fy*W).toFixed(2)}px)`;
   if(str!==ui.camStr){ui.camStr=str;bd.style.transformOrigin='50% 50%';bd.style.transform=str;}
   const cs=-(B.t-CAM.lean),cz=-B.yw;   /* fichas y números se paran mirando a la cámara, un poco recostados hacia atrás (sin el balanceo, para no repintar todo en cada cuadro) */
-  if(ui.camCs===undefined||Math.abs(cs-ui.camCs)>.04){ui.camCs=cs;bd.style.setProperty('--cs',cs.toFixed(2)+'deg');}
-  if(ui.camCz===undefined||Math.abs(cz-ui.camCz)>.05){ui.camCz=cz;bd.style.setProperty('--cz',cz.toFixed(2)+'deg');}
+  const bill=!ui.rot||!!document.querySelector('.cop');
+  if(bill&&(ui.camCs===undefined||Math.abs(cs-ui.camCs)>.04)){ui.camCs=cs;bd.style.setProperty('--cs',cs.toFixed(2)+'deg');}
+  if(bill&&(ui.camCz===undefined||Math.abs(cz-ui.camCz)>.05)){ui.camCz=cz;bd.style.setProperty('--cz',cz.toFixed(2)+'deg');}
 }
 function toggle3d(){ui.flat=!ui.flat;store.set('mono_3d',ui.flat?'0':'1');render();}
 
@@ -3509,7 +3529,7 @@ function render(){
   if(rolled){
     const cpp=curP(S),cur=ui.tcur[cpp.id],dd=cur===undefined?0:(cpp.pos-cur+40)%40;
     dly=Math.max(0,(ui.cardHold||0)-Date.now());
-    ui.holdUntil=Date.now()+dly+diceDur()+250+((dd>0&&dd<=14)?dd*(camOn()?CAM.step:240)+(camOn()?CAM.pause+CAM.dive:0):0)+150;
+    ui.holdUntil=Date.now()+dly+diceDur()+250+((dd>0&&dd<=14)?dd*(camOn()?CAM.step:240)+(camOn()?CAM.pause+CAM.dive+CAM.show:0):0)+150;
     if(S.ordRes&&S.ordRes.rid===S.rollId){ui.ordRevealAt=Date.now()+dly+diceDur()+250;ui.ordShowUntil=ui.ordRevealAt+3300;ui.holdUntil=Math.max(ui.holdUntil,ui.ordShowUntil);setTimeout(()=>{if(S)render();},Math.max(0,ui.ordRevealAt-Date.now())+40);}
   }
   let ctrNew=true;
@@ -3892,7 +3912,7 @@ function tokAng(pid){
   ui.tang=ui.tang||{};const i=ui.tcur&&ui.tcur[pid]!==undefined?ui.tcur[pid]:((P(S,pid)||{}).pos||0);
   const b=sideAng(i),pv=ui.tang[pid];const a=pv===undefined?b:pv+wrap180(b-pv);ui.tang[pid]=a;return a;
 }
-const TKL=[-5,-4,-3,-2,-1,1,2,3,4,5].map(k=>{const n=Math.abs(k),a=n/5;return[`--z:${(k*.24).toFixed(2)};--s:${(1-.24*a*a).toFixed(3)}`,n===5?' fc':n===4?' l':n<=1?' d':''];});
+const TKL=[-4,-3,-2,-1,1,2,3,4].map(k=>{const n=Math.abs(k),a=n/4;return[`--z:${(k*.52).toFixed(2)};--s:${n===4?.93:1}`,n===4?' fc':n===3?' l':n<=1?' d':''];});
 const TKC={};
 function tokModel(e){   /* la figura se dibuja una vez en un lienzo: cara de metal + silueta para el relleno, y su perfil para que sea maciza */
   if(TKC[e])return TKC[e];
@@ -3901,15 +3921,17 @@ function tokModel(e){   /* la figura se dibuja una vez en un lienzo: cara de met
     const N=96,W=Math.round(N*1.4),c=document.createElement('canvas');c.width=c.height=W;const x=c.getContext('2d',{willReadFrequently:true});
     x.font=N+'px '+getComputedStyle(document.body).fontFamily;x.textAlign='center';x.textBaseline='middle';x.fillText(e,W/2,W/2);
     const im=x.getImageData(0,0,W,W),d=im.data,al=(px,py)=>d[(py*W+px)*4+3]>110;
-    let x0=W,x1=0;for(let px=0;px<W;px++)for(let py=0;py<W;py+=2)if(al(px,py)){if(px<x0)x0=px;if(px>x1)x1=px;}
+    let x0=W,x1=0,y0=W,y1=0;for(let px=0;px<W;px++)for(let py=0;py<W;py++)if(al(px,py)){if(px<x0)x0=px;if(px>x1)x1=px;if(py<y0)y0=py;if(py>y1)y1=py;}
+    x0=Math.max(0,x0-2);y0=Math.max(0,y0-2);x1=Math.min(W-1,x1+2);y1=Math.min(W-1,y1+2);
     if(x1>x0){
-      const K=6;for(let j=0;j<K;j++){const px=Math.round(x0+(x1-x0)*(j+.5)/K);let t=-1,b=-1;for(let py=0;py<W;py++)if(al(px,py)){if(t<0)t=py;b=py;}
+      const K=7;for(let j=0;j<K;j++){const px=Math.round(x0+(x1-x0)*(j+.5)/K);let t=-1,b=-1;for(let py=0;py<W;py++)if(al(px,py)){if(t<0)t=py;b=py;}
         if(t>=0&&b-t>4)R.prof.push([(px-W/2)/N,(t-W/2)/N+.09,(b-W/2)/N-.02]);}
       const mk=f=>{const o=x.createImageData(W,W),q=o.data;for(let i=0;i<d.length;i+=4){const v=f(.3*d[i]+.59*d[i+1]+.11*d[i+2]);q[i]=v*.9;q[i+1]=v*.96;q[i+2]=Math.min(255,v*1.08);q[i+3]=d[i+3];}
-        const c2=document.createElement('canvas');c2.width=c2.height=W;c2.getContext('2d').putImageData(o,0,0);return c2.toDataURL();};
+        const c2=document.createElement('canvas');c2.width=x1-x0+1;c2.height=y1-y0+1;c2.getContext('2d').putImageData(o,-x0,-y0);return c2.toDataURL();};
       const idx=Math.max(0,TOKS.findIndex(T=>T.e===e)),k='tk'+idx,sel='.cam3d.fx3 .tok span.'+k+' em.ly';
       let st=document.getElementById('tkcss');if(!st){st=document.createElement('style');st.id='tkcss';document.head.appendChild(st);}
-      st.textContent+=`${sel}{background-image:url(${mk(()=>150)})}${sel}.d{background-image:url(${mk(()=>118)})}${sel}.l{background-image:url(${mk(()=>190)})}${sel}.fc{background-image:url(${mk(l=>95+l*.72)})}`;
+      const U=v=>`calc(var(--u)*${v.toFixed(3)})`;
+      st.textContent+=`${sel}{width:${U((x1-x0+1)/N*7)};height:${U((y1-y0+1)/N*7)};margin-left:${U((x0-W/2)/N*7)};bottom:${U(3.15-7*(y1+1-W/2)/N)};transform-origin:50% 100%;background-image:url(${mk(()=>150)})}${sel}.d{background-image:url(${mk(()=>118)})}${sel}.l{background-image:url(${mk(()=>190)})}${sel}.fc{background-image:url(${mk(l=>95+l*.72)})}`;
       R.cls=k+' ti';
     }
   }catch(err){}
@@ -4132,9 +4154,9 @@ function applyDice(){
     const d=$('d'+i),s=$('s'+i);if(!d||!s)return;
     const r3=ui.cam3d&&camOn();
     const _x=b.rx*Math.PI/180,_y=b.ry*Math.PI/180,hz=ds/2*(Math.abs(Math.cos(_x)*Math.sin(_y))+Math.abs(Math.sin(_x))+Math.abs(Math.cos(_x)*Math.cos(_y)))+ds*.04;
-    d.style.transform=r3?`translate3d(${b.x-ds/2}px,${b.y-ds/2}px,${(b.z+hz).toFixed(1)}px)`:`translate3d(${b.x-ds/2}px,${b.y-ds/2-b.z*.55}px,0) scale(${1+b.z/ds*.3})`;
+    d.style.transform=`translate3d(${(b.x-ds/2).toFixed(1)}px,calc(${(b.y-ds/2).toFixed(1)}px - var(--k2,1)*${(b.z*.55).toFixed(1)}px),calc(var(--k3,0)*${(b.z*.45+hz).toFixed(1)}px)) scale(calc(1 + var(--k2,1)*${(b.z/ds*.3).toFixed(3)}))`;
     d.firstElementChild.style.transform=`rotateZ(${b.rz}deg) rotateX(${b.rx}deg) rotateY(${b.ry}deg)`;
-    s.style.transform=r3?`translate3d(${b.x-ds/2}px,${b.y-ds*.27}px,0) scale(${1.15+b.z/ds*.25})`:`translate3d(${b.x-ds/2}px,${b.y+ds*.15}px,0) scale(${1+b.z/ds*.25})`;
+    s.style.transform=`translate3d(${(b.x-ds/2).toFixed(1)}px,calc(${(b.y+ds*.15).toFixed(1)}px - var(--k3,0)*${(ds*.42).toFixed(1)}px),calc(var(--k3,0)*1px)) scale(calc(${(1+b.z/ds*.25).toFixed(3)} + var(--k3,0)*.15))`;
     s.style.opacity=Math.max(.15,.55-b.z/ds*.45);
   });
 }
@@ -4152,16 +4174,24 @@ function startDice(){
 }
 function diceBanner(){
   if(!(camOn()&&ui.cam3d)||!S||!S.dice)return;
-  const w=$('boardwrap');if(!w)return;
-  const old=$('dvo');if(old)old.remove();
   const [a,b]=S.dice,dbl=a===b&&S.sub!=='order';
-  const pips=n=>{const on={1:[4],2:[0,8],3:[0,4,8],4:[0,2,6,8],5:[0,2,4,6,8],6:[0,2,3,5,6,8]}[n]||[4];return Array.from({length:9},(_,i)=>`<i class="${on.includes(i)?'on':''}"></i>`).join('');};
-  const o=document.createElement('div');o.id='dvo';o.className=dbl?'dbl':'';
-  const R={1:'rotateY(0deg)',6:'rotateY(180deg)',3:'rotateY(-90deg)',4:'rotateY(90deg)',2:'rotateX(-90deg)',5:'rotateX(90deg)'};
-  const cube=n=>`<div class="dvc"><div class="dvq" style="--r:${R[n]||R[1]}">${[1,6,3,4,2,5].map(f=>`<div class="dvd">${pips(f)}</div>`).join('')}</div></div>`;
-  o.innerHTML=`<div class="dvb"></div><div class="dvr"><div class="dvd">${pips(a)}</div><div class="dvd">${pips(b)}</div></div>${dbl?'<div class="dvt">DOBLE</div>':''}`;
-  {const dl=$('dl');if(dl){dl.style.opacity='0';ui.dHide=true;}}
-  w.appendChild(o);setTimeout(()=>{o.classList.add('out');setTimeout(()=>o.remove(),450);},1900);
+  ui.dvUntil=Date.now()+CAM.show;ui.cardHold=Math.max(ui.cardHold||0,Date.now()+CAM.show);
+  clearTimeout(ui.dvTm);
+  ui.dvTm=setTimeout(()=>{
+    const w=$('boardwrap');if(!w||!(camOn()&&ui.cam3d))return;
+    const old=$('dvo');if(old)old.remove();
+    const pips=n=>{const on={1:[4],2:[0,8],3:[0,4,8],4:[0,2,6,8],5:[0,2,4,6,8],6:[0,2,3,5,6,8]}[n]||[4];return Array.from({length:9},(_,i)=>`<i class="${on.includes(i)?'on':''}"></i>`).join('');};
+    const o=document.createElement('div');o.id='dvo';o.className=dbl?'dbl':'';
+    o.innerHTML=`<div class="dvb"></div><div class="dvr"><div class="dvd">${pips(a)}</div><div class="dvd">${pips(b)}</div></div>${dbl?'<div class="dvt">DOBLE</div>':''}`;
+    w.appendChild(o);
+    o.querySelectorAll('.dvd').forEach((e,i)=>{   /* cada dado sale desde donde quedó en la mesa y se acerca a la pantalla */
+      const s=$('d'+i);if(!s||!e.animate)return;const A=s.getBoundingClientRect(),B=e.getBoundingClientRect();if(!A.width||!B.width)return;
+      const dx=A.left+A.width/2-(B.left+B.width/2),dy=A.top+A.height/2-(B.top+B.height/2),sc=Math.max(.12,Math.min(1,A.width/B.width)),fin=i?'rotate(7deg)':'rotate(-6deg)';
+      e.animate([{transform:`translate(${dx.toFixed(1)}px,${dy.toFixed(1)}px) scale(${sc.toFixed(3)}) rotate(${i?50:-60}deg)`},{transform:fin}],{duration:520,easing:'cubic-bezier(.2,.75,.3,1.12)'});
+    });
+    const dl=$('dl');if(dl){dl.style.opacity='0';ui.dHide=true;}
+    setTimeout(()=>{o.classList.add('out');setTimeout(()=>o.remove(),450);},CAM.show-650+350);
+  },650);
 }
 function markHit(){diceBanner();
   if(S&&S.sub!=='order'&&ui.dn&&S.dice){const q=S.players.find(p=>p.col===ui.dn.col);if(q)ui.dtg={pid:q.id,pos:ui.dn.pos,d:S.dice[0]+S.dice[1],col:ui.dn.col,t:Date.now()};}
@@ -4654,6 +4684,7 @@ function menuHTML(){
     S.players.filter(p=>p.id!==me&&!p.bankrupt).forEach(p=>{h+=`<button class="sec" onclick="doKick('${p.id}')">🚪 Expulsar a ${p.tk} ${esc(p.name)}</button>`;});
   }
   h+=`<div class="note"><b>🔊 Sonido</b><div class="row" style="align-items:center;margin-top:8px"><button class="sec sndb" style="flex:none;padding:8px 14px" onclick="toggleSnd()">${SND.on?'🔊':'🔇'}</button><input type="range" min="0" max="100" value="${Math.round(SND.vol*100)}" oninput="SND.setVol(this.value/100)" onchange="SND.pick()"></div></div>
+  <div class="note"><b>🗺 Vista</b><div class="row" style="margin-top:8px">${[[0,'Tablero 3D'],[1,'Tablero 2D']].map(([v,l])=>`<button class="${(ui.flat?1:0)===v?'pri':'sec'}" style="padding:10px 4px" onclick="if(!!ui.flat!==!!${v})toggle3d();renderModal()">${l}</button>`).join('')}</div></div>
   <div class="note"><b>🎥 Cámara</b><div class="row" style="margin-top:8px">${[[1,'Sigue la ficha'],[0,'Fija']].map(([v,l])=>`<button class="${(ui.cam?1:0)===v?'pri':'sec'}" style="padding:10px 4px" onclick="setCam(${v})">${l}</button>`).join('')}</div><div class="row" style="margin-top:8px">${[[1,'La mesa gira'],[0,'Mesa fija']].map(([v,l])=>`<button class="${(ui.rot?1:0)===v?'pri':'sec'}" style="padding:10px 4px" onclick="setRot(${v})">${l}</button>`).join('')}</div><div class="row" style="margin-top:8px">${[[1,'Balanceo suave'],[0,'Sin balanceo']].map(([v,l])=>`<button class="${(ui.sway?1:0)===v?'pri':'sec'}" style="padding:10px 4px" onclick="setSway(${v})">${l}</button>`).join('')}</div><div class="mut" style="margin-top:10px">La cámara va por detrás de la ficha y la mesa gira para seguirla; al caer en una casilla se inclina a 50°. Con “Mesa fija” la cámara siempre mira desde el lado de la Salida. El balanceo es un movimiento muy leve cuando la cámara está quieta.</div></div>
   <div class="note"><b>Junto al nombre de cada jugador</b><div class="row" style="margin-top:8px">${[['heap','💵 Fajos'],['cards','🃏 Tarjetas'],['none','Nada']].map(([k,l])=>`<button class="${ui.side===k?'pri':'sec'}" style="padding:10px 4px" onclick="setSide('${k}')">${l}</button>`).join('')}</div><div class="mut" style="margin-top:6px">${ui.side==='heap'?'Una columna de billetes que sube con tu dinero.':ui.side==='cards'?'Mini tarjetas de color: qué propiedades tiene cada jugador.':'Solo nombre y dinero.'}</div></div>
   <div class="note"><b>Reglas rápidas</b><br>• Cobras S/200 al pasar por la SALIDA.<br>• Si no compras, la propiedad se subasta.<br>• Casas parejas dentro de un color; 32 casas y 12 hoteles.<br>• Tres dobles seguidos = cárcel.<br>• Puedes hacer tratos y construir en cualquier momento (también en el turno de otros o estando preso), pero no mientras ruedan los dados, hay una carta o una subasta.<br>• Mientras un trato espera respuesta, la partida se pausa para todos.<br>• En un trato, las propiedades hipotecadas 🔒 cuestan 10% extra a quien las recibe, y no se pueden tratar colores con edificios.</div>`;
@@ -4933,7 +4964,7 @@ function renderIncoming(){
 
 /* ---------- arranque ---------- */
 function boot(){
-  ui.flat=store.get('mono_3d')==='0';ui.cam=store.get('mono_cam')==='1';ui.rot=store.get('mono_rot')!=='0';{const sv=store.get('mono_sway');ui.sway=sv===null?!(window.matchMedia&&matchMedia('(prefers-reduced-motion: reduce)').matches):sv!=='0';}if(ui.cam)setTimeout(camStart,500);ui.side=store.get('mono_side_v')==='2'?(store.get('mono_side')||'cards'):'cards';setInterval(tickTokens,120);setInterval(pruneTick,1000);
+  ui.flat=store.get('mono_3d')==='0';ui.cam=store.get('mono_cam')!=='0';ui.rot=store.get('mono_rot')!=='0';{const sv=store.get('mono_sway');ui.sway=sv===null?!(window.matchMedia&&matchMedia('(prefers-reduced-motion: reduce)').matches):sv!=='0';}if(ui.cam)setTimeout(camStart,500);ui.side=store.get('mono_side_v')==='2'?(store.get('mono_side')||'cards'):'cards';setInterval(tickTokens,120);setInterval(pruneTick,1000);
   ['pointerdown','touchstart','keydown'].forEach(ev=>document.addEventListener(ev,()=>SND.unlock(),{passive:true,capture:true}));
   document.addEventListener('click',e=>{
     const el=e.target.closest&&e.target.closest('button,.pk,.cc,.rm,.sq');
