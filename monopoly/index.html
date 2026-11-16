@@ -1731,7 +1731,7 @@ window.BOOT=(function(){
 <button id="emoB" type="button" aria-label="Reacciones y chat">😊<span class="bd" id="emoBd"></span></button>
 <script>
 'use strict';
-const VERSION='3.61.0';
+const VERSION='3.62.0';
 /* Firebase (mismo proyecto que Wolvevilles). Los datos van en el nodo "monopoly/" */
 const FBCFG={apiKey:"AIzaSyBfrs6B-j22O67pnUb5DYq5CevrIg0dtEs",authDomain:"project-349e4491-0828-4f64-bb5.firebaseapp.com",databaseURL:"https://project-349e4491-0828-4f64-bb5-default-rtdb.firebaseio.com",projectId:"project-349e4491-0828-4f64-bb5",storageBucket:"project-349e4491-0828-4f64-bb5.firebasestorage.app",messagingSenderId:"180444249462",appId:"1:180444249462:web:bdf189d171d908a0274e57"};
 
@@ -3911,9 +3911,9 @@ const SGN=180;
 const sideAng=i=>[0,90,180,270][Math.floor((((i%40)+40)%40)/10)];
 function tokAng(pid){
   ui.tang=ui.tang||{};const i=ui.tcur&&ui.tcur[pid]!==undefined?ui.tcur[pid]:((P(S,pid)||{}).pos||0);
-  const b=sideAng(i),pv=ui.tang[pid];const a=pv===undefined?b:pv+wrap180(b-pv);ui.tang[pid]=a;return a;
+  const b=sideAng(i)-45,pv=ui.tang[pid];const a=pv===undefined?b:pv+wrap180(b-pv);ui.tang[pid]=a;return a;
 }
-const TKL=[-4,-3,-2,-1,1,2,3,4].map(k=>{const n=Math.abs(k),a=n/4;return[`--z:${(k*.52).toFixed(2)};--s:${n===4?.93:1}`,n===4?' fc':n===3?' l':n<=1?' d':''];});
+const TKL=[-4,-3,-2,-1,1,2,3,4].map(k=>{const n=Math.abs(k);return[`--z:${(k*.21).toFixed(2)};--s:1`,n===4?' fc':n===3?' l':n<=1?' d':''];});
 const TKC={};
 function tokModel(e){   /* la figura se dibuja una vez en un lienzo: cara de metal + silueta para el relleno, y su perfil para que sea maciza */
   if(TKC[e])return TKC[e];
@@ -3932,13 +3932,13 @@ function tokModel(e){   /* la figura se dibuja una vez en un lienzo: cara de met
       const idx=Math.max(0,TOKS.findIndex(T=>T.e===e)),k='tk'+idx,sel='.cam3d.fx3 .tok span.'+k+' em.ly';
       let st=document.getElementById('tkcss');if(!st){st=document.createElement('style');st.id='tkcss';document.head.appendChild(st);}
       const U=v=>`calc(var(--u)*${v.toFixed(3)})`;
-      st.textContent+=`${sel}{width:${U((x1-x0+1)/N*7)};height:${U((y1-y0+1)/N*7)};margin-left:${U((x0-W/2)/N*7)};bottom:${U(3.15-7*(y1+1-W/2)/N)};transform-origin:50% 100%;background-image:url(${mk(()=>150)})}${sel}.d{background-image:url(${mk(()=>118)})}${sel}.l{background-image:url(${mk(()=>190)})}${sel}.fc{background-image:url(${mk(l=>95+l*.72)})}`;
+      st.textContent+=`${sel}{width:${U((x1-x0+1)/N*7)};height:${U((y1-y0+1)/N*7)};margin-left:${U((x0-W/2)/N*7)};bottom:${U(3.15-7*(y1+1-W/2)/N)};transform-origin:50% 100%;background-image:url(${mk(()=>135)})}${sel}.d{background-image:url(${mk(()=>120)})}${sel}.l{background-image:url(${mk(()=>100)})}${sel}.fc{background-image:url(${mk(l=>Math.min(255,120+l*.62))})}`;
       R.cls=k+' ti';
     }
   }catch(err){}
   return TKC[e]=R;
 }
-const tokBody=e=>{const M=tokModel(e);return`<em>${e}</em>`+(M.cls?TKL.map(L=>`<em class="ly${L[1]}" style="${L[0]}"></em>`).join('')+M.prof.map(q=>`<s style="--x:${q[0].toFixed(3)};--h:${(q[2]-q[1]).toFixed(3)};--yb:${q[2].toFixed(3)}"></s>`).join(''):'');};
+const tokBody=e=>{const M=tokModel(e);return`<em>${e}</em>`+(M.cls?TKL.map(L=>`<em class="ly${L[1]}" style="${L[0]}"></em>`).join('')+[].map(q=>`<s style="--x:${q[0].toFixed(3)};--h:${(q[2]-q[1]).toFixed(3)};--yb:${q[2].toFixed(3)}"></s>`).join(''):'');};
 function cage(pid){ui.cgT=ui.cgT||{};if(!ui.cgT[pid])ui.cgT[pid]=Date.now();
   return`<u class="cg${Date.now()-ui.cgT[pid]<900?' drop':''}"><ins class="s"></ins><ins class="n"></ins><ins class="w"></ins><ins class="e"></ins><ins class="t"></ins></u>`;}
 function tokensHTML(){
