@@ -307,27 +307,27 @@ details.adv h4{margin:14px 16px 6px;font-size:12px;letter-spacing:1px;text-trans
       <button class="btn g sm" id="tAdd">+ Agregar nivel</button>
     </details>
     <details class="card adv">
-      <summary>⚙️ Más opciones <span class="mut">límites y tiempos</span></summary>
-      <h4>Quién agrega a la lista</h4>
+      <summary>⚙️ Más opciones</summary>
+      <h4>Quién agrega</h4>
       <div class="seg chips" id="nWhoAdd"><button data-v="all" class="on">👥 Todos</button><button data-v="admin">👑 Solo yo</button></div>
       <div id="nLimBox">
         <div class="row" style="margin-top:8px;flex-wrap:wrap">
-          <label class="chk" style="flex:0 0 auto"><input type="checkbox" id="nNoLim" checked> Sin límite por persona</label>
+          <label class="chk" style="flex:0 0 auto"><input type="checkbox" id="nNoLim" checked> Sin límite</label>
           <input id="nLim" type="number" min="1" max="9999" value="5" inputmode="numeric" class="hide" style="max-width:90px">
           <span class="mut hide" id="nLimTxt" style="white-space:nowrap">por persona</span>
         </div>
-        <label class="chk hide" id="nAdmFreeBox"><input type="checkbox" id="nAdmFree"> 👑 Yo (admin) sin límite</label>
+        <label class="chk hide" id="nAdmFreeBox"><input type="checkbox" id="nAdmFree"> 👑 Admin sin límite</label>
       </div>
       <h4>Tiempos</h4>
-      <div class="lbl" style="margin-top:0">Para ver o escuchar cada uno</div>
+      <div class="lbl" style="margin-top:0">Ver / escuchar</div>
       <select id="nTW"><option value="0">Sin límite</option><option value="15">15 s</option><option value="30">30 s</option><option value="45">45 s</option><option value="60">1 min</option><option value="90">1 min 30 s</option><option value="120">2 min</option><option value="180">3 min</option><option value="300">5 min</option></select>
-      <div class="lbl">Para votar (luego pasa solo al siguiente)</div>
+      <div class="lbl">Votar (luego pasa al siguiente)</div>
       <select id="nTV"><option value="0">Sin temporizador</option><option value="10">10 s</option><option value="15">15 s</option><option value="20">20 s</option><option value="30">30 s</option><option value="45">45 s</option><option value="60">1 min</option><option value="90">1 min 30 s</option></select>
-      <label class="chk"><input type="checkbox" id="nTA" checked> Pasar antes si ya votaron todos</label>
+      <label class="chk"><input type="checkbox" id="nTA" checked> Pasar antes si todos votaron</label>
       <h4>Otros</h4>
-      <label class="chk"><input type="checkbox" id="nWho" checked> Mostrar quién votó qué al revelar</label>
-      <label class="chk"><input type="checkbox" id="nRand"> Lo nuevo entra en un lugar al azar de la lista</label>
-      <label class="chk"><input type="checkbox" id="nPub" checked> Aparece en «Buscar sala» (si no, solo con código)</label>
+      <label class="chk"><input type="checkbox" id="nWho" checked> Mostrar la nota de cada persona</label>
+      <label class="chk"><input type="checkbox" id="nRand"> Agregar en orden aleatorio</label>
+      <label class="chk"><input type="checkbox" id="nPub" checked> Sala pública (sale en «Buscar sala»)</label>
     </details>
     <button class="btn" id="bCreate">🚀 Crear y entrar</button>
     <div style="height:30px"></div>
@@ -571,7 +571,7 @@ function renderHome(){
     `<button data-c="${esc(r.c)}"><b>${esc(r.c)}</b><span class="grow">${esc(r.t)}</span><span class="mut">›</span></button>`).join('') : '';
   $('recent').querySelectorAll('button').forEach(b => b.onclick = () => joinRoom(b.dataset.c));
   const sv = savedList();
-  $('saved').innerHTML = sv.length ? '<div class="lbl">Guardadas en este celular (para continuar)</div>' + sv.map((x, i) =>
+  $('saved').innerHTML = sv.length ? '<div class="lbl">Guardadas en este celular</div>' + sv.map((x, i) =>
     `<button data-i="${i}"><b>💾</b><span class="grow">${esc(x.t)}<br><span class="mut" style="font-size:12px">${new Date(x.at).toLocaleString()} · ${x.n} ítems</span></span><span class="mut" data-del="${i}" style="padding:6px">✕</span></button>`).join('') : '';
   $('saved').querySelectorAll('button').forEach(b => b.onclick = e => {
     const i = +b.dataset.i;
@@ -616,13 +616,13 @@ function renderTiersEd(){
 function initNew(){
   segBind('nMode', 'mode', () => {
     $('nScaleBox').classList.toggle('hide', nf.mode === 'tier');
-    $('tierHint').textContent = nf.mode === 'tier' ? 'De mejor a peor: son las opciones que cada uno podrá elegir.' : 'Solo se usan para la vista tierlist del resultado.';
+    $('tierHint').textContent = nf.mode === 'tier' ? 'Las opciones para votar, de mejor a peor.' : 'Para ver el resultado como tierlist.';
     if (nf.mode === 'tier') $('tierBox').open = true;
   });
-  const revTxt = {end: 'Nadie ve notas hasta que el admin revela el ranking, del último al primero.', item: 'El admin cierra cada ítem y en ese momento se muestra su nota.', live: 'Las notas se ven mientras se vota.'};
+  const revTxt = {end: 'Se revelan todas juntas al final.', item: 'Cada nota se ve cuando el admin cierra ese ítem.', live: 'Se ven mientras votan.'};
   const revUpd = () => { $('revHint').textContent = revTxt[nf.reveal] || ''; };
   $('nReveal').addEventListener('click', () => setTimeout(revUpd, 0)); revUpd();
-  $('tierHint').textContent = 'Solo se usan para la vista tierlist del resultado.';
+  $('tierHint').textContent = 'Para ver el resultado como tierlist.';
   segBind('nScale', 'scale'); segBind('nReveal', 'reveal'); segBind('nCat', 'cat');
   segBind('nWhoAdd', 'whoAdd', () => $('nLimBox').classList.toggle('hide', nf.whoAdd !== 'all'));
   bindLim('nNoLim', 'nLim', 'nLimTxt', 'nAdmFreeBox');
@@ -1273,7 +1273,7 @@ function openAdd(){
     <div class="seg" id="adMode"><button data-v="one" class="on">🔗 De a uno</button><button data-v="many">📋 Pegar lista</button><button data-v="anime">📺 Anime</button></div>
     <div class="mut" id="adCount" style="font-size:13px;color:var(--ok);min-height:0"></div>
     <div id="adOne">
-      <div class="lbl">Link (YouTube, Spotify, TikTok, imagen, video…) — opcional</div>
+      <div class="lbl">Link (opcional)</div>
       <input id="adUrl" placeholder="https://…" inputmode="url">
       <div class="lbl">Nombre</div>
       <input id="adT" maxlength="120" placeholder="Se completa solo con el link, o escribe lo que sea">
@@ -1282,7 +1282,7 @@ function openAdd(){
       <div class="prev hide" id="adPrev"></div>
     </div>
     <div id="adMany" class="hide">
-      <div class="lbl">Uno por línea. Puede ser solo el link, solo el nombre, o <b>Nombre | link</b></div>
+      <div class="lbl">Uno por línea: link, nombre o <b>Nombre | link</b></div>
       <textarea id="adList" rows="8" placeholder="https://youtu.be/xxxx&#10;Pizza&#10;Goku | https://…/goku.png"></textarea>
     </div>
     <div id="adAnime" class="hide">
@@ -1611,7 +1611,7 @@ function renderRank(){
     h += `<div class="card" style="text-align:center"><div style="font-size:34px">🏆</div><b style="font-size:20px">${esc(m.title)}</b>
       <div class="mut" style="font-size:13px">Resultado final · ${visible.length} rankeados · ${playersList().length} participantes</div>
       <div class="row" style="margin-top:12px;gap:8px">
-        <button class="btn sm grow" id="rImg">🖼️ Imagen</button>
+        <button class="btn sm grow" id="rImg">🖼️ ${{grid: 'Imagen', list: 'Imagen', tier: 'Imagen'}[rankView] || 'Imagen'}</button>
         <button class="btn c sm grow" id="rCopy">📋 WhatsApp</button>
         <button class="btn g sm grow" id="rExp">💾 Guardar</button>
       </div>
@@ -1853,20 +1853,20 @@ function openCfg(){
     <div class="lbl" style="margin-top:0">Título</div><input id="cT" maxlength="60" value="${esc(m.title)}">
     <div class="lbl">Cuándo se ven las notas</div>
     <select id="cR"><option value="end">🔒 Al final</option><option value="item">⏭️ Al cerrar cada ítem</option><option value="live">⚡ En vivo</option></select>
-    <label class="chk"><input type="checkbox" id="cW" ${m.showWho ? 'checked' : ''}> Mostrar quién votó qué</label>
-    <div class="lbl">⏱️ Tiempo para ver / escuchar</div><select id="cTW"><option value="0">Sin límite</option><option value="15">15 s</option><option value="30">30 s</option><option value="45">45 s</option><option value="60">1 min</option><option value="90">1 min 30 s</option><option value="120">2 min</option><option value="180">3 min</option><option value="300">5 min</option></select>
-    <div class="lbl">⏱️ Temporizador para votar</div><select id="cTV"><option value="0">Sin temporizador</option><option value="10">10 s</option><option value="15">15 s</option><option value="20">20 s</option><option value="30">30 s</option><option value="45">45 s</option><option value="60">1 min</option><option value="90">1 min 30 s</option></select>
-    <label class="chk"><input type="checkbox" id="cTA" ${m.tAll ? 'checked' : ''}> ⚡ Si ya votaron todos, pasar antes</label>
+    <label class="chk"><input type="checkbox" id="cW" ${m.showWho ? 'checked' : ''}> Mostrar la nota de cada persona</label>
+    <div class="lbl">⏱️ Ver / escuchar</div><select id="cTW"><option value="0">Sin límite</option><option value="15">15 s</option><option value="30">30 s</option><option value="45">45 s</option><option value="60">1 min</option><option value="90">1 min 30 s</option><option value="120">2 min</option><option value="180">3 min</option><option value="300">5 min</option></select>
+    <div class="lbl">⏱️ Votar</div><select id="cTV"><option value="0">Sin temporizador</option><option value="10">10 s</option><option value="15">15 s</option><option value="20">20 s</option><option value="30">30 s</option><option value="45">45 s</option><option value="60">1 min</option><option value="90">1 min 30 s</option></select>
+    <label class="chk"><input type="checkbox" id="cTA" ${m.tAll ? 'checked' : ''}> Pasar antes si todos votaron</label>
     <div class="lbl">Categoría</div>
     <select id="cC">${Object.entries(CATS).map(([k, c]) => `<option value="${k}">${c.l}</option>`).join('')}</select>
-    <label class="chk"><input type="checkbox" id="cRnd" ${m.randOrd ? 'checked' : ''}> 🎲 Lo nuevo entra en posición al azar</label>
-    <label class="chk"><input type="checkbox" id="cPub" ${m.pub !== false ? 'checked' : ''}> 🔎 Aparece en «Buscar sala»</label>
-    <div class="lbl">Quién pone los links</div>
+    <label class="chk"><input type="checkbox" id="cRnd" ${m.randOrd ? 'checked' : ''}> Agregar en orden aleatorio</label>
+    <label class="chk"><input type="checkbox" id="cPub" ${m.pub !== false ? 'checked' : ''}> Sala pública (sale en «Buscar sala»)</label>
+    <div class="lbl">Quién agrega</div>
     <select id="cA"><option value="all">👥 Todos</option><option value="admin">👑 Solo el admin</option></select>
     <div id="cLimBox"><div class="lbl">Máximo por persona</div>
       <div class="row"><label class="chk" style="flex:0 0 auto"><input type="checkbox" id="cNoLim" ${+m.perUser ? '' : 'checked'}> Sin límite</label>
       <input id="cLim" type="number" min="1" max="9999" value="${+m.perUser || 5}" inputmode="numeric" style="max-width:120px"><span class="mut" id="cLimTxt" style="white-space:nowrap">por persona</span></div>
-      <label class="chk" id="cAdmFreeBox"><input type="checkbox" id="cAdmFree" ${m.adminFree ? 'checked' : ''}> 👑 El admin puede agregar sin límite</label></div>
+      <label class="chk" id="cAdmFreeBox"><input type="checkbox" id="cAdmFree" ${m.adminFree ? 'checked' : ''}> 👑 Admin sin límite</label></div>
     <div class="mut" style="font-size:12px;margin:6px 0 12px">La forma de votar y los niveles no se cambian después de crear la sala para no romper los votos.</div>
     <div class="row"><button class="btn g" id="cX">Cancelar</button><button class="btn" id="cOk">Guardar</button></div>
     <div style="height:16px"></div>
@@ -1936,7 +1936,13 @@ async function rankImage(){
   const TILE = TH_T + IH + FH, rows = Math.ceil(all.length / COLS);
   const g = generalAvg(all), people = g.per.length > 1 ? g.per : [];
   const HEAD = 230, AVG = g.n ? 190 : 0, PPL = people.length ? 70 + Math.ceil(people.length / 4) * 58 : 0;
-  const H = HEAD + AVG + PPL + rows * (TILE + GAP) + 110;
+  // la imagen copia la vista que está abierta: cuadrícula, ranking o tierlist
+  const VIEW = rankView === 'list' ? 'list' : rankView === 'tier' ? 'tier' : 'grid';
+  const LROW = 120, LAB = 140, CW = 176, CIH = Math.round(CW * 9 / 16), CH = CIH + 46, CGAP = 12;
+  const CPL = Math.max(1, Math.floor((W - P * 2 - LAB - 16 + CGAP) / (CW + CGAP)));
+  const tierRows = tiers().map((t, ti) => { const its = all.filter(x => tierOf(x.st) === ti); return {t, its, h: its.length ? Math.ceil(its.length / CPL) * (CH + CGAP) + 4 : 90}; });
+  const BODY = VIEW === 'list' ? all.length * (LROW + 12) : VIEW === 'tier' ? tierRows.reduce((a, r) => a + r.h + 10, 0) : rows * (TILE + GAP);
+  const H = HEAD + AVG + PPL + BODY + 110;
   const cv = document.createElement('canvas'); cv.width = W; cv.height = H;
   const cx = cv.getContext('2d');
   // fondo
@@ -1983,9 +1989,54 @@ async function rankImage(){
     });
     y += Math.ceil(people.length / 4) * 58 + 30;
   }
-  // recuadros
   const imgs = await Promise.all(all.map(x => loadImg(media(x.url, itImg(x)).th || '')));
-  all.forEach((x, i) => {
+  const imgOf = x => imgs[all.indexOf(x)];
+  const drawThumb = (x, tx, ty, w, h) => {
+    cx.fillStyle = '#251a40'; cx.fillRect(tx, ty, w, h);
+    const im = imgOf(x);
+    if (im) { try { coverFit(cx, im, tx, ty, w, h); } catch(e){} }
+    else { cx.textAlign = 'center'; cx.fillStyle = '#fff'; cx.font = Math.round(h * .42) + 'px sans-serif'; cx.fillText(thumbIcon(media(x.url, itImg(x))) || '🎬', tx + w / 2, ty + h / 2 + h * .15); }
+  };
+  // ---- vista RANKING: filas con puesto, imagen, nombre, barra y nota
+  if (VIEW === 'list') all.forEach((x, i) => {
+    const pos = i + 1, ty = y + i * (LROW + 12), T = isTier() ? tiers()[tierOf(x.st)] : null;
+    rr(cx, P, ty, W - P * 2, LROW, 20); cx.fillStyle = pos === 1 ? 'rgba(255,213,74,.12)' : 'rgba(255,255,255,.06)'; cx.fill();
+    cx.strokeStyle = pos <= 3 ? ['#ffd54a', '#d7dde8', '#e0965a'][pos - 1] : 'rgba(255,255,255,.12)'; cx.lineWidth = pos <= 3 ? 3 : 2; cx.stroke();
+    cx.textAlign = 'center'; cx.fillStyle = pos <= 3 ? '#fff' : '#a9a2cc';
+    cx.font = pos <= 3 ? '52px sans-serif' : '900 34px ' + FX; cx.fillText(pos <= 3 ? ['🥇', '🥈', '🥉'][pos - 1] : String(pos), P + 52, ty + LROW / 2 + (pos <= 3 ? 18 : 12));
+    cx.save(); rr(cx, P + 100, ty + 14, 164, LROW - 28, 12); cx.clip(); drawThumb(x, P + 100, ty + 14, 164, LROW - 28); cx.restore();
+    const sx = W - P - 24, tx2 = P + 284, tw = sx - 170 - tx2;
+    cx.textAlign = 'left'; cx.fillStyle = '#fff'; cx.font = '700 30px ' + F;
+    const ls = wrapLines(cx, x.t || 'Sin título', tw, 2); ls.forEach((l, k) => cx.fillText(l, tx2, ty + 46 + k * 30 - (ls.length - 1) * 10));
+    rr(cx, tx2, ty + LROW - 30, tw, 10, 5); cx.fillStyle = 'rgba(0,0,0,.4)'; cx.fill();
+    if (x.st.nrm > 0){ rr(cx, tx2, ty + LROW - 30, Math.max(10, tw * x.st.nrm), 10, 5); const bg2 = cx.createLinearGradient(tx2, 0, tx2 + tw, 0); bg2.addColorStop(0, '#ff2e97'); bg2.addColorStop(1, '#ffd54a'); cx.fillStyle = bg2; cx.fill(); }
+    cx.textAlign = 'right';
+    if (T){ cx.font = '900 40px ' + FX; const w2 = cx.measureText(T.n).width + 30; rr(cx, sx - w2, ty + 22, w2, 56, 12); cx.fillStyle = T.c; cx.fill(); cx.fillStyle = '#111'; cx.fillText(T.n, sx - 15, ty + 64); }
+    else { cx.fillStyle = '#ffd54a'; cx.font = '900 44px ' + FX; cx.fillText(fmtAvg(x.st), sx, ty + 66); }
+    cx.fillStyle = '#a9a2cc'; cx.font = '600 22px ' + F; cx.fillText(x.st.n + ' votos', sx, ty + LROW - 18);
+  });
+  // ---- vista TIERLIST: filas de color con los ítems de cada nivel
+  if (VIEW === 'tier'){
+    let ty = y;
+    tierRows.forEach(r => {
+      rr(cx, P, ty, W - P * 2, r.h, 16); cx.fillStyle = 'rgba(0,0,0,.35)'; cx.fill();
+      cx.save(); rr(cx, P, ty, W - P * 2, r.h, 16); cx.clip(); cx.fillStyle = r.t.c; cx.fillRect(P, ty, LAB, r.h); cx.restore();
+      cx.fillStyle = '#111'; cx.textAlign = 'center'; cx.font = '900 ' + (r.t.n.length > 3 ? 28 : 52) + 'px ' + FX;
+      wrapLines(cx, r.t.n, LAB - 16, 2).forEach((l, k, a) => cx.fillText(l, P + LAB / 2, ty + r.h / 2 + 18 + (k - (a.length - 1) / 2) * 32));
+      r.its.forEach((x, k) => {
+        const cxp = P + LAB + 16 + (k % CPL) * (CW + CGAP), cyp = ty + 8 + Math.floor(k / CPL) * (CH + CGAP);
+        cx.save(); rr(cx, cxp, cyp, CW, CH, 12); cx.clip();
+        cx.fillStyle = '#1d1433'; cx.fillRect(cxp, cyp, CW, CH); drawThumb(x, cxp, cyp, CW, CIH);
+        cx.fillStyle = '#fff'; cx.textAlign = 'center'; cx.font = '700 20px ' + F;
+        cx.fillText(wrapLines(cx, x.t || 'Sin título', CW - 14, 1)[0] || '', cxp + CW / 2, cyp + CIH + 22);
+        cx.fillStyle = '#ffd54a'; cx.font = '900 16px ' + FX; cx.fillText(isTier() ? x.st.n + ' votos' : fmtAvg(x.st), cxp + CW / 2, cyp + CIH + 41);
+        cx.restore();
+      });
+      ty += r.h + 10;
+    });
+  }
+  // ---- vista CUADRÍCULA
+  if (VIEW === 'grid') all.forEach((x, i) => {
     const col = i % COLS, row = Math.floor(i / COLS), tx = P + col * (TW + GAP), ty = y + row * (TILE + GAP), pos = i + 1;
     cx.save(); rr(cx, tx, ty, TW, TILE, 22); cx.clip();
     cx.fillStyle = '#1b1230'; cx.fillRect(tx, ty, TW, TILE);
@@ -2017,7 +2068,7 @@ async function rankImage(){
   cx.fillText('Rankeo · Club Campestre', W / 2, H - 44);
   const blob = await new Promise(ok => { try { cv.toBlob(ok, 'image/png'); } catch(e){ ok(null); } });
   if (!blob) return toast('No se pudo crear la imagen');
-  const name = 'rankeo-' + String(R.meta.title || 'ranking').toLowerCase().replace(/[^a-z0-9áéíóúñ]+/gi, '-').replace(/^-|-$/g, '').slice(0, 40) + '.png';
+  const name = 'rankeo-' + String(R.meta.title || 'ranking').toLowerCase().replace(/[^a-z0-9áéíóúñ]+/gi, '-').replace(/^-|-$/g, '').slice(0, 40) + '-' + {grid: 'cuadricula', list: 'ranking', tier: 'tierlist'}[VIEW] + '.png';
   const file = typeof File === 'function' ? new File([blob], name, {type: 'image/png'}) : null;
   if (file && navigator.canShare && navigator.canShare({files: [file]}) && /Android|iPhone|iPad/i.test(navigator.userAgent)){
     navigator.share({files: [file], title: R.meta.title}).catch(() => download(blob, name));
