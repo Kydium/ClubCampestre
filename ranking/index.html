@@ -326,7 +326,7 @@ details.adv h4{margin:14px 16px 6px;font-size:12px;letter-spacing:1px;text-trans
       <select id="nTW"><option value="0">Sin límite</option><option value="15">15 s</option><option value="30">30 s</option><option value="45">45 s</option><option value="60">1 min</option><option value="90">1 min 30 s</option><option value="120">2 min</option><option value="180">3 min</option><option value="300">5 min</option></select>
       <div class="lbl">Votar (luego pasa al siguiente)</div>
       <select id="nTV"><option value="0">Sin temporizador</option><option value="10">10 s</option><option value="15">15 s</option><option value="20">20 s</option><option value="30">30 s</option><option value="45">45 s</option><option value="60">1 min</option><option value="90">1 min 30 s</option></select>
-      <label class="chk"><input type="checkbox" id="nTA" checked> Pasar antes si todos votaron</label>
+      <label class="chk"><input type="checkbox" id="nTA" checked> Si todos votan, saltar al tiempo de votar</label>
       <h4>Otros</h4>
       <label class="chk"><input type="checkbox" id="nWho" checked> Mostrar la nota de cada persona</label>
       <label class="chk"><input type="checkbox" id="nRand"> Agregar en orden aleatorio</label>
@@ -824,6 +824,7 @@ function onRoom(k){
   if (!R.meta) return;
   // pasar a la vista del ítem que muestra el admin
   const its = R.items || {};
+  if (!canBrowse()) follow = true;
   if (follow && R.meta.cur && its[R.meta.cur]) viewId = R.meta.cur;
   if (!its[viewId]){ const f = itemsSorted()[0]; viewId = (R.meta.cur && its[R.meta.cur]) ? R.meta.cur : f ? f.id : ''; }
   // si me sacaron
@@ -901,11 +902,12 @@ function renderVote(){
 `;
   const yt1 = media(it.url).k === 'yt', voting = status() === 'voting';
   // fila de navegación: ◀  (🎲 al azar | seguir al admin)  ▶
-  h += `<div class="nav">
+  if (canBrowse()) h += `<div class="nav">
     <button class="btn g" id="nPrev" ${idx <= 0 ? 'disabled' : ''} aria-label="Anterior">◀</button>
     ${admin ? `<button class="btn g sm" id="aRand" ${its.length < 2 ? 'disabled' : ''} style="width:100%;height:46px">🎲 Al azar</button>`
             : `<button class="btn ${follow ? 'g' : 'c'} sm" id="bFollow" style="width:100%;height:46px;${follow ? 'color:var(--cyan)' : ''}">${follow ? '🔗 Siguiendo al admin' : '📍 Ir a donde está el admin'}</button>`}
     <button class="btn g" id="nNext" ${idx >= its.length - 1 ? 'disabled' : ''} aria-label="Siguiente">▶</button></div>`;
+  else h += '<div class="tools" style="margin-top:10px"><span class="tool on">🔗 Sincronizado con el admin</span></div>';
   // herramientas (chips)
   const tl = [];
   if (admin && !isCur) tl.push('<button class="tool p" id="aHere">📍 Mostrar este a todos</button>');
@@ -942,7 +944,7 @@ function renderVote(){
   $('vRest').innerHTML = h;
   bindVote(it);
   tickTimer();
-  const go = d => { const j = idx + d; if (its[j]) { if (admin) setCur(its[j].id); else { follow = false; viewId = its[j].id; render(); } } };
+  const go = d => { const j = idx + d; if (!its[j]) return; if (admin) setCur(its[j].id); else if (canBrowse()) { follow = false; viewId = its[j].id; render(); } };
   if ($('bFollow')) $('bFollow').onclick = () => { follow = !follow; if (follow && R.meta.cur) viewId = R.meta.cur; render(); applySync(); };
   if ($('nPrev')) $('nPrev').onclick = () => go(-1);
   if ($('nNext')) $('nNext').onclick = () => go(1);
@@ -954,8 +956,11 @@ function renderVote(){
   if ($('aEnd')) $('aEnd').onclick = startReveal;
   if ($('aEndNew')) $('aEndNew').onclick = revealNew;
 }
+// Mientras se vota, solo el admin pasa de un ítem a otro; al terminar, cualquiera puede mirar
+function canBrowse(){ return isAdmin() || status() === 'done'; }
 function goItem(id){
   if (!R.items[id]) return;
+  if (!canBrowse()){ toast('Solo el admin cambia de ítem'); return; }
   if (isAdmin() && status() === 'voting') setCur(id); else { viewId = id; follow = R.meta.cur === id; }
   setTab('pVote'); render();
 }
@@ -1193,8 +1198,8 @@ function driveAuto(){
   }
   if (ph.k === 'ready') return;
   const end = (+ph.st || t) + (+ph.dur || 0) * 1000;
-  // ⚡ si ya votaron todos, quedan 3 segundos
-  if (m.tAll && (ph.k === 'vote' || ph.k === 'watch') && allVoted(cur) && (!ph.dur || end - t > 3500) && (+m.tVote > 0)){ setPhase(cur, 'vote', 3); return; }
+  // ⚡ si todos votaron mientras se veía/escuchaba, se corta y empieza el tiempo de votar elegido
+  if (m.tAll && ph.k === 'watch' && allVoted(cur)){ if (+m.tVote > 0) setPhase(cur, 'vote'); else setPhase(cur, 'manual', 0); return; }
   if (!ph.dur || t < end) return;
   if (ph.k === 'watch'){ if (+m.tVote > 0) setPhase(cur, 'vote'); else setPhase(cur, 'manual', 0); return; }
   if (ph.k === 'vote'){
@@ -1283,7 +1288,7 @@ function renderList(){
     const id = row.dataset.id, i = its.findIndex(x => x.id === id);
     row.onclick = e => {
       const a = e.target.closest('[data-a]');
-      if (!a){ if (admin) setCur(id); else { viewId = id; follow = R.meta.cur === id; } setTab('pVote'); render(); return; }
+      if (!a){ goItem(id); return; }
       e.stopPropagation();
       const A = a.dataset.a;
       if (A === 'up' || A === 'dn'){
@@ -1896,7 +1901,7 @@ function openCfg(){
     <label class="chk"><input type="checkbox" id="cW" ${m.showWho ? 'checked' : ''}> Mostrar la nota de cada persona</label>
     <div class="lbl">⏱️ Ver / escuchar</div><select id="cTW"><option value="0">Sin límite</option><option value="15">15 s</option><option value="30">30 s</option><option value="45">45 s</option><option value="60">1 min</option><option value="90">1 min 30 s</option><option value="120">2 min</option><option value="180">3 min</option><option value="300">5 min</option></select>
     <div class="lbl">⏱️ Votar</div><select id="cTV"><option value="0">Sin temporizador</option><option value="10">10 s</option><option value="15">15 s</option><option value="20">20 s</option><option value="30">30 s</option><option value="45">45 s</option><option value="60">1 min</option><option value="90">1 min 30 s</option></select>
-    <label class="chk"><input type="checkbox" id="cTA" ${m.tAll ? 'checked' : ''}> Pasar antes si todos votaron</label>
+    <label class="chk"><input type="checkbox" id="cTA" ${m.tAll ? 'checked' : ''}> Si todos votan, saltar al tiempo de votar</label>
     <div class="lbl">Categoría</div>
     <select id="cC">${Object.entries(CATS).map(([k, c]) => `<option value="${k}">${c.l}</option>`).join('')}</select>
     <label class="chk"><input type="checkbox" id="cRnd" ${m.randOrd ? 'checked' : ''}> Agregar en orden aleatorio</label>
