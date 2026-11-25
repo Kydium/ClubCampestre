@@ -1,0 +1,2111 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#0b0618">
+<meta name="referrer" content="strict-origin-when-cross-origin">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<title>Rankeo · Rankings y tierlists con amigos</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@700;900&family=Rajdhani:wght@500;600;700&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#0b0618; --bg2:#140b2c; --panel:rgba(255,255,255,.06); --panel2:rgba(255,255,255,.1); --line:rgba(255,255,255,.12);
+  --txt:#fff; --mut:#a9a2cc; --pink:#ff2e97; --cyan:#22d3ee; --gold:#ffd54a; --ok:#3ddc84; --bad:#ff5a6a;
+  --f:'Rajdhani',system-ui,-apple-system,'Segoe UI',Roboto,sans-serif; --fx:'Orbitron',var(--f);
+}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{margin:0;height:100%;background:var(--bg);color:var(--txt);font-family:var(--f);font-size:16px;-webkit-font-smoothing:antialiased}
+body{background:radial-gradient(120vmax 80vmax at 10% -20%,#2a0c4e 0,transparent 60%),radial-gradient(100vmax 70vmax at 110% 110%,#062a3a 0,transparent 55%),var(--bg);background-attachment:fixed}
+button{font:inherit;color:inherit;border:0;background:none;cursor:pointer;padding:0}
+input,textarea,select{font:inherit;color:#fff;background:rgba(0,0,0,.35);border:1px solid var(--line);border-radius:12px;padding:11px 12px;width:100%;outline:none}
+input:focus,textarea:focus,select:focus{border-color:var(--pink)}
+select option{background:#140b2c}
+a{color:var(--cyan)}
+.hide{display:none!important}
+.mut{color:var(--mut)}
+.screen{display:none;min-height:100%;flex-direction:column;padding:env(safe-area-inset-top) env(safe-area-inset-right) 0 env(safe-area-inset-left)}
+.screen.on{display:flex}
+.wrap{width:100%;max-width:760px;margin:0 auto;padding:0 14px}
+.logo{font-family:var(--fx);font-weight:900;letter-spacing:2px;font-size:38px;text-align:center;margin:18px 0 2px;
+  background:linear-gradient(90deg,var(--pink),var(--gold),var(--cyan));-webkit-background-clip:text;background-clip:text;color:transparent}
+.sub{text-align:center;color:var(--mut);margin:0 0 18px}
+.card{background:var(--panel);border:1px solid var(--line);border-radius:18px;padding:16px;margin-bottom:14px}
+.card h3{margin:0 0 10px;font-family:var(--fx);font-size:14px;letter-spacing:1px;color:var(--gold)}
+.btn{display:flex;align-items:center;justify-content:center;gap:8px;width:100%;padding:13px 16px;border-radius:14px;font-weight:700;font-size:17px;
+  background:linear-gradient(180deg,#ff4fae,#e01a7c);box-shadow:0 4px 0 #8a0d4b,0 10px 20px rgba(0,0,0,.35);transition:transform .08s,box-shadow .08s}
+.btn:active{transform:translateY(3px);box-shadow:0 1px 0 #8a0d4b}
+.btn.c{background:linear-gradient(180deg,#3fe0f5,#0aa7c2);box-shadow:0 4px 0 #075e6e,0 10px 20px rgba(0,0,0,.35);color:#032029}
+.btn.g{background:var(--panel2);box-shadow:none;border:1px solid var(--line)}
+.btn.sm{padding:9px 12px;font-size:15px;border-radius:11px;width:auto}
+.btn[disabled]{opacity:.45;pointer-events:none}
+.row{display:flex;gap:10px;align-items:center}
+.row>*{min-width:0}
+.grow{flex:1}
+.lbl{font-size:13px;color:var(--mut);margin:12px 0 6px;font-weight:600}
+.seg{display:flex;gap:6px;flex-wrap:wrap}
+.seg button{flex:1 1 auto;padding:10px 10px;border-radius:12px;background:rgba(0,0,0,.3);border:1px solid var(--line);font-weight:700;font-size:15px;min-width:90px}
+.seg button.on{background:rgba(255,46,151,.2);border-color:var(--pink);color:#fff}
+.seg small{display:block;font-weight:500;color:var(--mut);font-size:12px}
+.chk{display:flex;align-items:center;gap:10px;padding:8px 0;font-weight:600}
+.chk input{width:22px;height:22px;accent-color:var(--pink);flex:0 0 auto}
+.back{display:inline-flex;align-items:center;gap:6px;color:var(--mut);font-weight:700;padding:12px 0 0;text-decoration:none}
+.recent button{display:flex;width:100%;text-align:left;gap:10px;align-items:center;padding:10px;border-radius:12px;background:rgba(0,0,0,.25);margin-top:8px;border:1px solid var(--line)}
+.recent b{font-family:var(--fx);font-size:13px;color:var(--cyan)}
+.me{display:flex;align-items:center;gap:10px}
+.av{width:36px;height:36px;border-radius:50%;flex:0 0 auto;display:inline-flex;align-items:center;justify-content:center;font-weight:800;background:hsl(var(--h,300),60%,42%);font-size:16px;overflow:hidden;background-size:cover;background-position:center}
+details.adv{padding:0}
+details.adv>summary{list-style:none;cursor:pointer;padding:14px 16px;font-weight:700;display:flex;gap:8px;align-items:center}
+details.adv>summary::-webkit-details-marker{display:none}
+details.adv>summary::after{content:'▾';margin-left:auto;color:var(--mut);transition:transform .2s}
+details.adv[open]>summary::after{transform:rotate(180deg)}
+details.adv>summary .mut{font-weight:500;font-size:13px}
+details.adv>*:not(summary){margin-left:16px;margin-right:16px}
+details.adv[open]{padding-bottom:16px}
+details.adv h4{margin:14px 16px 6px;font-size:12px;letter-spacing:1px;text-transform:uppercase;color:var(--gold)}
+.seg.chips button{flex:0 1 auto;min-width:0;padding:9px 12px;font-size:14px}
+.hint{font-size:13px;color:var(--mut);margin-top:8px;line-height:1.35}
+.tiersEd .t{display:flex;gap:6px;margin-bottom:6px;align-items:center}
+.tiersEd input[type=text]{flex:1}
+.tiersEd input[type=color]{width:44px;height:42px;padding:2px;flex:0 0 auto}
+.tiersEd button{width:38px;height:42px;border-radius:10px;background:var(--panel2);flex:0 0 auto}
+
+/* sala */
+.top{position:sticky;top:0;z-index:20;background:rgba(11,6,24,.88);backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);border-bottom:1px solid var(--line);padding-top:env(safe-area-inset-top)}
+.top .wrap{display:flex;align-items:center;gap:8px;padding-top:8px;padding-bottom:8px}
+.ib{width:40px;height:40px;border-radius:12px;background:var(--panel2);border:1px solid var(--line);display:inline-flex;align-items:center;justify-content:center;font-size:18px;flex:0 0 auto}
+.ttl{flex:1;min-width:0}
+.ttl b{display:block;font-size:18px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.ttl span{font-size:12px;color:var(--mut)}
+.code{font-family:var(--fx);font-size:13px;padding:8px 10px;border-radius:10px;background:rgba(34,211,238,.12);border:1px solid rgba(34,211,238,.4);color:var(--cyan);flex:0 0 auto}
+.main{flex:1;padding:12px 0 calc(86px + env(safe-area-inset-bottom))}
+.tabs{position:fixed;left:0;right:0;bottom:0;z-index:30;background:rgba(11,6,24,.94);backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);border-top:1px solid var(--line);padding-bottom:env(safe-area-inset-bottom)}
+.tabs .wrap{display:flex}
+.tabs button{flex:1;padding:9px 0 8px;display:flex;flex-direction:column;align-items:center;gap:2px;font-size:12px;font-weight:700;color:var(--mut)}
+.tabs button i{font-style:normal;font-size:20px;filter:grayscale(1);opacity:.7}
+.tabs button.on{color:#fff}.tabs button.on i{filter:none;opacity:1}
+.pane{display:none}.pane.on{display:block}
+
+.stage{border-radius:16px;overflow:hidden;background:#000;border:1px solid var(--line);position:relative}
+.ratio{position:relative;width:100%;padding-top:56.25%}
+.ratio>*{position:absolute;inset:0;width:100%;height:100%;border:0}
+.ratio iframe,#ytp iframe{width:100%;height:100%;border:0}
+.vert{position:relative;width:100%;max-width:340px;margin:0 auto;aspect-ratio:9/16;max-height:72vh}
+.vert iframe{width:100%;height:100%;border:0}
+.stage img.full{display:block;width:100%;max-height:60vh;object-fit:contain;background:#000}
+.stage video{display:block;width:100%;max-height:62vh;background:#000}
+.stage audio{display:block;width:100%;padding:14px}
+.txtItem{padding:40px 18px;text-align:center;font-family:var(--fx);font-size:28px;line-height:1.25;word-break:break-word;background:linear-gradient(135deg,#2a0c4e,#062a3a)}
+.linkCard{padding:26px 16px;text-align:center;background:linear-gradient(135deg,#1c1036,#0b1f2c)}
+.linkCard .u{word-break:break-all;color:var(--mut);font-size:13px;margin:8px 0 14px}
+.itHead{display:flex;align-items:flex-start;gap:10px;margin:12px 0 4px}
+.itHead h2{margin:0;font-size:22px;line-height:1.15;flex:1;word-break:break-word}
+.pill{display:inline-flex;align-items:center;gap:4px;font-size:12px;font-weight:700;padding:4px 9px;border-radius:999px;background:var(--panel2);border:1px solid var(--line);white-space:nowrap}
+.pill.p{background:rgba(255,46,151,.18);border-color:rgba(255,46,151,.5)}
+.pill.c{background:rgba(34,211,238,.14);border-color:rgba(34,211,238,.45);color:var(--cyan)}
+.pill.g{background:rgba(255,213,74,.14);border-color:rgba(255,213,74,.5);color:var(--gold)}
+.nav{display:grid;grid-template-columns:52px 1fr 52px;gap:8px;margin:10px 0;align-items:center}
+.nav .btn{height:46px;padding:0}
+.tools{display:flex;flex-wrap:wrap;gap:6px;margin:6px 0 4px}
+.tool{display:inline-flex;align-items:center;gap:5px;padding:7px 11px;border-radius:999px;background:var(--panel2);border:1px solid var(--line);font-size:13px;font-weight:700;color:#fff;text-decoration:none}
+.tool.on{border-color:var(--cyan);color:var(--cyan);background:rgba(34,211,238,.12)}
+.tool.p{border-color:rgba(255,46,151,.6);background:rgba(255,46,151,.15)}
+.tool[disabled]{opacity:.4;pointer-events:none}
+.vote{margin-top:12px}
+.grid10{display:grid;grid-template-columns:repeat(5,1fr);gap:8px}
+.grid10 button,.stars button{height:54px;border-radius:14px;background:rgba(0,0,0,.35);border:1px solid var(--line);font-family:var(--fx);font-size:20px;transition:transform .08s}
+.grid10 button:active,.stars button:active,.tierBtns button:active{transform:scale(.93)}
+.grid10 button.on{background:linear-gradient(180deg,#ff4fae,#e01a7c);border-color:#ff8cc8;box-shadow:0 0 16px rgba(255,46,151,.55)}
+.stars{display:flex;gap:8px}.stars button{flex:1;font-size:30px;filter:grayscale(1);opacity:.45}
+.stars button.on{filter:none;opacity:1;background:rgba(255,213,74,.15);border-color:var(--gold)}
+.slider{display:flex;align-items:center;gap:10px}
+.slider input[type=range]{flex:1;padding:0;border:0;background:none;accent-color:var(--pink);height:40px}
+.big{font-family:var(--fx);font-size:40px;min-width:96px;text-align:center;color:var(--gold)}
+.tierBtns{display:flex;flex-direction:column;gap:7px}
+.tierBtns button{display:flex;align-items:center;gap:12px;padding:0;border-radius:12px;overflow:hidden;background:rgba(0,0,0,.35);border:2px solid transparent;text-align:left;transition:transform .08s}
+.tierBtns button b{width:64px;min-height:48px;display:flex;align-items:center;justify-content:center;font-family:var(--fx);font-size:22px;color:#111;flex:0 0 auto;padding:4px;word-break:break-all;text-align:center}
+.tierBtns button.on{border-color:#fff;box-shadow:0 0 16px rgba(255,255,255,.35)}
+.tierBtns button span{font-weight:700;color:var(--mut)}
+.tierBtns button.on span{color:#fff}
+.voters{display:flex;flex-wrap:wrap;gap:6px;margin-top:12px}
+.voter{display:flex;align-items:center;gap:6px;padding:4px 9px 4px 4px;border-radius:999px;background:rgba(0,0,0,.3);border:1px solid var(--line);font-size:13px;font-weight:700}
+.voter .av{width:24px;height:24px;font-size:12px}
+.voter.ok{border-color:rgba(61,220,132,.6);background:rgba(61,220,132,.1)}
+.voter em{font-style:normal;color:var(--gold)}
+.prog{height:8px;border-radius:9px;background:rgba(0,0,0,.4);overflow:hidden;margin-top:10px}
+.prog i{display:block;height:100%;background:linear-gradient(90deg,var(--pink),var(--cyan));transition:width .35s}
+.result{margin-top:12px;padding:14px;border-radius:14px;background:rgba(255,213,74,.08);border:1px solid rgba(255,213,74,.35);display:flex;align-items:center;gap:14px}
+.result .big{font-size:34px;min-width:0}
+.locked{margin-top:12px;padding:12px;border-radius:14px;background:rgba(0,0,0,.3);border:1px dashed var(--line);text-align:center;color:var(--mut);font-weight:600}
+
+.items .it{display:flex;align-items:center;gap:10px;padding:8px;border-radius:14px;background:var(--panel);border:1px solid var(--line);margin-bottom:8px}
+.items .it.cur{border-color:var(--pink);background:rgba(255,46,151,.1)}
+.items .it.view{outline:2px solid var(--cyan);outline-offset:-2px}
+.th{width:72px;height:44px;border-radius:9px;flex:0 0 auto;background:#222 center/cover no-repeat;display:flex;align-items:center;justify-content:center;font-size:22px}
+.items .info{flex:1;min-width:0}
+.items .info b{display:block;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.items .info span{font-size:12px;color:var(--mut)}
+.items .acts{display:flex;gap:4px;flex:0 0 auto}
+.items .acts button{width:32px;height:32px;border-radius:9px;background:var(--panel2);font-size:14px}
+
+.rk{display:flex;align-items:center;gap:10px;padding:9px;border-radius:14px;background:var(--panel);border:1px solid var(--line);margin-bottom:8px;width:100%;text-align:left}
+.rk .pos{width:34px;font-family:var(--fx);font-size:18px;text-align:center;flex:0 0 auto;color:var(--mut)}
+.rk.p1 .pos{color:var(--gold)}.rk.p2 .pos{color:#d7dde8}.rk.p3 .pos{color:#e0965a}
+.rk.p1{border-color:rgba(255,213,74,.6);background:rgba(255,213,74,.08)}
+.rk .info{flex:1;min-width:0}
+.rk .info b{display:block;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.rk .bar{height:5px;border-radius:5px;background:rgba(0,0,0,.4);margin-top:5px;overflow:hidden}
+.rk .bar i{display:block;height:100%;background:linear-gradient(90deg,var(--pink),var(--gold))}
+.rk .sc{font-family:var(--fx);font-size:18px;text-align:right;flex:0 0 auto}
+.rk .sc small{display:block;font-family:var(--f);font-size:11px;color:var(--mut)}
+.det{margin:-4px 0 10px 44px;display:flex;flex-wrap:wrap;gap:6px}
+.tl .row1{display:flex;min-height:76px;border-radius:12px;overflow:hidden;margin-bottom:6px;background:rgba(0,0,0,.35)}
+.tl .lab{width:70px;flex:0 0 auto;display:flex;align-items:center;justify-content:center;font-family:var(--fx);font-size:22px;color:#111;padding:4px;text-align:center;word-break:break-all}
+.tl .its{flex:1;display:flex;flex-wrap:wrap;gap:6px;padding:6px;align-items:flex-start}
+.tl .chip{width:92px;border-radius:9px;overflow:hidden;background:#1d1433;font-size:11px;font-weight:700;line-height:1.15}
+.tl .chip .th{width:92px;height:56px;border-radius:0}
+.tl .chip span{display:block;padding:3px 5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.tmr{margin:10px 0 2px;padding:9px 12px;border-radius:12px;background:rgba(0,0,0,.35);border:1px solid var(--line)}
+.tmr .row{justify-content:space-between;font-weight:700}
+.tmr .t{font-family:var(--fx);font-size:20px}
+.tmr.w .t{color:var(--cyan)}.tmr.v .t{color:var(--pink)}.tmr.r .t{color:var(--gold)}
+.tmr.hurry{animation:hurry .5s ease-in-out infinite alternate}
+@keyframes hurry{to{border-color:var(--pink);box-shadow:0 0 14px rgba(255,46,151,.5)}}
+.tmr .prog{margin-top:6px}
+.rgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(104px,1fr));gap:6px;margin-bottom:12px}
+@media (max-width:340px){.rgrid{grid-template-columns:1fr 1fr}}
+.gt{display:flex;flex-direction:column;text-align:left;border-radius:14px;overflow:hidden;background:var(--panel);border:1px solid var(--line);transition:transform .08s}
+.gt:active{transform:scale(.97)}
+.gt.p1{border-color:var(--gold);box-shadow:0 0 14px rgba(255,213,74,.35)}.gt.p2{border-color:#d7dde8}.gt.p3{border-color:#e0965a}
+.gt .gtt{padding:5px 5px 4px;font-weight:700;font-size:12px;line-height:1.1;text-align:center;min-height:32px;display:flex;align-items:center;justify-content:center}
+.gt .gtt span{display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+.gt .gimg{position:relative;aspect-ratio:16/10;background:#1d1433 center/cover no-repeat;display:flex;align-items:center;justify-content:center;font-size:24px}
+.gt .gpos{position:absolute;top:3px;left:3px;font-family:var(--fx);font-size:10px;padding:2px 5px;border-radius:6px;background:rgba(0,0,0,.7)}
+.gt .gfoot{display:flex;flex-direction:column;align-items:center;justify-content:center;padding:4px 2px 5px;
+  background:linear-gradient(180deg,#ffe27a,#ffb627);color:#2a1700}
+.gt .gfoot b{font-family:var(--fx);font-weight:900;font-size:19px;line-height:1}
+.gt .gfoot small{font-size:9.5px;font-weight:700;opacity:.75;margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:100%}
+.gt .gfoot.lk{background:rgba(255,255,255,.08);color:var(--mut)}
+.gt .gfoot.lk b{font-size:15px}
+.gt{border-radius:11px}
+.avgCard{display:flex;align-items:center;gap:14px;padding:14px;border-radius:16px;margin-bottom:12px;
+  background:linear-gradient(135deg,rgba(255,46,151,.16),rgba(34,211,238,.12));border:1px solid rgba(255,255,255,.18)}
+.avgCard .num{font-family:var(--fx);font-size:44px;font-weight:900;line-height:1;color:var(--gold);text-shadow:0 0 18px rgba(255,213,74,.45)}
+.avgCard .num small{font-size:16px;color:var(--mut);font-weight:700}
+.avgCard b{display:block;font-size:17px}
+.pavg{display:flex;flex-wrap:wrap;gap:6px;margin:-4px 0 12px}
+.stats{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:8px}
+.stats div{padding:10px;border-radius:12px;background:rgba(0,0,0,.3);border:1px solid var(--line);font-size:13px}
+.stats b{display:block;font-size:15px;margin-top:2px;word-break:break-word}
+
+.pp{display:flex;align-items:center;gap:10px;padding:9px;border-radius:14px;background:var(--panel);border:1px solid var(--line);margin-bottom:8px}
+.pp .info{flex:1;min-width:0}.pp .info b{display:block}
+.pp .dot{width:9px;height:9px;border-radius:50%;background:#555;display:inline-block;margin-right:4px}
+.pp .dot.on{background:var(--ok);box-shadow:0 0 8px var(--ok)}
+
+/* modales */
+.ov{position:fixed;inset:0;z-index:100;background:rgba(4,2,12,.78);display:flex;align-items:flex-end;justify-content:center;animation:fade .2s}
+@media (min-width:640px){.ov{align-items:center}}
+@keyframes fade{from{opacity:0}}
+.sheet{width:100%;max-width:560px;max-height:92vh;overflow:auto;background:var(--bg2);border:1px solid var(--line);border-radius:20px 20px 0 0;padding:16px 16px calc(16px + env(safe-area-inset-bottom));animation:up .25s cubic-bezier(.2,.9,.3,1)}
+@media (min-width:640px){.sheet{border-radius:20px}}
+@keyframes up{from{transform:translateY(40px);opacity:.5}}
+.sheet h3{margin:0 0 12px;font-family:var(--fx);font-size:16px;color:var(--gold)}
+.prev{margin-top:10px;display:flex;gap:10px;align-items:center;padding:8px;border-radius:12px;background:rgba(0,0,0,.3)}
+.toast{position:fixed;left:50%;bottom:calc(96px + env(safe-area-inset-bottom));transform:translateX(-50%);z-index:200;background:#000d;border:1px solid var(--line);padding:10px 16px;border-radius:12px;font-weight:700;max-width:90vw;text-align:center;animation:fade .2s}
+
+/* revelación final */
+.rev{position:fixed;inset:0;z-index:90;background:radial-gradient(circle at 50% 30%,#3a0d5e,#07030f 70%);display:flex;flex-direction:column;align-items:center;justify-content:center;padding:20px;text-align:center;overflow:auto}
+.rev .k{font-family:var(--fx);color:var(--mut);letter-spacing:3px;font-size:13px}
+.rev .pos{font-family:var(--fx);font-size:64px;font-weight:900;color:var(--gold);text-shadow:0 0 30px rgba(255,213,74,.6);animation:pop .6s cubic-bezier(.2,1.6,.4,1)}
+.rev .name{font-size:28px;font-weight:700;margin:6px 0 10px;max-width:640px;word-break:break-word;animation:pop .6s .1s both}
+.rev .th{width:min(80vw,360px);height:min(45vw,202px);border-radius:14px;margin:6px auto;font-size:60px;animation:pop .6s .15s both}
+.rev .score{font-family:var(--fx);font-size:40px;color:var(--pink);animation:pop .6s .25s both}
+.rev .who{display:flex;flex-wrap:wrap;gap:6px;justify-content:center;margin-top:12px;max-width:640px}
+.rev .ctl{display:flex;gap:10px;margin-top:22px;width:100%;max-width:420px}
+@keyframes pop{from{transform:scale(.3);opacity:0}}
+.confetti{position:fixed;inset:0;pointer-events:none;z-index:95}
+.anRes button{display:flex;gap:10px;align-items:center;width:100%;text-align:left;padding:8px;border-radius:12px;background:rgba(0,0,0,.3);border:1px solid var(--line);margin-top:8px}
+.anRes img{width:46px;height:64px;object-fit:cover;border-radius:7px;flex:0 0 auto;background:#222}
+.anRes b{display:block;line-height:1.15}.anRes span{font-size:12px;color:var(--mut)}
+.anSel{display:flex;gap:10px;align-items:center;padding:8px;border-radius:12px;background:rgba(255,46,151,.1);border:1px solid rgba(255,46,151,.4);margin-top:10px}
+.anSel img{width:52px;height:72px;object-fit:cover;border-radius:7px}
+.anEps{max-height:190px;overflow:auto;margin-top:8px;font-size:13px;background:rgba(0,0,0,.25);border-radius:10px;padding:6px 10px}
+.anEps div{padding:3px 0;border-bottom:1px solid rgba(255,255,255,.05);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.anEps .x{opacity:.35;text-decoration:line-through}
+.isub{color:var(--mut);font-size:14px;margin-top:2px}
+.ssn{background:rgba(0,0,0,.28);border:1px solid var(--line);border-radius:12px;padding:10px;margin-bottom:8px}
+.ssn .row{gap:8px;flex-wrap:wrap}.ssn .row+.row{margin-top:8px}
+.ssn b.tn{font-family:var(--fx);color:var(--gold);flex:0 0 auto}
+.ssn input[type=number]{max-width:66px;padding:9px 6px}
+.ssn summary{font-size:13px;color:var(--mut);cursor:pointer;margin-top:8px}
+.ssn textarea{margin-top:6px;font-size:14px}
+.empty{text-align:center;padding:30px 10px;color:var(--mut)}
+.empty .e{font-size:44px}
+</style>
+</head>
+<body>
+
+<!-- ================= INICIO ================= -->
+<section class="screen on" id="sHome">
+  <div class="wrap">
+    <a class="back" href="../">← Club Campestre</a>
+    <div class="logo">RANKEO</div>
+    <p class="sub">Rankings y tierlists de lo que sea, votando todos a la vez</p>
+    <div class="card" id="homeMsg">Conectando…</div>
+    <div class="card hide" id="homeMain">
+      <div class="lbl" style="margin-top:0">Tu nombre</div>
+      <div class="me" id="meBox"></div>
+      <div class="sp" style="height:14px"></div>
+      <button class="btn" id="bNew">➕ Crear sala</button>
+      <div class="lbl">¿Te pasaron un código?</div>
+      <div class="row">
+        <input id="codeIn" maxlength="5" placeholder="CÓDIGO" autocapitalize="characters" style="text-transform:uppercase;font-family:var(--fx);letter-spacing:3px">
+        <button class="btn c sm" id="bJoin" style="flex:0 0 auto">Entrar</button>
+      </div>
+      <div class="recent" id="recent"></div>
+      <div class="recent" id="saved"></div>
+      <label class="btn g sm" style="margin-top:12px;width:100%;cursor:pointer">📂 Continuar desde un archivo guardado<input type="file" id="loadFile" accept=".json,application/json" class="hide"></label>
+    </div>
+  </div>
+</section>
+
+<!-- ================= CREAR ================= -->
+<section class="screen" id="sNew">
+  <div class="wrap">
+    <a class="back" href="#" id="newBack">← Volver</a>
+    <div class="logo" style="font-size:26px">NUEVA SALA</div>
+    <div class="card">
+      <div class="lbl" style="margin-top:0">Nombre del ranking</div>
+      <input id="nTitle" maxlength="60" placeholder="Ej: Mejores canciones de rock 2000s">
+      <div class="lbl">Categoría</div>
+      <div class="seg chips" id="nCat">
+        <button data-v="todo" class="on">✨ De todo</button><button data-v="musica">🎵 Música</button><button data-v="videos">🎬 Videos</button>
+        <button data-v="caps">📺 Capítulos</button><button data-v="imagenes">🖼️ Imágenes</button>
+      </div>
+      <div class="lbl">Cómo se vota</div>
+      <div class="seg" id="nMode"><button data-v="score" class="on">🔢 Con nota</button><button data-v="tier">🏷️ Con tierlist</button></div>
+      <div id="nScaleBox" style="margin-top:8px">
+        <div class="seg chips" id="nScale">
+          <button data-v="10" class="on">1 a 10</button><button data-v="10h">1 a 10 (con ½)</button><button data-v="5">1 a 5 ⭐</button><button data-v="100">0 a 100</button>
+        </div>
+      </div>
+      <div class="lbl">Cuándo se ven las notas</div>
+      <div class="seg chips" id="nReveal"><button data-v="end" class="on">🔒 Al final</button><button data-v="item">⏭️ Al cerrar cada uno</button><button data-v="live">⚡ En vivo</button></div>
+      <div class="hint" id="revHint"></div>
+    </div>
+    <details class="card adv" id="tierBox">
+      <summary>🏷️ Niveles de la tierlist <span class="mut" id="tierSum"></span></summary>
+      <div class="hint" id="tierHint" style="margin:0 0 10px"></div>
+      <div class="tiersEd" id="tiersEd"></div>
+      <button class="btn g sm" id="tAdd">+ Agregar nivel</button>
+    </details>
+    <details class="card adv">
+      <summary>⚙️ Más opciones <span class="mut">límites y tiempos</span></summary>
+      <h4>Quién agrega a la lista</h4>
+      <div class="seg chips" id="nWhoAdd"><button data-v="all" class="on">👥 Todos</button><button data-v="admin">👑 Solo yo</button></div>
+      <div id="nLimBox">
+        <div class="row" style="margin-top:8px;flex-wrap:wrap">
+          <label class="chk" style="flex:0 0 auto"><input type="checkbox" id="nNoLim" checked> Sin límite por persona</label>
+          <input id="nLim" type="number" min="1" max="9999" value="5" inputmode="numeric" class="hide" style="max-width:90px">
+          <span class="mut hide" id="nLimTxt" style="white-space:nowrap">por persona</span>
+        </div>
+        <label class="chk hide" id="nAdmFreeBox"><input type="checkbox" id="nAdmFree"> 👑 Yo (admin) sin límite</label>
+      </div>
+      <h4>Tiempos</h4>
+      <div class="lbl" style="margin-top:0">Para ver o escuchar cada uno</div>
+      <select id="nTW"><option value="0">Sin límite</option><option value="15">15 s</option><option value="30">30 s</option><option value="45">45 s</option><option value="60">1 min</option><option value="90">1 min 30 s</option><option value="120">2 min</option><option value="180">3 min</option><option value="300">5 min</option></select>
+      <div class="lbl">Para votar (luego pasa solo al siguiente)</div>
+      <select id="nTV"><option value="0">Sin temporizador</option><option value="10">10 s</option><option value="15">15 s</option><option value="20">20 s</option><option value="30">30 s</option><option value="45">45 s</option><option value="60">1 min</option><option value="90">1 min 30 s</option></select>
+      <label class="chk"><input type="checkbox" id="nTA" checked> Pasar antes si ya votaron todos</label>
+      <h4>Otros</h4>
+      <label class="chk"><input type="checkbox" id="nWho" checked> Mostrar quién votó qué al revelar</label>
+      <label class="chk"><input type="checkbox" id="nRand"> Lo nuevo entra en un lugar al azar de la lista</label>
+    </details>
+    <button class="btn" id="bCreate">🚀 Crear y entrar</button>
+    <div style="height:30px"></div>
+  </div>
+</section>
+
+<!-- ================= SALA ================= -->
+<section class="screen" id="sRoom">
+  <div class="top"><div class="wrap">
+    <button class="ib" id="bLeave" title="Salir">←</button>
+    <div class="ttl"><b id="rTitle">Sala</b><span id="rSub"></span></div>
+    <button class="code" id="bCode">-----</button>
+    <button class="ib hide" id="bCfg" title="Ajustes">⚙️</button>
+  </div></div>
+  <div class="main"><div class="wrap">
+    <div class="pane on" id="pVote"></div>
+    <div class="pane" id="pList"></div>
+    <div class="pane" id="pRank"></div>
+    <div class="pane" id="pPeople"></div>
+  </div></div>
+  <nav class="tabs"><div class="wrap">
+    <button data-t="pVote" class="on"><i>🎬</i>Votar</button>
+    <button data-t="pList"><i>📋</i>Lista</button>
+    <button data-t="pRank"><i>🏆</i>Ranking</button>
+    <button data-t="pPeople"><i>👥</i><span id="tPeople">Gente</span></button>
+  </div></nav>
+</section>
+
+<div id="revBox"></div>
+
+<script src="../club-avatar.js" onerror="void 0"></script>
+<script src="../club-xp.js" onerror="void 0"></script>
+<script>
+'use strict';
+// ============ FIREBASE (el mismo de todos los juegos del Club Campestre) ============
+const firebaseConfig = {
+  apiKey: "AIzaSyBfrs6B-j22O67pnUb5DYq5CevrIg0dtEs",
+  authDomain: "project-349e4491-0828-4f64-bb5.firebaseapp.com",
+  databaseURL: "https://project-349e4491-0828-4f64-bb5-default-rtdb.firebaseio.com",
+  projectId: "project-349e4491-0828-4f64-bb5",
+  storageBucket: "project-349e4491-0828-4f64-bb5.firebasestorage.app",
+  messagingSenderId: "180444249462",
+  appId: "1:180444249462:web:bdf189d171d908a0274e57"
+};
+const ROOT = 'rank';                 // rank/<CODIGO>/{meta,items,votes,players,sync}
+const PRES = 'rank_pres';            // rank_pres/<CODIGO>/<uid> = true  (se borra solo al desconectarse)
+const IDX  = 'rank_idx';             // rank_idx/<CODIGO> = {last}       (liviano, para la limpieza)
+const GRACE = 15 * 60e3;             // sala sin nadie conectado por 15 min → se borra
+const GAME = 'ranking';              // nombre para la XP compartida
+
+// ============ UTILIDADES ============
+const $ = id => document.getElementById(id);
+const esc = s => String(s == null ? '' : s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const LS = {
+  get(k, d){ try { const v = localStorage.getItem('rk_' + k); return v == null ? d : JSON.parse(v); } catch(e){ return d; } },
+  set(k, v){ try { localStorage.setItem('rk_' + k, JSON.stringify(v)); } catch(e){} }
+};
+let offset = 0;
+const now = () => Date.now() + offset;
+const hue = s => { let h = 0; s = String(s || '?'); for (let i = 0; i < s.length; i++) h = (h * 31 + s.charCodeAt(i)) % 360; return h; };
+function toast(t, ms){
+  document.querySelectorAll('.toast').forEach(e => e.remove());
+  const d = document.createElement('div'); d.className = 'toast'; d.textContent = t; document.body.appendChild(d);
+  setTimeout(() => d.remove(), ms || 2400);
+}
+function fbErr(e){
+  console.error(e);
+  toast(/permission/i.test(String(e && (e.code || e.message))) ? 'Firebase rechazó la operación (revisa las reglas)' : 'Problema de conexión');
+}
+function loadScript(u){
+  return new Promise((ok, ko) => {
+    const s = document.createElement('script'); s.src = u; s.async = true;
+    s.onload = ok; s.onerror = () => ko(new Error(u)); setTimeout(() => ko(new Error('timeout ' + u)), 9000);
+    document.head.appendChild(s);
+  });
+}
+async function loadFirebase(){
+  for (const b of ['https://cdn.jsdelivr.net/npm/firebase@9.23.0/', 'https://www.gstatic.com/firebasejs/9.23.0/']){
+    try {
+      if (!window.firebase) await loadScript(b + 'firebase-app-compat.js');
+      if (!firebase.database) await loadScript(b + 'firebase-database-compat.js');
+      if (!firebase.auth) await loadScript(b + 'firebase-auth-compat.js').catch(() => {});
+      if (window.firebase && firebase.database) return true;
+    } catch(e){ console.warn(e); }
+  }
+  return false;
+}
+function openModal(html){
+  closeModal();
+  const ov = document.createElement('div'); ov.className = 'ov'; ov.id = 'modal';
+  ov.innerHTML = '<div class="sheet">' + html + '</div>';
+  ov.addEventListener('click', e => { if (e.target === ov) closeModal(); });
+  document.body.appendChild(ov);
+  return ov.firstChild;
+}
+function closeModal(){ const m = $('modal'); if (m) m.remove(); }
+function copyText(t){
+  if (navigator.clipboard && navigator.clipboard.writeText) return navigator.clipboard.writeText(t).then(() => true, () => fallbackCopy(t));
+  return Promise.resolve(fallbackCopy(t));
+}
+function fallbackCopy(t){
+  const a = document.createElement('textarea'); a.value = t; document.body.appendChild(a); a.select();
+  let ok = false; try { ok = document.execCommand('copy'); } catch(e){} a.remove(); return ok;
+}
+
+// ============ ESCALAS Y NIVELES ============
+const SCALES = {
+  '10':  {min:1, max:10, step:1,   label:'1 a 10'},
+  '10h': {min:1, max:10, step:0.5, label:'1 a 10 con medios'},
+  '5':   {min:1, max:5,  step:1,   label:'1 a 5 ⭐', stars:true},
+  '100': {min:0, max:100,step:1,   label:'0 a 100'}
+};
+const DEF_TIERS = [
+  {n:'S', c:'#ff4d6d'}, {n:'A', c:'#ff9f43'}, {n:'B', c:'#ffd54a'},
+  {n:'C', c:'#7bd88f'}, {n:'D', c:'#4dabf7'}, {n:'F', c:'#b197fc'}
+];
+const arr = o => Array.isArray(o) ? o : o ? Object.values(o) : [];
+
+// ============ CATEGORÍAS DE SALA ============
+// Qué se puede agregar en cada categoría (para que en un ranking de música no aparezcan capítulos, etc.)
+const CATS = {
+  todo:     {l: '✨ De todo',    tabs: ['one', 'many', 'anime'], hint: ''},
+  musica:   {l: '🎵 Música',     tabs: ['one', 'many'], hint: 'Solo canciones: YouTube, Spotify, SoundCloud, audio o el nombre de la canción', kinds: ['yt', 'frame', 'audio', 'video', 'vert', 'text', 'link']},
+  videos:   {l: '🎬 Videos',     tabs: ['one', 'many'], hint: 'Solo videos: YouTube, TikTok, Vimeo, Twitch, Instagram, mp4…', kinds: ['yt', 'frame', 'vert', 'video', 'link']},
+  caps:     {l: '📺 Capítulos',  tabs: ['anime'], hint: 'Solo capítulos de anime o series (por temporadas)', kinds: ['ep']},
+  imagenes: {l: '🖼️ Imágenes',   tabs: ['one', 'many'], hint: 'Solo imágenes: sube una foto o pega el link de una imagen', kinds: ['img']}
+};
+const catOf = () => CATS[(R.meta && R.meta.cat) || 'todo'] || CATS.todo;
+function catAllows(x){
+  const c = catOf(); if (!c.kinds) return true;
+  const k = x.kind === 'ep' ? 'ep' : media(x.url, x.img || (x.cov ? 'data:image/x' : '')).k;
+  if (c === CATS.musica && k === 'frame' && !/spotify|soundcloud|vimeo|drive\.google|deezer|apple/i.test(x.url || '')) return false;
+  return c.kinds.includes(k);
+}
+
+// ============ RECONOCER LINKS (reproductor) ============
+function media(url, img){
+  if (img) return {k:'img', src:img, th:img};
+  url = String(url || '').trim();
+  if (!url) return {k:'text'};
+  if (/^data:image\//.test(url)) return {k:'img', src:url, th:url};
+  if (!/^https?:\/\//i.test(url) && !/^[\w-]+(\.[\w-]+)+(\/|$)/.test(url)) return {k:'text'};
+  let u; try { u = new URL(/^https?:\/\//i.test(url) ? url : 'https://' + url); } catch(e){ return {k:'text'}; }
+  const h = u.hostname.replace(/^(www|m|music)\./, ''), p = u.pathname, host = location.hostname || 'localhost';
+  let m;
+  // YouTube
+  if (h === 'youtu.be' || /(^|\.)youtube(-nocookie)?\.com$/.test(h)){
+    let id = h === 'youtu.be' ? p.slice(1).split('/')[0] : u.searchParams.get('v');
+    if (!id && (m = p.match(/\/(shorts|embed|live|v)\/([\w-]{6,})/))) id = m[2];
+    if (id){
+      const t = u.searchParams.get('t') || u.searchParams.get('start') || '';
+      let start = 0;
+      if (t){ const mm = String(t).match(/(?:(\d+)h)?(?:(\d+)m)?(?:(\d+)s?)?/); start = (+mm[1] || 0) * 3600 + (+mm[2] || 0) * 60 + (+mm[3] || 0); }
+      return {k:'yt', id, start, short: /\/shorts\//.test(p), th:'https://i.ytimg.com/vi/' + id + '/mqdefault.jpg'};
+    }
+  }
+  if (h === 'vimeo.com' && (m = p.match(/\/(\d+)/))) return {k:'frame', src:'https://player.vimeo.com/video/' + m[1], th:'', ic:'🎞️'};
+  if (h === 'open.spotify.com' && (m = p.match(/\/(track|album|playlist|episode|show|artist)\/([\w]+)/)))
+    return {k:'frame', src:'https://open.spotify.com/embed/' + m[1] + '/' + m[2], h: m[1] === 'track' || m[1] === 'episode' ? 152 : 380, ic:'🎧'};
+  if (h === 'soundcloud.com') return {k:'frame', src:'https://w.soundcloud.com/player/?visual=true&url=' + encodeURIComponent(u.href), h:300, ic:'☁️'};
+  if (/tiktok\.com$/.test(h) && (m = p.match(/\/video\/(\d+)/))) return {k:'vert', src:'https://www.tiktok.com/embed/v2/' + m[1], ic:'🎵'};
+  if (h === 'instagram.com' && (m = p.match(/\/(p|reel|reels|tv)\/([\w-]+)/))) return {k:'vert', src:'https://www.instagram.com/' + (m[1] === 'reels' ? 'reel' : m[1]) + '/' + m[2] + '/embed', ic:'📸'};
+  if ((h === 'twitter.com' || h === 'x.com') && (m = p.match(/\/status\/(\d+)/))) return {k:'vert', src:'https://platform.twitter.com/embed/Tweet.html?dnt=true&theme=dark&id=' + m[1], ic:'🐦'};
+  if (h === 'clips.twitch.tv') return {k:'frame', src:'https://clips.twitch.tv/embed?clip=' + p.slice(1) + '&parent=' + host, ic:'🟣'};
+  if (h === 'twitch.tv'){
+    if ((m = p.match(/\/clip\/([\w-]+)/))) return {k:'frame', src:'https://clips.twitch.tv/embed?clip=' + m[1] + '&parent=' + host, ic:'🟣'};
+    if ((m = p.match(/\/videos\/(\d+)/))) return {k:'frame', src:'https://player.twitch.tv/?video=' + m[1] + '&parent=' + host, ic:'🟣'};
+    if ((m = p.match(/^\/([\w]+)\/?$/))) return {k:'frame', src:'https://player.twitch.tv/?channel=' + m[1] + '&parent=' + host, ic:'🟣'};
+  }
+  if (h === 'kick.com' && (m = p.match(/^\/([\w-]+)\/?$/))) return {k:'frame', src:'https://player.kick.com/' + m[1], ic:'🟢'};
+  if (h === 'drive.google.com' && (m = p.match(/\/file\/d\/([\w-]+)/))) return {k:'frame', src:'https://drive.google.com/file/d/' + m[1] + '/preview', ic:'📁'};
+  if (/facebook\.com$|fb\.watch$/.test(h)) return {k:'frame', src:'https://www.facebook.com/plugins/video.php?show_text=false&href=' + encodeURIComponent(u.href), ic:'📘'};
+  if (h === 'dailymotion.com' && (m = p.match(/\/video\/([\w]+)/))) return {k:'frame', src:'https://www.dailymotion.com/embed/video/' + m[1], ic:'🎞️'};
+  if (/\.(mp4|webm|mov|m4v)(\?|$)/i.test(u.href)) return {k:'video', src:u.href, ic:'🎬'};
+  if (/\.(mp3|ogg|wav|m4a|aac|flac|opus)(\?|$)/i.test(u.href)) return {k:'audio', src:u.href, ic:'🎵'};
+  if (/\.(jpe?g|png|gif|webp|avif|svg|bmp)(\?|$)/i.test(u.href) || /^i\.imgur\.com$|pbs\.twimg\.com$|googleusercontent\.com$/.test(h))
+    return {k:'img', src:u.href, th:u.href};
+  return {k:'link', src:u.href, ic:'🔗', host:h};
+}
+const thumbStyle = md => md.th ? `style="background-image:url('${esc(md.th).replace(/'/g, '%27')}')"` : '';
+const thumbIcon = md => md.th ? '' : (md.ic || (md.k === 'text' ? '📝' : '🔗'));
+const itImg = it => it.img || (it.cov && R.covers && R.covers[it.cov]) || '';
+function thumbHTML(it){ const md = media(it.url, itImg(it)); return `<div class="th" ${thumbStyle(md)}>${thumbIcon(md)}</div>`; }
+
+// Título automático desde el link (YouTube, Vimeo, Spotify, SoundCloud, TikTok…)
+async function fetchTitle(url){
+  const tries = [
+    'https://noembed.com/embed?url=' + encodeURIComponent(url),
+    'https://www.youtube.com/oembed?format=json&url=' + encodeURIComponent(url),
+    'https://open.spotify.com/oembed?url=' + encodeURIComponent(url)
+  ];
+  for (const t of tries){
+    try {
+      const ctl = new AbortController(); setTimeout(() => ctl.abort(), 5000);
+      const r = await fetch(t, {signal: ctl.signal}); if (!r.ok) continue;
+      const j = await r.json();
+      if (j && j.title) return String(j.title).slice(0, 120);
+    } catch(e){}
+  }
+  return '';
+}
+
+// ============ IDENTIDAD ============
+let db = null, fauth = null;
+let me = {id:'', name:'', acc:false};
+function guestId(){ let g = LS.get('gid'); if (!g){ g = 'g' + Math.random().toString(36).slice(2, 11); LS.set('gid', g); } return g; }
+function setIdentity(user){
+  if (user) me = {id:user.uid, name:String(user.displayName || (user.email || '').split('@')[0] || 'jugador').slice(0, 20), acc:true};
+  else me = {id:guestId(), name:String(LS.get('name', '')).slice(0, 20), acc:false};
+  if (me.acc && window.ClubXP && db){
+    try { ClubXP.init({db, uid:me.id, game:GAME, legacy:0}); } catch(e){ console.warn(e); }
+  }
+  renderHome();
+}
+let avOk = false;
+function avHTML(name, uid, size){
+  const st = `--h:${hue(name || uid)};` + (size ? `width:${size}px;height:${size}px;font-size:${Math.round(size * .45)}px` : '');
+  const acc = uid && !/^g/.test(uid) && uid.length > 16;
+  return `<span class="av" style="${st}" ${acc ? `data-uid="${esc(uid)}" data-n="${esc(name)}"` : ''}>${esc((name || '?').charAt(0).toUpperCase())}</span>`;
+}
+function hydrateAv(root){
+  if (!avOk) return;
+  (root || document).querySelectorAll('.av[data-uid]:not([data-done])').forEach(el => {
+    el.dataset.done = 1;
+    try { ClubAvatar.render(el.dataset.uid, el, {name: el.dataset.n, size: el.offsetWidth || 36}); } catch(e){}
+  });
+}
+
+// ============ INICIO ============
+function show(id){ document.querySelectorAll('.screen').forEach(s => s.classList.toggle('on', s.id === id)); window.scrollTo(0, 0); }
+function renderHome(){
+  if (!db) return;
+  $('homeMsg').classList.add('hide'); $('homeMain').classList.remove('hide');
+  $('meBox').innerHTML = me.acc
+    ? avHTML(me.name, me.id, 42) + `<div class="grow"><b style="font-size:18px">${esc(me.name)}</b><div class="mut" style="font-size:13px">Cuenta Club Campestre · ganas XP</div></div>`
+    : `<input id="nameIn" maxlength="20" placeholder="¿Cómo te llamas?" value="${esc(me.name)}">`;
+  const ni = $('nameIn');
+  if (ni) ni.oninput = () => { me.name = ni.value.trim().slice(0, 20); LS.set('name', me.name); };
+  const rec = LS.get('recent', []);
+  $('recent').innerHTML = rec.length ? '<div class="lbl">Salas recientes</div>' + rec.map(r =>
+    `<button data-c="${esc(r.c)}"><b>${esc(r.c)}</b><span class="grow">${esc(r.t)}</span><span class="mut">›</span></button>`).join('') : '';
+  $('recent').querySelectorAll('button').forEach(b => b.onclick = () => joinRoom(b.dataset.c));
+  const sv = savedList();
+  $('saved').innerHTML = sv.length ? '<div class="lbl">Guardadas en este celular (para continuar)</div>' + sv.map((x, i) =>
+    `<button data-i="${i}"><b>💾</b><span class="grow">${esc(x.t)}<br><span class="mut" style="font-size:12px">${new Date(x.at).toLocaleString()} · ${x.n} ítems</span></span><span class="mut" data-del="${i}" style="padding:6px">✕</span></button>`).join('') : '';
+  $('saved').querySelectorAll('button').forEach(b => b.onclick = e => {
+    const i = +b.dataset.i;
+    if (e.target.dataset.del != null){ const l = savedList(); l.splice(i, 1); LS.set('saved', l); renderHome(); return; }
+    if (confirm('¿Continuar «' + sv[i].t + '»? Se crea una sala nueva con la lista y los votos guardados.')) restoreRoom(sv[i].data);
+  });
+  hydrateAv($('meBox'));
+}
+function needName(){
+  if (me.name) return true;
+  toast('Primero escribe tu nombre'); const ni = $('nameIn'); if (ni) ni.focus(); return false;
+}
+function addRecent(c, t){
+  const rec = LS.get('recent', []).filter(r => r.c !== c); rec.unshift({c, t: t || ''}); LS.set('recent', rec.slice(0, 6));
+}
+
+// ============ CREAR SALA ============
+let nf = {cat:'todo', mode:'score', scale:'10', reveal:'end', whoAdd:'all', tiers: DEF_TIERS.map(t => ({...t}))};
+function segBind(id, key, after){
+  $(id).querySelectorAll('button').forEach(b => b.onclick = () => {
+    nf[key] = b.dataset.v;
+    $(id).querySelectorAll('button').forEach(x => x.classList.toggle('on', x === b));
+    if (after) after();
+  });
+}
+function renderTiersEd(){
+  if ($('tierSum')) $('tierSum').textContent = nf.tiers.map(t => t.n).join(' · ');
+  $('tiersEd').innerHTML = nf.tiers.map((t, i) => `<div class="t">
+    <input type="color" value="${esc(t.c)}" data-i="${i}" data-f="c">
+    <input type="text" maxlength="14" value="${esc(t.n)}" data-i="${i}" data-f="n">
+    <button data-up="${i}" title="Subir">↑</button><button data-del="${i}" title="Quitar">✕</button></div>`).join('');
+  $('tiersEd').querySelectorAll('input').forEach(inp => inp.oninput = () => { nf.tiers[+inp.dataset.i][inp.dataset.f] = inp.value; if ($('tierSum')) $('tierSum').textContent = nf.tiers.map(t => t.n).join(' · '); });
+  $('tiersEd').querySelectorAll('[data-del]').forEach(b => b.onclick = () => {
+    if (nf.tiers.length <= 2) return toast('Mínimo 2 niveles');
+    nf.tiers.splice(+b.dataset.del, 1); renderTiersEd();
+  });
+  $('tiersEd').querySelectorAll('[data-up]').forEach(b => b.onclick = () => {
+    const i = +b.dataset.up; if (!i) return;
+    [nf.tiers[i - 1], nf.tiers[i]] = [nf.tiers[i], nf.tiers[i - 1]]; renderTiersEd();
+  });
+}
+function initNew(){
+  segBind('nMode', 'mode', () => {
+    $('nScaleBox').classList.toggle('hide', nf.mode === 'tier');
+    $('tierHint').textContent = nf.mode === 'tier' ? 'De mejor a peor: son las opciones que cada uno podrá elegir.' : 'Solo se usan para la vista tierlist del resultado.';
+    if (nf.mode === 'tier') $('tierBox').open = true;
+  });
+  const revTxt = {end: 'Nadie ve notas hasta que el admin revela el ranking, del último al primero.', item: 'El admin cierra cada ítem y en ese momento se muestra su nota.', live: 'Las notas se ven mientras se vota.'};
+  const revUpd = () => { $('revHint').textContent = revTxt[nf.reveal] || ''; };
+  $('nReveal').addEventListener('click', () => setTimeout(revUpd, 0)); revUpd();
+  $('tierHint').textContent = 'Solo se usan para la vista tierlist del resultado.';
+  segBind('nScale', 'scale'); segBind('nReveal', 'reveal'); segBind('nCat', 'cat');
+  segBind('nWhoAdd', 'whoAdd', () => $('nLimBox').classList.toggle('hide', nf.whoAdd !== 'all'));
+  bindLim('nNoLim', 'nLim', 'nLimTxt', 'nAdmFreeBox');
+  $('tAdd').onclick = () => {
+    if (nf.tiers.length >= 12) return toast('Máximo 12 niveles');
+    const pal = ['#ff4d6d','#ff9f43','#ffd54a','#7bd88f','#4dabf7','#b197fc','#f783ac','#63e6be','#adb5bd'];
+    nf.tiers.push({n: 'Nivel ' + (nf.tiers.length + 1), c: pal[nf.tiers.length % pal.length]}); renderTiersEd();
+  };
+  renderTiersEd();
+  $('newBack').onclick = e => { e.preventDefault(); show('sHome'); };
+  $('bCreate').onclick = createRoom;
+}
+// Límite de links por persona: 0 = sin límite (el admin nunca tiene límite)
+function readLim(chk, num){ return $(chk).checked ? 0 : Math.max(1, Math.min(9999, parseInt($(num).value, 10) || 1)); }
+function bindLim(chk, num, txt, extra){
+  const f = () => { const off = $(chk).checked; $(num).classList.toggle('hide', off); if (txt) $(txt).classList.toggle('hide', off); if (extra) $(extra).classList.toggle('hide', off); };
+  $(chk).onchange = f; f();
+}
+const myCount = () => Object.values(R.items || {}).filter(x => x && x.by === me.id).length;
+// El límite vale para todos (también el admin), salvo que el admin se haya dado permiso o que solo él agregue
+const adminFree = () => isAdmin() && (!R.meta.anyoneAdd || !!R.meta.adminFree);
+function quota(){
+  if (!R.meta) return 0;
+  if (adminFree()) return Infinity;
+  if (!R.meta.anyoneAdd && !isAdmin()) return 0;
+  const lim = +R.meta.perUser || 0;
+  return lim ? Math.max(0, lim - myCount()) : Infinity;
+}
+const limTxt = () => {
+  if (!R.meta || adminFree() || !R.meta.anyoneAdd) return '';
+  const lim = +R.meta.perUser || 0;
+  return lim ? `Llevas ${myCount()} de ${lim} · te quedan ${quota()}` : 'Puedes agregar sin límite';
+};
+function genCode(){ const A = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789'; let c = ''; for (let i = 0; i < 5; i++) c += A[Math.floor(Math.random() * A.length)]; return c; }
+async function createRoom(){
+  const title = $('nTitle').value.trim() || 'Ranking sin nombre';
+  const tiers = nf.tiers.map(t => ({n: String(t.n || '?').trim().slice(0, 14) || '?', c: t.c || '#888'}));
+  $('bCreate').disabled = true;
+  try {
+    let c = genCode();
+    for (let i = 0; i < 5; i++){ const s = await db.ref(ROOT + '/' + c + '/meta').once('value'); if (!s.exists()) break; c = genCode(); }
+    await db.ref(ROOT + '/' + c).set({
+      meta: {title, admin: me.id, adminName: me.name, mode: nf.mode, scale: nf.scale, tiers, reveal: nf.reveal,
+             showWho: $('nWho').checked, tWatch: +$('nTW').value, tVote: +$('nTV').value, tAll: $('nTA').checked,
+             auto: +$('nTW').value > 0 || +$('nTV').value > 0, randOrd: $('nRand').checked, cat: nf.cat, anyoneAdd: nf.whoAdd === 'all', perUser: readLim('nNoLim', 'nLim'), adminFree: $('nAdmFree').checked, status: 'voting', cur: '', step: 0,
+             created: firebase.database.ServerValue.TIMESTAMP, syncOn: false}
+    });
+    await db.ref(IDX + '/' + c).set({last: firebase.database.ServerValue.TIMESTAMP});
+    await enter(c);
+  } catch(e){ fbErr(e); }
+  $('bCreate').disabled = false;
+}
+
+// ============ ENTRAR A UNA SALA ============
+let code = '', R = {meta:null, items:{}, votes:{}, players:{}, sync:null, covers:{}}, offs = [], presRef = null;
+let viewId = '', follow = true, tab = 'pVote', rankView = 'grid', openDet = {};
+const rp = s => ROOT + '/' + code + (s ? '/' + s : '');
+async function joinRoom(c){
+  c = String(c || '').trim().toUpperCase();
+  if (c.length < 4) return toast('Escribe el código de la sala');
+  if (!needName()) return;
+  try {
+    const s = await db.ref(ROOT + '/' + c + '/meta').once('value');
+    if (!s.exists()){ toast('No existe una sala con ese código'); return; }
+    await enter(c);
+  } catch(e){ fbErr(e); }
+}
+async function enter(c){
+  leave(true);
+  code = c; R = {meta:null, items:{}, votes:{}, players:{}, sync:null, covers:{}}; viewId = ''; follow = true; openDet = {}; lastStage = ''; revShown = -1; seenMe = false; prevStatus = '';
+  LS.set('room', c);
+  try { history.replaceState(null, '', location.pathname + '?sala=' + c); } catch(e){}
+  presRef = db.ref(rp('players/' + me.id));
+  onlineRef = db.ref(PRES + '/' + c + '/' + me.id);
+  const pres = () => {
+    presRef.update({n: me.name, acc: me.acc, on: true, ts: firebase.database.ServerValue.TIMESTAMP});
+    presRef.onDisconnect().update({on: false, ts: firebase.database.ServerValue.TIMESTAMP});
+    onlineRef.set(true); onlineRef.onDisconnect().remove();
+    touch();
+  };
+  pres();
+  const conRef = db.ref('.info/connected'), conCb = conRef.on('value', s => { if (s.val() && code) pres(); });
+  offs.push(() => conRef.off('value', conCb));
+  const hb = setInterval(touch, 5 * 60e3); offs.push(() => clearInterval(hb));
+  ['meta', 'items', 'votes', 'players', 'sync', 'covers'].forEach(k => {
+    const r = db.ref(rp(k)), cb = r.on('value', s => { R[k] = s.val() || (k === 'meta' || k === 'sync' ? null : {}); onRoom(k); }, fbErr);
+    offs.push(() => r.off('value', cb));
+  });
+  setTab('pVote');
+  show('sRoom');
+}
+let onlineRef = null;
+function touch(){ if (code) db.ref(IDX + '/' + code).set({last: firebase.database.ServerValue.TIMESTAMP}).catch(() => {}); }
+// Borra la sala completa (datos, presencia e índice)
+function wipeRoom(c){ const u = {}; u[ROOT + '/' + c] = null; u[PRES + '/' + c] = null; u[IDX + '/' + c] = null; return db.ref().update(u); }
+function leave(silent){
+  const c = code, wasIn = !!onlineRef;
+  if (c && R.meta) saveLocal();
+  offs.forEach(f => { try { f(); } catch(e){} }); offs = [];
+  if (presRef){ presRef.update({on: false}).catch(() => {}); presRef.onDisconnect().cancel(); presRef = null; }
+  if (onlineRef){
+    const o = onlineRef; onlineRef = null;
+    o.onDisconnect().cancel(); o.remove().then(() => db.ref(PRES + '/' + c).once('value')).then(s => {
+      if (wasIn && !s.exists()) return wipeRoom(c).then(() => console.log('sala ' + c + ' borrada: no quedó nadie'));
+    }).catch(() => {});
+  }
+  destroyYT(); code = ''; $('revBox').innerHTML = '';
+  if (!silent){
+    LS.set('room', '');
+    try { history.replaceState(null, '', location.pathname); } catch(e){}
+    show('sHome'); renderHome();
+  }
+}
+
+// ============ ESTADO DERIVADO ============
+const isAdmin = () => !!(R.meta && R.meta.admin === me.id);
+const scale = () => SCALES[(R.meta && R.meta.scale) || '10'] || SCALES['10'];
+const tiers = () => arr(R.meta && R.meta.tiers).length ? arr(R.meta.tiers) : DEF_TIERS;
+const isTier = () => R.meta && R.meta.mode === 'tier';
+const status = () => (R.meta && R.meta.status) || 'voting';
+function itemsSorted(){ return Object.entries(R.items || {}).map(([id, v]) => ({id, ...v})).sort((a, b) => (a.ord || 0) - (b.ord || 0)); }
+function playersList(){ return Object.entries(R.players || {}).map(([id, v]) => ({id, ...v})).sort((a, b) => (b.on ? 1 : 0) - (a.on ? 1 : 0) || String(a.n).localeCompare(String(b.n))); }
+const pname = id => (R.players && R.players[id] && R.players[id].n) || 'alguien';
+function norm(v){
+  if (isTier()){ const T = tiers().length; return T > 1 ? (T - 1 - v) / (T - 1) : 1; }
+  const s = scale(); return (v - s.min) / (s.max - s.min);
+}
+function stats(id){
+  const vs = R.votes && R.votes[id] ? Object.entries(R.votes[id]).filter(([, v]) => typeof v === 'number') : [];
+  const n = vs.length; if (!n) return {n:0, avg:null, nrm:0, sd:0, vs};
+  const ns = vs.map(([, v]) => norm(v)), nrm = ns.reduce((a, b) => a + b, 0) / n;
+  const sd = Math.sqrt(ns.reduce((a, b) => a + (b - nrm) * (b - nrm), 0) / n);
+  const avg = vs.reduce((a, [, v]) => a + v, 0) / n;
+  return {n, avg, nrm, sd, vs};
+}
+function tierOf(st){
+  const T = tiers().length;
+  if (isTier()) return Math.max(0, Math.min(T - 1, Math.round(st.avg)));
+  return Math.max(0, Math.min(T - 1, Math.floor((1 - st.nrm) * T - 1e-9)));
+}
+function fmtVal(v){
+  if (isTier()) { const t = tiers()[Math.round(v)]; return t ? t.n : '?'; }
+  return scale().step < 1 ? (Math.round(v * 2) / 2).toString() : String(v);
+}
+function fmtAvg(st){
+  if (!st.n) return '—';
+  if (isTier()) return tiers()[tierOf(st)].n;
+  const s = scale(); return s.max >= 100 ? st.avg.toFixed(1) : st.avg.toFixed(2);
+}
+function ranked(){
+  return itemsSorted().map(it => ({...it, st: stats(it.id)})).filter(x => x.st.n)
+    .sort((a, b) => b.st.nrm - a.st.nrm || b.st.n - a.st.n || (a.ord || 0) - (b.ord || 0));
+}
+// «Nuevos»: ítems agregados después de terminar la votación. Solo esos se pueden votar.
+const isNew = it => !!(it && it.extra && !it.closed);
+const openNew = () => itemsSorted().filter(isNew);
+function canSee(it){
+  const m = R.meta || {};
+  if (status() === 'done') return !isNew(it) || m.reveal === 'live';
+  if (status() === 'reveal') return false;
+  if (m.reveal === 'live') return true;
+  if (m.reveal === 'item') return !!it.closed;
+  return false;
+}
+const canVote = it => !!it && !it.closed && (status() === 'voting' || (status() === 'done' && !!it.extra));
+const canAdd = () => isAdmin() || !!(R.meta && R.meta.anyoneAdd);
+
+// ============ AL CAMBIAR LA SALA ============
+let prevStatus = '', seenMe = false;
+function onRoom(k){
+  if (!code) return;
+  if (k === 'meta' && !R.meta){ toast('La sala ya no existe'); leave(); return; }
+  if (!R.meta) return;
+  // pasar a la vista del ítem que muestra el admin
+  const its = R.items || {};
+  if (follow && R.meta.cur && its[R.meta.cur]) viewId = R.meta.cur;
+  if (!its[viewId]){ const f = itemsSorted()[0]; viewId = (R.meta.cur && its[R.meta.cur]) ? R.meta.cur : f ? f.id : ''; }
+  // si me sacaron
+  if (k === 'players' && R.players && R.players[me.id]) seenMe = true;
+  if (k === 'players' && seenMe && R.players && !R.players[me.id] && presRef){ toast('El admin te sacó de la sala'); leave(); return; }
+  addRecent(code, R.meta.title);
+  const st = status();
+  if (st !== prevStatus){
+    if (st === 'done' && prevStatus) { setTab('pRank'); giveXP(); }
+    prevStatus = st;
+  }
+  render();
+  if (k === 'sync') applySync();
+}
+function render(){
+  const m = R.meta, pl = playersList(), on = pl.filter(p => p.on).length;
+  $('rTitle').textContent = m.title || 'Ranking';
+  $('rSub').textContent = [m.cat && m.cat !== 'todo' ? catOf().l : '', isTier() ? 'Tierlist' : 'Nota ' + scale().label,
+    status() === 'done' ? '🏁 Terminado' : ({end: '🔒 Ocultas', item: '⏭️ Al cerrar', live: '⚡ En vivo'}[m.reveal] || '')].filter(Boolean).join(' · ');
+  $('bCode').textContent = code;
+  $('bCfg').classList.toggle('hide', !isAdmin());
+  $('tPeople').textContent = 'Gente (' + on + ')';
+  renderVote(); renderList(); renderRank(); renderPeople(); renderReveal();
+  hydrateAv();
+}
+
+// ============ PESTAÑA VOTAR (reproductor + voto) ============
+let lastStage = '', sliding = false, pendingRender = false, sliderPend = {};
+function renderVote(){
+  const box = $('pVote'), its = itemsSorted(), it = R.items[viewId] ? {id: viewId, ...R.items[viewId]} : null;
+  if (!it){
+    destroyYT(); lastStage = '';
+    box.innerHTML = `<div class="empty"><div class="e">📭</div><p>La lista está vacía.<br>${canAdd() ? 'Agrega canciones, videos, imágenes, links o solo nombres.' : 'Espera a que el admin agregue cosas.'}</p>
+      ${canAdd() ? '<button class="btn" id="eAdd" style="max-width:300px;margin:0 auto">➕ Agregar a la lista</button>' : ''}</div>`;
+    if ($('eAdd')) $('eAdd').onclick = openAdd;
+    return;
+  }
+  const idx = its.findIndex(x => x.id === it.id), key = it.id + '|' + (it.url || '') + '|' + itImg(it).length;
+  if (!$('stage') || lastStage !== key){
+    destroyYT();
+    box.innerHTML = `<div class="stage" id="stage"></div><div id="vRest"></div>`;
+    mountStage($('stage'), it); lastStage = key;
+  }
+  const st = stats(it.id), mine = R.votes && R.votes[it.id] ? R.votes[it.id][me.id] : undefined;
+  const pl = playersList(), on = pl.filter(p => p.on || (R.votes[it.id] && R.votes[it.id][p.id] != null));
+  const isCur = R.meta.cur === it.id, admin = isAdmin(), see = canSee(it);
+  let h = `<div class="itHead"><div style="flex:1;min-width:0"><h2>${esc(it.t || 'Sin título')}</h2>${it.sub ? `<div class="isub">${esc(it.sub)}</div>` : ''}</div>
+    <span class="pill">${idx + 1}/${its.length}</span></div>
+`;
+  const yt1 = media(it.url).k === 'yt', voting = status() === 'voting';
+  // fila de navegación: ◀  (🎲 al azar | seguir al admin)  ▶
+  h += `<div class="nav">
+    <button class="btn g" id="nPrev" ${idx <= 0 ? 'disabled' : ''} aria-label="Anterior">◀</button>
+    ${admin ? `<button class="btn g sm" id="aRand" ${its.length < 2 ? 'disabled' : ''} style="width:100%;height:46px">🎲 Al azar</button>`
+            : `<button class="btn ${follow ? 'g' : 'c'} sm" id="bFollow" style="width:100%;height:46px;${follow ? 'color:var(--cyan)' : ''}">${follow ? '🔗 Siguiendo al admin' : '📍 Ir a donde está el admin'}</button>`}
+    <button class="btn g" id="nNext" ${idx >= its.length - 1 ? 'disabled' : ''} aria-label="Siguiente">▶</button></div>`;
+  // herramientas (chips)
+  const tl = [];
+  if (admin && !isCur) tl.push('<button class="tool p" id="aHere">📍 Mostrar este a todos</button>');
+  if (admin && (voting || (status() === 'done' && it.extra))) tl.push(`<button class="tool ${it.closed ? 'on' : ''}" id="aClose">${it.closed ? '🔓 Reabrir' : (R.meta.reveal === 'item' ? '🔒 Cerrar y mostrar nota' : '🔒 Cerrar votación')}</button>`);
+  if (admin && yt1) tl.push(`<button class="tool ${R.meta.syncOn ? 'on' : ''}" id="aSync">📡 Ver juntos${R.meta.syncOn ? ' ✓' : ''}</button>`);
+  if (admin && (R.meta.tWatch || R.meta.tVote) && voting) tl.push(`<button class="tool ${R.meta.auto ? 'on' : ''}" id="aAuto">${R.meta.auto ? '⏸️ Pausar tiempos' : '▶️ Reanudar tiempos'}</button>`);
+  if (admin) tl.push(`<button class="tool" id="aShuf" ${its.length < 2 ? 'disabled' : ''}>🔀 Mezclar</button>`);
+  if (!admin && it.closed) tl.push('<span class="tool">🔒 Cerrado</span>');
+  if (!admin && R.meta.syncOn && yt1 && follow) tl.push('<span class="tool on">📡 Sincronizado</span>');
+  if (it.url) tl.push(`<a class="tool" href="${esc(it.url)}" target="_blank" rel="noopener">↗ Abrir original</a>`);
+  if (it.ext) tl.push(`<a class="tool" href="${esc(it.ext)}" target="_blank" rel="noopener">↗ Ficha del anime</a>`);
+  if (tl.length) h += '<div class="tools">' + tl.join('') + '</div>';
+  if ((R.meta.tWatch || R.meta.tVote) && isCur) h += `<div class="tmr" id="tmr"><div class="row"><span id="tmrL">⏱️</span><span class="t" id="tmrT"></span></div><div class="prog"><i id="tmrB" style="width:0"></i></div></div>`;
+  h += '<div class="vote">' + voteHTML(it, mine) + '</div>';
+  // resultado o candado
+  if (see && st.n){
+    h += `<div class="result">${isTier() ? `<span class="tbadge" style="background:${esc(tiers()[tierOf(st)].c)};color:#111;font-family:var(--fx);font-size:30px;padding:6px 14px;border-radius:10px">${esc(fmtAvg(st))}</span>` : `<span class="big">${fmtAvg(st)}</span>`}
+      <div class="grow"><b>Nota del grupo</b><div class="mut" style="font-size:13px">${st.n} voto${st.n === 1 ? '' : 's'}${!isTier() ? '' : ' · promedio'}</div></div></div>`;
+  } else if (!see){
+    h += `<div class="locked">🔒 ${status() === 'done' ? 'Nota oculta hasta que el admin cierre los nuevos' : R.meta.reveal === 'item' ? 'Nota oculta hasta que el admin cierre este ítem' : 'Notas ocultas hasta el final'}</div>`;
+  }
+  // quién votó
+  const showVal = see && R.meta.showWho;
+  h += `<div class="prog"><i style="width:${on.length ? Math.round(100 * st.n / on.length) : 0}%"></i></div>
+    <div class="mut" style="font-size:13px;margin-top:6px">${st.n} de ${on.length} ya votaron</div>
+    <div class="voters">${on.map(p => {
+      const v = R.votes[it.id] && R.votes[it.id][p.id];
+      return `<span class="voter ${v != null ? 'ok' : ''}">${avHTML(p.n, p.id, 24)}${esc(p.n)}${v != null ? (showVal || p.id === me.id ? ` <em>${esc(fmtVal(v))}</em>` : ' ✓') : ''}</span>`;
+    }).join('')}</div>`;
+  if (admin && status() === 'voting'){
+    h += `<div style="height:16px"></div><button class="btn" id="aEnd">🏁 Terminar y revelar el ranking</button>`;
+  }
+  if (admin && status() === 'done' && openNew().length){
+    h += `<div style="height:16px"></div><button class="btn" id="aEndNew">🏁 Cerrar y revelar los nuevos (${openNew().length})</button>`;
+  }
+  if (sliding) { pendingRender = true; return; }
+  $('vRest').innerHTML = h;
+  bindVote(it);
+  const go = d => { const j = idx + d; if (its[j]) { if (admin) setCur(its[j].id); else { follow = false; viewId = its[j].id; render(); } } };
+  if ($('bFollow')) $('bFollow').onclick = () => { follow = !follow; if (follow && R.meta.cur) viewId = R.meta.cur; render(); applySync(); };
+  if ($('nPrev')) $('nPrev').onclick = () => go(-1);
+  if ($('nNext')) $('nNext').onclick = () => go(1);
+  if ($('aHere')) $('aHere').onclick = () => setCur(it.id);
+  if ($('aRand')) $('aRand').onclick = randomItem;
+  if ($('aAuto')) $('aAuto').onclick = () => db.ref(rp('meta')).update({auto: !R.meta.auto, phase: null}).catch(fbErr);
+  if ($('aShuf')) $('aShuf').onclick = shuffleItems;
+  if ($('aClose')) $('aClose').onclick = () => db.ref(rp('items/' + it.id + '/closed')).set(!it.closed).catch(fbErr);
+  if ($('aSync')) $('aSync').onclick = () => { db.ref(rp('meta/syncOn')).set(!R.meta.syncOn).catch(fbErr); if (!R.meta.syncOn) setTimeout(() => pushSync(), 300); };
+  if ($('aEnd')) $('aEnd').onclick = startReveal;
+  if ($('aEndNew')) $('aEndNew').onclick = revealNew;
+}
+function goItem(id){
+  if (!R.items[id]) return;
+  if (isAdmin() && status() === 'voting') setCur(id); else { viewId = id; follow = R.meta.cur === id; }
+  setTab('pVote'); render();
+}
+// 🎲 elige al azar entre los que todavía no se mostraron (y si ya se vieron todos, entre los que tienen menos votos)
+function randomItem(){
+  const its = itemsSorted().filter(x => x.id !== R.meta.cur && !x.closed); if (!its.length) return toast('No quedan ítems abiertos');
+  const shown = R.meta.shown || {};
+  let pool = its.filter(x => !shown[x.id]);
+  if (!pool.length){ const mn = Math.min(...its.map(x => stats(x.id).n)); pool = its.filter(x => stats(x.id).n === mn); }
+  const pick = pool[Math.floor(Math.random() * pool.length)];
+  setCur(pick.id); toast('🎲 ' + (pick.t || 'Ítem').slice(0, 40));
+}
+function shuffleItems(){
+  const its = itemsSorted(); if (its.length < 2) return;
+  if (!confirm('¿Mezclar el orden de toda la lista al azar?')) return;
+  const u = {}; its.map(x => x.id).sort(() => Math.random() - .5).forEach((id, i) => u['items/' + id + '/ord'] = i + 1);
+  const first = Object.keys(u).sort((a, b) => u[a] - u[b])[0].split('/')[1];
+  u['meta/cur'] = first;
+  db.ref(rp()).update(u).then(() => toast('🔀 Lista mezclada')).catch(fbErr);
+}
+function setCur(id){ viewId = id; const u = {cur: id, phase: null}; u['shown/' + id] = true; db.ref(rp('meta')).update(u).catch(fbErr); }
+
+function voteHTML(it, mine){
+  const dis = !canVote(it), d = dis ? 'disabled' : '';
+  let h = '';
+  if (dis && status() !== 'voting') h += `<div class="mut" style="margin-bottom:8px">La votación de este ya terminó${openNew().length ? ' · solo se votan los <b style="color:var(--cyan)">🆕 nuevos</b>' : ''}</div>`;
+  else if (!dis && it.extra && status() === 'done') h += '<div class="pill c" style="margin-bottom:8px">🆕 Nuevo: este sí se puede votar</div>';
+  else if (dis) h += '<div class="mut" style="margin-bottom:8px">Este ítem está cerrado</div>';
+  else h += `<div class="lbl" style="margin-top:0">${mine != null ? 'Tu voto · puedes cambiarlo' : 'Tu voto'}</div>`;
+  if (isTier()){
+    h += '<div class="tierBtns">' + tiers().map((t, i) => `<button data-v="${i}" class="${mine === i ? 'on' : ''}" ${d}><b style="background:${esc(t.c)}">${esc(t.n)}</b><span>${mine === i ? '✓ Tu elección' : ''}</span></button>`).join('') + '</div>';
+  } else {
+    const s = scale();
+    if (s.stars){
+      h += '<div class="stars">' + [1, 2, 3, 4, 5].map(i => `<button data-v="${i}" class="${mine != null && i <= mine ? 'on' : ''}" ${d}>⭐</button>`).join('') + '</div>';
+    } else if (s.step === 1 && s.max - s.min <= 10){
+      h += '<div class="grid10">' + Array.from({length: s.max - s.min + 1}, (_, i) => s.min + i).map(v => `<button data-v="${v}" class="${mine === v ? 'on' : ''}" ${d}>${v}</button>`).join('') + '</div>';
+    } else {
+      const pend = sliderPend[it.id], v = pend != null ? pend : mine != null ? mine : (s.min + s.max) / 2;
+      h += `<div class="slider"><button class="ib" id="sMinus" ${d}>−</button><input type="range" id="sRange" min="${s.min}" max="${s.max}" step="${s.step}" value="${v}" ${d}>
+        <button class="ib" id="sPlus" ${d}>+</button></div>
+        <div class="row" style="justify-content:center"><span class="big" id="sVal" style="${mine == null && pend == null ? 'opacity:.4' : ''}">${fmtVal(v)}</span>
+        ${!dis ? `<button class="btn sm" id="sSave">${mine != null ? 'Cambiar' : 'Votar'}</button>` : ''}</div>`;
+    }
+  }
+  if (mine != null && !dis) h += '<div style="text-align:center;margin-top:8px"><button class="mut" id="vDel" style="font-size:13px;text-decoration:underline">Quitar mi voto</button></div>';
+  return h;
+}
+function castVote(id, v){
+  const it = R.items[id]; if (!canVote(it)) return;
+  db.ref(rp('votes/' + id + '/' + me.id)).set(v).catch(fbErr);
+  if (navigator.vibrate) try { navigator.vibrate(15); } catch(e){}
+}
+function bindVote(it){
+  const box = $('vRest');
+  box.querySelectorAll('.tierBtns button,.stars button,.grid10 button').forEach(b => b.onclick = () => castVote(it.id, +b.dataset.v));
+  const rg = $('sRange');
+  if (rg){
+    const s = scale(), upd = () => { sliderPend[it.id] = +rg.value; $('sVal').textContent = fmtVal(+rg.value); $('sVal').style.opacity = 1; };
+    rg.oninput = upd;
+    const endSlide = () => { if (!sliding) return; sliding = false; if (pendingRender){ pendingRender = false; setTimeout(renderVote, 0); } };
+    rg.addEventListener('pointerdown', () => { sliding = true; });
+    rg.addEventListener('touchstart', () => { sliding = true; }, {passive: true});
+    ['pointerup', 'pointercancel', 'touchend', 'change', 'blur'].forEach(ev => rg.addEventListener(ev, endSlide));
+    $('sMinus').onclick = () => { rg.value = Math.max(s.min, +rg.value - s.step); upd(); };
+    $('sPlus').onclick = () => { rg.value = Math.min(s.max, +rg.value + s.step); upd(); };
+    if ($('sSave')) $('sSave').onclick = () => { castVote(it.id, +rg.value); delete sliderPend[it.id]; };
+  }
+  if ($('vDel')) $('vDel').onclick = () => db.ref(rp('votes/' + it.id + '/' + me.id)).remove().catch(fbErr);
+}
+
+// ============ REPRODUCTOR ============
+function mountStage(el, it){
+  const md = media(it.url, itImg(it));
+  setTimeout(() => el.querySelectorAll('video,audio').forEach(v => v.addEventListener('play', () => { if (isAdmin()) startTimers(); })), 0);
+  if (md.k === 'yt'){
+    el.innerHTML = `<div class="${md.short ? 'vert' : 'ratio'}" style="${md.short ? 'max-width:360px' : ''}"><div id="ytp"></div></div>`;
+    mountYT(md, it.id);
+  } else if (md.k === 'frame'){
+    el.innerHTML = md.h ? `<iframe referrerpolicy="strict-origin-when-cross-origin" src="${esc(md.src)}" style="width:100%;height:${md.h}px;border:0;display:block" allow="autoplay; encrypted-media; fullscreen; clipboard-write; picture-in-picture" allowfullscreen loading="lazy"></iframe>`
+      : `<div class="ratio"><iframe referrerpolicy="strict-origin-when-cross-origin" src="${esc(md.src)}" allow="autoplay; encrypted-media; fullscreen; picture-in-picture" allowfullscreen></iframe></div>`;
+  } else if (md.k === 'vert'){
+    el.innerHTML = `<div class="vert"><iframe referrerpolicy="strict-origin-when-cross-origin" src="${esc(md.src)}" allow="autoplay; encrypted-media; fullscreen" allowfullscreen></iframe></div>`;
+  } else if (md.k === 'video'){
+    el.innerHTML = `<video src="${esc(md.src)}" controls playsinline preload="metadata"></video>`;
+  } else if (md.k === 'audio'){
+    el.innerHTML = `<div class="txtItem" style="padding:24px 14px 6px;font-size:22px">🎵 ${esc(it.t || '')}</div><audio src="${esc(md.src)}" controls preload="metadata"></audio>`;
+  } else if (md.k === 'img'){
+    el.innerHTML = `<img class="full" src="${esc(md.src)}" alt="">`;
+  } else if (md.k === 'link'){
+    el.innerHTML = `<div class="linkCard"><div style="font-size:42px">🔗</div><b>${esc(md.host)}</b><div class="u">${esc(md.src)}</div>
+      <div class="row" style="justify-content:center;flex-wrap:wrap"><a class="btn c sm" href="${esc(md.src)}" target="_blank" rel="noopener" style="text-decoration:none">↗ Abrir</a>
+      <button class="btn g sm" id="tryFrame">Intentar ver aquí</button></div></div>`;
+    $('tryFrame').onclick = () => { el.innerHTML = `<div class="ratio"><iframe referrerpolicy="strict-origin-when-cross-origin" src="${esc(md.src)}" allowfullscreen></iframe></div><div class="mut" style="padding:8px;font-size:12px;background:var(--bg2)">Si queda en blanco, esa página no deja mostrarse dentro de otra: usa «Abrir link».</div>`; };
+  } else {
+    el.innerHTML = `<div class="txtItem">${esc(it.t || 'Sin título')}</div>`;
+  }
+}
+
+// ¿La página está en un lugar sin dirección web (archivo, vista previa, dentro de otra página)? Ahí YouTube da error 153.
+const NO_WEB = (() => {
+  if (location.protocol === 'file:' || location.origin === 'null' || !/^https?:$/.test(location.protocol)) return true;
+  try { if (window.self !== window.top) return true; } catch(e){ return true; }
+  return false;
+})();
+// YouTube con API para poder sincronizar ("Ver juntos")
+let yt = null, ytReady = false, ytFor = '', ytApi = null;
+function loadYTApi(){
+  if (window.YT && YT.Player) return Promise.resolve();
+  if (!ytApi) ytApi = new Promise((ok, ko) => {
+    const prev = window.onYouTubeIframeAPIReady;
+    window.onYouTubeIframeAPIReady = () => { if (prev) try { prev(); } catch(e){} ok(); };
+    loadScript('https://www.youtube.com/iframe_api').catch(ko);
+    setTimeout(() => ko(new Error('yt')), 8000);
+  });
+  return ytApi;
+}
+function mountYT(md, itemId){
+  ytFor = itemId; ytReady = false;
+  if (NO_WEB){ setTimeout(() => ytFail(md, 'web'), 0); return; }
+  const fallback = () => {
+    const h = $('ytp'); if (!h || ytFor !== itemId) return;
+    h.outerHTML = `<iframe referrerpolicy="strict-origin-when-cross-origin" src="https://www.youtube.com/embed/${esc(md.id)}?playsinline=1&rel=0&start=${md.start}&origin=${encodeURIComponent(location.origin)}" allow="autoplay; encrypted-media; fullscreen; picture-in-picture" allowfullscreen style="position:absolute;inset:0;width:100%;height:100%;border:0"></iframe>`;
+  };
+  loadYTApi().then(() => {
+    if (ytFor !== itemId || !$('ytp')) return;
+    yt = new YT.Player('ytp', {
+      videoId: md.id, width: '100%', height: '100%',
+      playerVars: {playsinline: 1, rel: 0, start: md.start || 0, enablejsapi: 1, origin: location.origin, widget_referrer: location.href},
+      events: {
+        onReady: () => { ytReady = true; try { yt.getIframe().setAttribute('referrerpolicy', 'strict-origin-when-cross-origin'); } catch(e){} applySync(); },
+        onError: e => ytFail(md, e && e.data),
+        onStateChange: e => {
+          if (e.data === 1 && isAdmin()) startTimers();
+          if (isAdmin() && R.meta && R.meta.syncOn && (e.data === 1 || e.data === 2)) pushSync();
+        }
+      }
+    });
+  }).catch(fallback);
+}
+// Si YouTube no deja ver el video aquí (dueño bloqueó insertarlo, error 153, etc.) se muestra la miniatura con botón para abrirlo
+function ytFail(md, code){
+  const st = $('stage'); if (!st) return;
+  const why = code === 101 || code === 150 ? 'El dueño del video no deja verlo fuera de YouTube.'
+    : code === 153 || code === 152 ? 'YouTube no aceptó la página (error ' + code + '). Ábrela desde el link de GitHub, no como archivo ni dentro de WhatsApp.'
+    : code === 'web' ? 'Aquí YouTube no deja reproducir (estás abriendo el archivo o una vista previa). Súbelo a GitHub Pages y ábrelo desde ese link para verlo aquí mismo.'
+    : code === 100 ? 'El video no existe o es privado.' : 'YouTube no pudo cargar el video' + (code ? ' (error ' + code + ')' : '') + '.';
+  destroyYT();
+  st.innerHTML = `<div class="ratio" style="background:#000 url('https://i.ytimg.com/vi/${esc(md.id)}/hqdefault.jpg') center/cover"><div style="display:flex;flex-direction:column;align-items:center;justify-content:center;gap:10px;background:rgba(0,0,0,.6);padding:14px;text-align:center">
+    <div style="font-size:13px">${esc(why)}</div>
+    <a class="btn sm" style="text-decoration:none" href="https://www.youtube.com/watch?v=${esc(md.id)}${md.start ? '&t=' + md.start + 's' : ''}" target="_blank" rel="noopener">▶ Ver en YouTube</a></div></div>`;
+}
+function destroyYT(){ if (yt){ try { yt.destroy(); } catch(e){} } yt = null; ytReady = false; ytFor = ''; }
+function pushSync(){
+  if (!yt || !ytReady || !isAdmin() || !code) return;
+  let t = 0, st = 'pause';
+  try { t = yt.getCurrentTime() || 0; st = yt.getPlayerState() === 1 ? 'play' : 'pause'; } catch(e){ return; }
+  db.ref(rp('sync')).set({id: ytFor, st, t, at: firebase.database.ServerValue.TIMESTAMP}).catch(() => {});
+}
+setInterval(() => { if (isAdmin() && R.meta && R.meta.syncOn && yt && ytReady) { try { if (yt.getPlayerState() === 1) pushSync(); } catch(e){} } }, 8000);
+function applySync(){
+  const s = R.sync;
+  if (isAdmin() || !follow || !R.meta || !R.meta.syncOn || !s || !yt || !ytReady || s.id !== ytFor) return;
+  try {
+    const target = s.st === 'play' ? s.t + Math.max(0, now() - (s.at || now())) / 1000 : s.t;
+    if (Math.abs((yt.getCurrentTime() || 0) - target) > 1.5) yt.seekTo(target, true);
+    const ps = yt.getPlayerState();
+    if (s.st === 'play' && ps !== 1) { yt.playVideo(); setTimeout(() => { try { if (yt && yt.getPlayerState() !== 1) toast('Toca ▶ en el video para unirte a la reproducción'); } catch(e){} }, 1500); }
+    if (s.st === 'pause' && ps === 1) yt.pauseVideo();
+  } catch(e){}
+}
+
+// ============ TIEMPOS: ver/escuchar → votar → (resultado) → siguiente ============
+// Solo el celular del admin hace avanzar las fases; todos ven la misma cuenta regresiva.
+let driveBusy = false;
+function phaseDur(k){ const m = R.meta; return k === 'watch' ? (+m.tWatch || 0) : k === 'vote' ? (+m.tVote || 0) : k === 'result' ? 5 : 0; }
+function busyFor(p){ driveBusy = true; return Promise.resolve(p).catch(fbErr).then(() => setTimeout(() => driveBusy = false, 600)); }
+function setPhase(id, k, dur){
+  return busyFor(db.ref(rp('meta/phase')).set({id, k, st: firebase.database.ServerValue.TIMESTAMP, dur: dur != null ? dur : phaseDur(k)}));
+}
+function onlineIds(){ return playersList().filter(p => p.on).map(p => p.id); }
+function allVoted(id){ const v = R.votes[id] || {}, on = onlineIds(); return on.length > 0 && on.every(u => v[u] != null); }
+function nextItem(){
+  const its = itemsSorted(), i = its.findIndex(x => x.id === R.meta.cur);
+  const nx = its.slice(i + 1).find(x => !x.closed);
+  if (!nx){ busyFor(db.ref(rp('meta')).update({auto: false, phase: null})); toast('🏁 Se terminó la lista'); return; }
+  driveBusy = true; setCur(nx.id); setTimeout(() => driveBusy = false, 600);
+}
+// ¿El ítem tiene algo que reproducir? (si es solo texto o imagen, el tiempo arranca solo)
+function playable(it){ const k = media(it.url, itImg(it)).k; return ['yt', 'frame', 'vert', 'video', 'audio'].includes(k); }
+function firstPhase(){ const m = R.meta; return (+m.tWatch > 0) ? 'watch' : (+m.tVote > 0) ? 'vote' : ''; }
+// El admin le dio play (o tocó «Empezar»): arranca la cuenta
+function startTimers(){
+  const m = R.meta; if (!isAdmin() || !m || !m.auto) return;
+  const ph = m.phase; if (!ph || ph.id !== m.cur || ph.k !== 'ready') return;
+  const k = firstPhase(); if (k) setPhase(m.cur, k);
+}
+function driveAuto(){
+  const m = R.meta;
+  if (driveBusy || !code || !m || !isAdmin() || !m.auto || status() !== 'voting') return;
+  const cur = m.cur; if (!cur || !R.items[cur]) return;
+  const ph = m.phase, t = now();
+  if (!ph || ph.id !== cur){
+    const k = firstPhase(); if (!k) return;
+    if (playable(R.items[cur])) setPhase(cur, 'ready', 0);   // espera a que le den play o a que el admin lo pida
+    else setPhase(cur, k);
+    return;
+  }
+  if (ph.k === 'ready') return;
+  const end = (+ph.st || t) + (+ph.dur || 0) * 1000;
+  // ⚡ si ya votaron todos, quedan 3 segundos
+  if (m.tAll && (ph.k === 'vote' || ph.k === 'watch') && allVoted(cur) && (!ph.dur || end - t > 3500) && (+m.tVote > 0)){ setPhase(cur, 'vote', 3); return; }
+  if (!ph.dur || t < end) return;
+  if (ph.k === 'watch'){ if (+m.tVote > 0) setPhase(cur, 'vote'); else setPhase(cur, 'manual', 0); return; }
+  if (ph.k === 'vote'){
+    if (m.reveal === 'item'){ db.ref(rp('items/' + cur + '/closed')).set(true); setPhase(cur, 'result'); }
+    else nextItem();
+    return;
+  }
+  if (ph.k === 'result') nextItem();
+}
+let stopped = {};
+function tickTimer(){
+  driveAuto();
+  const m = R.meta; if (!code || !m) return;
+  const ph = m.phase, el = $('tmr');
+  if (!ph || ph.id !== m.cur){
+    if (el){ $('tmrL').textContent = m.auto ? '⏱️ Empezando…' : '⏸️ Tiempos en pausa'; $('tmrT').textContent = ''; $('tmrB').style.width = '0'; el.className = 'tmr'; }
+    return;
+  }
+  const t = now(), end = (+ph.st || t) + (+ph.dur || 0) * 1000, left = Math.max(0, end - t);
+  // se acabó el tiempo de ver/escuchar: se detiene el reproductor
+  const key = ph.id + '|' + ph.st;
+  if (ph.k !== 'watch' && +m.tWatch > 0 && viewId === ph.id && !stopped[key]){ stopped[key] = 1; stopMedia(); }
+  if (!el) return;
+  if (ph.k === 'ready'){
+    $('tmrL').innerHTML = isAdmin() ? '⏳ El tiempo empieza al darle ▶ play' : '⏳ Esperando que empiece…';
+    if (isAdmin() && !$('tmrGo')){ $('tmrT').innerHTML = '<button class="btn sm" id="tmrGo" style="padding:6px 10px;font-size:14px">▶️ Empezar ya</button>'; $('tmrGo').onclick = startTimers; }
+    if (!isAdmin()) $('tmrT').textContent = '';
+    $('tmrB').style.width = '0'; el.className = 'tmr';
+    return;
+  }
+  $('tmrL').textContent = {watch: '👀 Tiempo para ver / escuchar', vote: '🗳️ ¡Vota! Pasa al siguiente en', result: '✅ Resultado · sigue en', manual: '🗳️ Vota · el admin pasa al siguiente'}[ph.k] || '⏱️';
+  const sec = Math.ceil(left / 1000);
+  $('tmrT').textContent = ph.dur ? Math.floor(sec / 60) + ':' + String(sec % 60).padStart(2, '0') : '';
+  $('tmrB').style.width = ph.dur ? (100 * left / (ph.dur * 1000)).toFixed(1) + '%' : '0';
+  el.className = 'tmr ' + ({watch: 'w', vote: 'v', result: 'r', manual: 'v'}[ph.k] || '') + (ph.k === 'vote' && ph.dur && sec <= 5 ? ' hurry' : '');
+}
+setInterval(tickTimer, 250);
+function stopMedia(){
+  const st = $('stage'); if (!st) return;
+  if (yt && ytReady){ try { yt.pauseVideo(); } catch(e){} }
+  st.querySelectorAll('video,audio').forEach(v => { try { v.pause(); } catch(e){} });
+  let ytFrame = null; try { ytFrame = yt && yt.getIframe ? yt.getIframe() : null; } catch(e){}
+  const fr = [...st.querySelectorAll('iframe')].find(f => f !== ytFrame);
+  if (fr){   // Spotify, TikTok, etc. no se pueden pausar desde fuera: se quita el reproductor
+    const it = R.items[viewId] || {}, md = media(it.url, itImg(it));
+    st.innerHTML = `<div class="linkCard" ${md.th ? `style="background:linear-gradient(rgba(0,0,0,.65),rgba(0,0,0,.65)),url('${esc(md.th)}') center/cover"` : ''}><div style="font-size:40px">⏱️</div><b>Se acabó el tiempo para ver / escuchar</b><div class="mut" style="margin-top:4px">¡Ahora vota!</div></div>`;
+  }
+  toast('⏱️ Se acabó el tiempo, ¡vota!');
+}
+
+// ============ PESTAÑA LISTA ============
+function renderList(){
+  const its = itemsSorted(), admin = isAdmin();
+  let h = `<div class="row" style="margin-bottom:10px"><h3 class="grow" style="margin:0;font-family:var(--fx);font-size:14px;color:var(--gold)">LISTA (${its.length})</h3>
+    ${canAdd() ? `<button class="btn sm" id="lAdd" ${quota() <= 0 ? 'disabled' : ''}>➕ Agregar</button>` : ''}</div>
+    <div class="mut" style="font-size:13px;margin:-4px 0 10px">${R.meta.anyoneAdd ? '👥 Todos agregan' : '👑 Solo el admin agrega'}${R.meta.anyoneAdd ? (+R.meta.perUser ? ' · máx. ' + R.meta.perUser + ' por persona' : ' · sin límite') : ''}${limTxt() ? ' · ' + limTxt() : ''}</div>`;
+  if (!its.length) h += '<div class="empty"><div class="e">📋</div>Aún no hay nada.</div>';
+  h += '<div class="items">' + its.map((it, i) => {
+    const st = stats(it.id), mine = R.votes[it.id] && R.votes[it.id][me.id];
+    const mineOk = (it.by === me.id);
+    return `<div class="it ${R.meta.cur === it.id ? 'cur' : ''} ${viewId === it.id ? 'view' : ''}" data-id="${it.id}">
+      ${thumbHTML(it)}
+      <div class="info"><b>${i + 1}. ${esc(it.t || 'Sin título')}</b>
+        <span>${mine != null ? '✅ votaste ' + esc(fmtVal(mine)) : '⬜ sin tu voto'} · ${st.n} voto${st.n === 1 ? '' : 's'}${it.closed ? ' · 🔒' : ''}${R.meta.cur === it.id ? ' · 📍' : ''}${it.byN ? ' · de ' + esc(it.byN) : ''}</span></div>
+      ${admin || mineOk ? `<div class="acts">
+        ${admin ? `<button data-a="up" title="Subir">↑</button><button data-a="dn" title="Bajar">↓</button>` : ''}
+        <button data-a="ed" title="Renombrar">✏️</button><button data-a="rm" title="Borrar">🗑</button></div>` : ''}
+    </div>`;
+  }).join('') + '</div>';
+  if (its.length && admin) h += `<button class="btn g" id="lShuffle" style="margin-top:6px">🔀 Mezclar orden</button>`;
+  $('pList').innerHTML = h;
+  if ($('lAdd')) $('lAdd').onclick = openAdd;
+  if ($('lShuffle')) $('lShuffle').onclick = shuffleItems;
+  $('pList').querySelectorAll('.it').forEach(row => {
+    const id = row.dataset.id, i = its.findIndex(x => x.id === id);
+    row.onclick = e => {
+      const a = e.target.closest('[data-a]');
+      if (!a){ if (admin) setCur(id); else { viewId = id; follow = R.meta.cur === id; } setTab('pVote'); render(); return; }
+      e.stopPropagation();
+      const A = a.dataset.a;
+      if (A === 'up' || A === 'dn'){
+        const j = A === 'up' ? i - 1 : i + 1; if (!its[j]) return;
+        const u = {}; u['items/' + id + '/ord'] = its[j].ord || j; u['items/' + its[j].id + '/ord'] = its[i].ord || i;
+        if (u['items/' + id + '/ord'] === u['items/' + its[j].id + '/ord']) { u['items/' + id + '/ord'] = j + .5; }
+        db.ref(rp()).update(u).catch(fbErr);
+      } else if (A === 'ed'){
+        const t = prompt('Nuevo nombre', its[i].t || ''); if (t != null && t.trim()) db.ref(rp('items/' + id + '/t')).set(t.trim().slice(0, 120)).catch(fbErr);
+      } else if (A === 'rm'){
+        if (!confirm('¿Borrar «' + (its[i].t || 'este ítem') + '» y sus votos?')) return;
+        const u = {}; u['items/' + id] = null; u['votes/' + id] = null;
+        if (R.meta.cur === id){ const nx = its[i + 1] || its[i - 1]; u['meta/cur'] = nx ? nx.id : ''; }
+        db.ref(rp()).update(u).catch(fbErr);
+      }
+    };
+  });
+}
+
+// ============ AGREGAR ÍTEMS ============
+function openAdd(){
+  if (!canAdd()) return toast('Solo el admin puede agregar');
+  if (quota() <= 0) return toast('Ya pusiste el máximo de ' + R.meta.perUser + ' links');
+  const CAT = catOf();
+  const sh = openModal(`<h3>AGREGAR A LA LISTA</h3>${CAT.hint ? `<div class="pill p" style="margin:-4px 0 10px;white-space:normal">${esc(CAT.l)} · ${esc(CAT.hint)}</div>` : ''}${limTxt() ? `<div class="mut" id="adLim" style="font-size:13px;margin:-6px 0 10px">${limTxt()}</div>` : ''}
+    <div class="seg" id="adMode"><button data-v="one" class="on">🔗 De a uno</button><button data-v="many">📋 Pegar lista</button><button data-v="anime">📺 Anime</button></div>
+    <div class="mut" id="adCount" style="font-size:13px;color:var(--ok);min-height:0"></div>
+    <div id="adOne">
+      <div class="lbl">Link (YouTube, Spotify, TikTok, imagen, video…) — opcional</div>
+      <input id="adUrl" placeholder="https://…" inputmode="url">
+      <div class="lbl">Nombre</div>
+      <input id="adT" maxlength="120" placeholder="Se completa solo con el link, o escribe lo que sea">
+      <div class="row" style="margin-top:10px"><label class="btn g sm" style="cursor:pointer">📷 Subir imagen<input type="file" id="adImg" accept="image/*" class="hide"></label>
+        <span class="mut grow" id="adImgTxt" style="font-size:13px"></span></div>
+      <div class="prev hide" id="adPrev"></div>
+    </div>
+    <div id="adMany" class="hide">
+      <div class="lbl">Uno por línea. Puede ser solo el link, solo el nombre, o <b>Nombre | link</b></div>
+      <textarea id="adList" rows="8" placeholder="https://youtu.be/xxxx&#10;Pizza&#10;Goku | https://…/goku.png"></textarea>
+    </div>
+    <div id="adAnime" class="hide">
+      <div class="lbl">Nombre del anime</div>
+      <input id="anName" maxlength="80" placeholder="Ej: Naruto Shippuden">
+      <div class="row" style="margin-top:8px"><label class="btn g sm" style="cursor:pointer">📷 Portada (opcional)<input type="file" id="anCov" accept="image/*" class="hide"></label>
+        <span class="mut grow" id="anCovTxt" style="font-size:13px"></span></div>
+      <div class="hide" id="anCont" style="margin-top:8px;padding:10px;border-radius:12px;background:rgba(34,211,238,.1);border:1px solid rgba(34,211,238,.4)"></div>
+      <div class="lbl">Temporadas y capítulos</div>
+      <div id="anSeasons"></div>
+      <button class="btn g sm" id="anAddS">+ Agregar temporada</button>
+      <div class="mut" id="anSum" style="margin-top:10px;font-weight:700"></div>
+      <details style="margin-top:12px;background:rgba(0,0,0,.25);border:1px solid var(--line);border-radius:12px;padding:10px">
+        <summary style="font-weight:700;cursor:pointer">🔍 Autocompletar desde internet (opcional)</summary>
+        <div class="mut" style="font-size:12px;margin:6px 0">Busca en MyAnimeList y AniList. Si encuentra el anime, llena una temporada con sus capítulos y nombres. Si no, sigue a mano.</div>
+        <div class="row"><input id="anQ" placeholder="Ej: Attack on Titan Season 3"><button class="btn c sm" id="anGo" style="flex:0 0 auto">Buscar</button></div>
+        <div class="mut" id="anSt" style="font-size:13px;margin-top:6px"></div>
+        <div class="anRes" id="anRes"></div>
+      </details>
+    </div>
+    <div style="height:14px"></div>
+    <div class="row"><button class="btn g" id="adCancel">Cancelar</button><button class="btn" id="adOk">Agregar</button></div>`);
+  let mode = 'one', img = '', tTouched = false, lastUrl = '';
+  sh.querySelectorAll('#adMode button').forEach(b => b.onclick = () => {
+    mode = b.dataset.v; sh.querySelectorAll('#adMode button').forEach(x => x.classList.toggle('on', x === b));
+    $('adOne').classList.toggle('hide', mode !== 'one'); $('adMany').classList.toggle('hide', mode !== 'many');
+    $('adAnime').classList.toggle('hide', mode !== 'anime');
+    if (mode === 'anime') setTimeout(() => $('anQ').focus(), 50);
+  });
+  const AN = bindAnime();
+  sh.querySelectorAll('#adMode button').forEach(b => { if (!CAT.tabs.includes(b.dataset.v)) b.classList.add('hide'); });
+  if (!CAT.tabs.includes('one')) sh.querySelector('#adMode button[data-v="' + CAT.tabs[0] + '"]').click();
+  if (CAT.tabs.length === 1) $('adMode').classList.add('hide');
+  if (CAT === CATS.imagenes){ $('adUrl').placeholder = 'Link de una imagen (o sube una foto)'; }
+  const prev = () => {
+    const md = media($('adUrl').value, img), p = $('adPrev');
+    if (md.k === 'text' && !img){ p.classList.add('hide'); return; }
+    p.classList.remove('hide');
+    p.innerHTML = `<div class="th" ${thumbStyle(md)}>${thumbIcon(md)}</div><span class="mut" style="font-size:13px">${{yt:'YouTube', frame:'Reproductor', vert:'Reproductor vertical', video:'Video', audio:'Audio', img:'Imagen', link:'Link (se abrirá aparte si la página no deja mostrarse)'}[md.k] || ''}</span>`;
+  };
+  $('adT').oninput = () => { tTouched = !!$('adT').value.trim(); };
+  const onUrl = async () => {
+    prev();
+    const u = $('adUrl').value.trim();
+    if (!u || u === lastUrl || tTouched) return; lastUrl = u;
+    if (media(u).k === 'text') return;
+    $('adT').placeholder = 'Buscando el nombre…';
+    const t = await fetchTitle(u);
+    if (t && !tTouched && $('adT')) $('adT').value = t;
+    if ($('adT')) $('adT').placeholder = 'Escribe el nombre';
+  };
+  $('adUrl').oninput = prev; $('adUrl').onchange = onUrl; $('adUrl').onpaste = () => setTimeout(onUrl, 50); $('adUrl').onblur = onUrl;
+  $('adImg').onchange = async () => {
+    const f = $('adImg').files[0]; if (!f) return;
+    $('adImgTxt').textContent = 'Reduciendo…';
+    try { img = await shrinkImg(f); $('adImgTxt').textContent = '✓ ' + f.name.slice(0, 30); if (!$('adT').value) $('adT').value = f.name.replace(/\.[^.]+$/, '').slice(0, 60); }
+    catch(e){ $('adImgTxt').textContent = 'No se pudo leer la imagen'; img = ''; }
+    prev();
+  };
+  $('adCancel').onclick = closeModal;
+  $('adOk').onclick = async () => {
+    const list = [];
+    if (mode === 'one'){
+      const url = $('adUrl').value.trim(), t = $('adT').value.trim();
+      if (!url && !t && !img) return toast('Pon un link, un nombre o una imagen');
+      list.push({url: img ? '' : url, t, img});
+    } else if (mode === 'anime'){
+      if (!$('anName').value.trim()) return toast('Escribe el nombre del anime');
+      AN.items().forEach(x => list.push(x));
+      if (!list.length) return toast('Pon cuántos capítulos tiene la temporada');
+    } else {
+      $('adList').value.split('\n').map(l => l.trim()).filter(Boolean).forEach(l => {
+        let t = '', url = '';
+        if (l.includes(' | ')){ const k = l.lastIndexOf(' | '); t = l.slice(0, k).trim(); url = l.slice(k + 3).trim(); }
+        else if (/^https?:\/\/|^www\./i.test(l)) url = l; else t = l;
+        list.push({url, t, img:''});
+      });
+      if (!list.length) return toast('Escribe al menos una línea');
+    }
+    {
+      const bad = list.filter(x => !catAllows(mode === 'anime' ? {...x, kind: 'ep'} : x));
+      if (bad.length){
+        if (mode === 'one' || bad.length === list.length) return toast('En esta sala (' + CAT.l + ') no va eso. ' + CAT.hint, 4500);
+        if (!confirm(bad.length + ' de ' + list.length + ' no son de la categoría ' + CAT.l + ' y no se agregarán. ¿Seguir con los demás?')) return;
+        bad.forEach(b => list.splice(list.indexOf(b), 1));
+      }
+      const q = quota();
+      if (list.length > q) return toast('Solo te quedan ' + q + ' — quita ' + (list.length - q) + ' de la lista');
+    }
+    $('adOk').disabled = true; $('adOk').textContent = 'Agregando…';
+    // nombres automáticos para los links sin nombre (en paralelo, de a 6)
+    for (let i = 0; i < list.length; i += 6){
+      await Promise.all(list.slice(i, i + 6).map(async x => { if (!x.t && x.url) x.t = (await fetchTitle(x.url)) || prettyUrl(x.url); }));
+    }
+    const base = Math.max(0, ...itemsSorted().map(x => x.ord || 0)) + 1, u = {}, rnd = !!R.meta.randOrd;
+    let first = '', covId = '';
+    if (mode === 'anime' && AN.cover()){ covId = db.ref(rp('covers')).push().key; u['covers/' + covId] = AN.cover(); }
+    list.forEach((x, i) => {
+      const id = db.ref(rp('items')).push().key; if (!first) first = id;
+      u['items/' + id] = {t: (x.t || 'Sin título').slice(0, 120), url: x.url || '', img: x.img || '', sub: (x.sub || '').slice(0, 160), ext: x.ext || '', cov: x.cov === '__COVER__' ? covId : (x.cov || ''), kind: x.kind || '',
+        ord: rnd ? Math.random() * base : base + i, by: me.id, byN: me.name, at: firebase.database.ServerValue.TIMESTAMP, extra: status() !== 'voting' ? true : null};
+    });
+    if (!R.meta.cur || !R.items[R.meta.cur] || status() !== 'voting') u['meta/cur'] = first;
+    try {
+      await db.ref(rp()).update(u);
+      const msg = list.length === 1 ? '«' + list[0].t.slice(0, 40) + '» agregado ✓' : list.length + ' agregados ✓';
+      if (mode === 'one' && quota() > 0){
+        // se queda abierto para seguir agregando
+        $('adUrl').value = ''; $('adT').value = ''; img = ''; tTouched = false; lastUrl = '';
+        $('adImgTxt').textContent = ''; $('adPrev').classList.add('hide');
+        $('adOk').disabled = false; $('adOk').textContent = 'Agregar';
+        $('adCount').textContent = msg + ' · pega el siguiente o toca Listo'; if ($('adLim')) $('adLim').textContent = limTxt();
+        $('adCancel').textContent = 'Listo'; $('adUrl').focus();
+      } else { closeModal(); toast(msg); }
+    }
+    catch(e){ fbErr(e); $('adOk').disabled = false; $('adOk').textContent = 'Agregar'; }
+  };
+  setTimeout(() => $('adUrl').focus(), 100);
+}
+// ============ CAPÍTULOS DE ANIME (MyAnimeList vía Jikan, gratis y sin clave) ============
+const JIKAN = 'https://api.jikan.moe/v4/';
+const sleep = ms => new Promise(r => setTimeout(r, ms));
+async function jikan(path, tries){
+  for (let i = 0; i < (tries || 3); i++){
+    try {
+      const r = await fetch(JIKAN + path);
+      if (r.status === 429){ await sleep(1200 * (i + 1)); continue; }   // límite de 3 consultas por segundo
+      if (!r.ok) throw new Error('HTTP ' + r.status);
+      return await r.json();
+    } catch(e){ if (i === (tries || 3) - 1) throw e; await sleep(800); }
+  }
+  throw new Error('jikan');
+}
+// AniList (segunda fuente, también gratis): títulos y miniaturas de capítulos cuando MAL no los tiene
+async function anilist(query, variables){
+  const r = await fetch('https://graphql.anilist.co', {method: 'POST', headers: {'Content-Type': 'application/json', 'Accept': 'application/json'},
+    body: JSON.stringify({query, variables})});
+  if (!r.ok) throw new Error('anilist ' + r.status);
+  const j = await r.json(); if (j.errors) throw new Error('anilist'); return j.data;
+}
+const AL_FIELDS = 'id idMal title{romaji english} format seasonYear episodes nextAiringEpisode{episode} coverImage{large medium} siteUrl';
+const fromJikan = a => ({name: a.title_english || a.title, alt: a.title_english && a.title !== a.title_english ? a.title : '', malId: a.mal_id, alId: 0,
+  cover: a.images && a.images.jpg && (a.images.jpg.large_image_url || a.images.jpg.image_url) || '', small: a.images && a.images.jpg && a.images.jpg.image_url || '',
+  type: a.type || '', year: a.year || (a.aired && a.aired.prop && a.aired.prop.from && a.aired.prop.from.year) || '', count: a.episodes || 0, url: a.url || ''});
+const fromAL = m => ({name: (m.title && (m.title.english || m.title.romaji)) || '?', alt: m.title && m.title.english && m.title.romaji !== m.title.english ? m.title.romaji : '',
+  malId: m.idMal || 0, alId: m.id, cover: m.coverImage && (m.coverImage.large || m.coverImage.medium) || '', small: m.coverImage && m.coverImage.medium || '',
+  type: m.format || '', year: m.seasonYear || '', count: m.episodes || (m.nextAiringEpisode ? m.nextAiringEpisode.episode - 1 : 0), url: m.siteUrl || ''});
+function bindAnime(){
+  // Modo manual: nombre + temporadas (cantidad de capítulos, desde qué número, nombres opcionales)
+  let seasons = [{num: 1, label: '', count: 12, start: 1, names: ''}], coverData = '', coverUrl = '', list = [], reuseCov = '', contMulti = false;
+  const sum = () => {
+    const tot = seasons.reduce((a, x) => a + (Math.max(0, +x.count || 0)), 0);
+    $('anSum').textContent = tot ? 'Se agregarán ' + tot + ' capítulo' + (tot === 1 ? '' : 's') : 'Pon cuántos capítulos tiene cada temporada';
+  };
+  const draw = () => {
+    $('anSeasons').innerHTML = seasons.map((x, i) => {
+      const nn = x.names.split('\n').filter(l => l.trim()).length;
+      return `<div class="ssn" data-i="${i}">
+        <div class="row"><b class="tn">T</b><input data-f="num" type="number" min="1" inputmode="numeric" value="${esc(x.num || i + 1)}" style="max-width:52px;padding:9px 6px"><input data-f="label" maxlength="40" placeholder="Nombre (opcional)" value="${esc(x.label)}" class="grow" style="min-width:150px">
+          ${seasons.length > 1 ? `<button class="ib" data-del="${i}" title="Quitar" style="width:36px;height:36px">✕</button>` : ''}</div>
+        <div class="row"><span class="mut">Capítulos</span><input data-f="count" type="number" min="1" max="3000" inputmode="numeric" value="${esc(x.count)}">
+          <span class="mut">desde el</span><input data-f="start" type="number" min="0" inputmode="numeric" value="${esc(x.start)}"></div>
+        <details ${x.open ? 'open' : ''}><summary>✏️ Nombres de los capítulos (opcional)${nn ? ' · ' + nn + ' escritos' : ''}</summary>
+          <textarea data-f="names" rows="6" placeholder="Uno por línea, en orden. Puedes dejar líneas vacías.">${esc(x.names)}</textarea></details>
+      </div>`;
+    }).join('');
+    $('anSeasons').querySelectorAll('[data-f]').forEach(el => {
+      const i = +el.closest('.ssn').dataset.i, f = el.dataset.f;
+      el.oninput = () => { seasons[i][f] = f === 'count' || f === 'start' ? el.value : el.value; sum(); };
+    });
+    $('anSeasons').querySelectorAll('details').forEach(d => d.ontoggle = () => { seasons[+d.closest('.ssn').dataset.i].open = d.open; });
+    $('anSeasons').querySelectorAll('[data-del]').forEach(b => b.onclick = () => { seasons.splice(+b.dataset.del, 1); draw(); });
+    sum();
+  };
+  $('anAddS').onclick = () => {
+    const last = seasons[seasons.length - 1];
+    seasons.push({num: last ? (+last.num || seasons.length) + 1 : 1, label: '', count: last ? last.count : 12, start: 1, names: ''}); draw();
+  };
+  $('anCov').onchange = async () => {
+    const f = $('anCov').files[0]; if (!f) return;
+    $('anCovTxt').textContent = 'Reduciendo…';
+    try { coverData = await shrinkImg(f); coverUrl = ''; $('anCovTxt').textContent = '✓ ' + f.name.slice(0, 28); } catch(e){ $('anCovTxt').textContent = 'No se pudo leer'; }
+  };
+  draw();
+
+  // ---- ¿Este anime ya tiene capítulos en la sala? → «Continuar donde quedó»
+  const existing = name => {
+    const n = name.trim().toLowerCase(); if (!n) return null;
+    let found = null;
+    Object.values(R.items || {}).forEach(it => {
+      if (it.kind !== 'ep' || !it.sub) return;
+      const sub = String(it.sub), base = sub.split(' · ')[0];
+      if (base.toLowerCase() !== n) return;
+      const mm = String(it.t || '').match(/^(?:T(\d+) · )?Cap\. (\d+)/); if (!mm) return;
+      const sn = +mm[1] || 1, cap = +mm[2];
+      if (!found) found = {name: base, n: 0, s: 0, cap: 0, label: '', multi: false, cov: '', img: ''};
+      found.n++; if (mm[1]) found.multi = true;
+      if (sn > found.s || (sn === found.s && cap > found.cap)){ found.s = sn; found.cap = cap; found.label = sub.slice(base.length + 3); }
+      if (it.cov) found.cov = it.cov; if (it.img) found.img = it.img;
+    });
+    return found;
+  };
+  const animeNames = [...new Set(Object.values(R.items || {}).filter(it => it.kind === 'ep' && it.sub).map(it => String(it.sub).split(' · ')[0]))];
+  if (animeNames.length){
+    $('anName').setAttribute('list', 'anNames');
+    $('anName').insertAdjacentHTML('afterend', `<datalist id="anNames">${animeNames.map(n => `<option value="${esc(n)}">`).join('')}</datalist>`);
+  }
+  const checkCont = () => {
+    const f = existing($('anName').value), box = $('anCont');
+    if (!f){ box.classList.add('hide'); return; }
+    box.classList.remove('hide');
+    box.innerHTML = `<div style="font-size:13px">📺 Ya hay <b>${f.n}</b> capítulos de «${esc(f.name)}» en la sala (hasta ${f.multi ? 'T' + f.s + ' · ' : ''}Cap. ${f.cap}).</div>
+      <div class="row" style="margin-top:8px;flex-wrap:wrap"><button class="btn c sm" id="anGoOn">➕ Continuar donde quedó</button><button class="btn g sm" id="anNewS">🆕 Nueva temporada</button></div>`;
+    const useOld = () => { $('anName').value = f.name; contMulti = f.multi; reuseCov = coverData ? '' : f.cov; if (!coverData && !f.cov) coverUrl = f.img; };
+    $('anGoOn').onclick = () => { useOld(); seasons = [{num: f.s, label: f.label.replace(/^Temporada \d+$/, ''), count: 1, start: f.cap + 1, names: ''}]; draw(); toast('Pon cuántos capítulos nuevos salieron'); };
+    $('anNewS').onclick = () => { useOld(); contMulti = true; seasons = [{num: f.s + 1, label: '', count: 12, start: 1, names: ''}]; draw(); };
+  };
+  $('anName').addEventListener('input', checkCont);
+  setTimeout(() => { if (animeNames.length === 1 && !$('anName').value){ $('anName').value = animeNames[0]; checkCont(); } }, 0);
+
+  // ---- Autocompletar (opcional): MyAnimeList y, si falla, AniList
+  const st = t => { $('anSt').innerHTML = t; };
+  const fromMAL = async a => {
+    const out = [];
+    for (let pg = 1; pg <= 40; pg++){
+      const j = await jikan('anime/' + a.malId + '/episodes?page=' + pg, 2);
+      (j.data || []).forEach(e => out.push({n: +e.mal_id, t: e.title || ''}));
+      st('Cargando capítulos… ' + out.length);
+      if (!j.pagination || !j.pagination.has_next_page) break;
+      await sleep(450);
+    }
+    return out;
+  };
+  const fromAniList = async a => {
+    const d = await anilist('query($id:Int,$mal:Int){Media(id:$id,idMal:$mal,type:ANIME){' + AL_FIELDS + ' streamingEpisodes{title}}}', a.alId ? {id: a.alId} : {mal: a.malId});
+    const m = d.Media; if (!m) return [];
+    const info = fromAL(m); if (!a.count) a.count = info.count; if (!a.cover) a.cover = info.cover;
+    const out = [], seen = {};
+    (m.streamingEpisodes || []).forEach((e, i) => {
+      const mm = String(e.title || '').match(/^(?:Episode|Ep\.?|Episodio|Cap[ií]tulo)\s*(\d+)\s*[-–:]?\s*(.*)$/i);
+      const n = mm ? +mm[1] : i + 1; if (seen[n]) return; seen[n] = 1; out.push({n, t: mm ? mm[2] : (e.title || '')});
+    });
+    return out;
+  };
+  const search = async () => {
+    const q = $('anQ').value.trim() || $('anName').value.trim(); if (q.length < 2) return toast('Escribe el nombre del anime');
+    $('anQ').value = q; st('Buscando…'); $('anRes').innerHTML = ''; list = [];
+    try { const j = await jikan('anime?limit=8&q=' + encodeURIComponent(q), 2); list = (j.data || []).map(fromJikan); } catch(e){ console.warn('jikan', e); }
+    if (!list.length){
+      try { const d = await anilist('query($q:String){Page(perPage:8){media(search:$q,type:ANIME,sort:SEARCH_MATCH){' + AL_FIELDS + '}}}', {q}); list = (d.Page.media || []).map(fromAL); }
+      catch(e){ console.warn('anilist', e); }
+    }
+    if (!list.length){ st('No encontré nada en internet. Llena las temporadas a mano 👆'); return; }
+    st('Toca el correcto:');
+    $('anRes').innerHTML = list.map((a, i) => `<button data-i="${i}"><img src="${esc(a.small || a.cover)}" alt="">
+      <div><b>${esc(a.name)}</b><span>${esc(a.type)}${a.year ? ' · ' + a.year : ''}${a.count ? ' · ' + a.count + ' caps' : ''}${a.alt ? ' · ' + esc(a.alt) : ''}</span></div></button>`).join('');
+    $('anRes').querySelectorAll('button').forEach(b => b.onclick = () => pick(list[+b.dataset.i]));
+  };
+  const pick = async a => {
+    $('anRes').innerHTML = ''; st('Cargando capítulos de «' + esc(a.name) + '»…');
+    let eps = [];
+    if (a.malId){ try { eps = await fromMAL(a); } catch(e){ console.warn(e); } }
+    if (!eps.length || eps.some(e => !e.t)){
+      try { const al = await fromAniList(a); if (!eps.length) eps = al; else { const by = {}; al.forEach(e => by[e.n] = e.t); eps.forEach(e => { if (!e.t && by[e.n]) e.t = by[e.n]; }); } } catch(e){ console.warn(e); }
+    }
+    eps.sort((x, y) => x.n - y.n);
+    const start = eps.length ? eps[0].n : 1, count = Math.max(eps.length ? eps[eps.length - 1].n - start + 1 : 0, a.count || 0);
+    if (!count){ st('Encontré el anime pero no cuántos capítulos tiene. Ponlo a mano 👆'); }
+    const names = []; eps.forEach(e => { names[e.n - start] = e.t || ''; });
+    const ns = {num: seasons.length + 1, label: '', count: count || 12, start, names: Array.from({length: count}, (_, k) => names[k] || '').join('\n').replace(/\n+$/, ''), open: false};
+    const first = seasons[0], untouched = seasons.length === 1 && !first.names.trim() && !first.label.trim();
+    if (untouched){ ns.num = 1; seasons[0] = ns; } else { ns.label = a.name; seasons.push(ns); }
+    if (!$('anName').value.trim()) $('anName').value = a.name;
+    if (!coverData && a.cover) coverUrl = a.cover;
+    draw();
+    if (count) st('✓ Listo: ' + count + ' capítulos de «' + esc(a.name) + '»' + (eps.length ? '' : ' (sin nombres)') + '. Revisa abajo y corrige lo que quieras.');
+  };
+  $('anGo').onclick = search;
+  $('anQ').onkeydown = e => { if (e.key === 'Enter') search(); };
+
+  return {
+    cover: () => coverData,
+    items(){
+      const name = $('anName').value.trim(), multi = contMulti || seasons.length > 1 || seasons.some(x => +x.num > 1), out = [];
+      seasons.forEach((x, si) => {
+        const c = Math.min(3000, Math.max(0, parseInt(x.count, 10) || 0)), st0 = parseInt(x.start, 10); const start = isNaN(st0) ? 1 : st0;
+        const names = x.names.split('\n');
+        const sn = +x.num || si + 1, sLabel = x.label.trim() || (multi ? 'Temporada ' + sn : '');
+        for (let k = 0; k < c; k++){
+          const n = start + k, nm = (names[k] || '').trim();
+          out.push({
+            t: (multi ? 'T' + sn + ' · ' : '') + 'Cap. ' + n + (nm ? ' · ' + nm : ''),
+            img: coverData || reuseCov ? '' : coverUrl, cov: coverData ? '__COVER__' : reuseCov, url: '', kind: 'ep',
+            sub: [name, sLabel].filter(Boolean).join(' · ')
+          });
+        }
+      });
+      return out;
+    }
+  };
+}
+function prettyUrl(u){ try { const x = new URL(u); return (x.hostname.replace(/^www\./, '') + x.pathname).slice(0, 60); } catch(e){ return u.slice(0, 60); } }
+function shrinkImg(file){
+  return new Promise((ok, ko) => {
+    const url = URL.createObjectURL(file), im = new Image();
+    im.onload = () => {
+      const S = 480, k = Math.min(1, S / Math.max(im.width, im.height));
+      const cv = document.createElement('canvas'); cv.width = Math.round(im.width * k); cv.height = Math.round(im.height * k);
+      cv.getContext('2d').drawImage(im, 0, 0, cv.width, cv.height);
+      let q = .8, d = cv.toDataURL('image/jpeg', q);
+      while (d.length > 70000 && q > .3){ q -= .1; d = cv.toDataURL('image/jpeg', q); }
+      URL.revokeObjectURL(url); ok(d);
+    };
+    im.onerror = () => { URL.revokeObjectURL(url); ko(new Error('img')); };
+    im.src = url;
+  });
+}
+
+// ============ PESTAÑA RANKING ============
+function renderRank(){
+  const box = $('pRank'), its = itemsSorted(), st = status(), m = R.meta;
+  const all = ranked(), visible = all.filter(canSee);
+  const hidden = its.filter(it => !canSee(it));
+  let h = '';
+  if (st === 'done'){
+    h += `<div class="card" style="text-align:center"><div style="font-size:34px">🏆</div><b style="font-size:20px">${esc(m.title)}</b>
+      <div class="mut" style="font-size:13px">Resultado final · ${visible.length} rankeados · ${playersList().length} participantes</div>
+      <div class="row" style="margin-top:12px;gap:8px">
+        <button class="btn sm grow" id="rImg">🖼️ Imagen</button>
+        <button class="btn c sm grow" id="rCopy">📋 WhatsApp</button>
+        <button class="btn g sm grow" id="rExp">💾 Guardar</button>
+      </div>
+      ${isAdmin() ? '<div class="tools" style="justify-content:center;margin-top:10px"><button class="tool" id="rReplay">🎬 Repetir revelación</button><button class="tool" id="rReopen">↩️ Reabrir votación</button></div>' : ''}</div>`;
+  }
+  if (visible.length) h += avgCardHTML(visible);
+  if (its.length){
+    h += `<div class="seg" id="rView" style="margin-bottom:10px">
+      <button data-v="grid" class="${rankView === 'grid' ? 'on' : ''}">🔲 Cuadrícula</button>
+      <button data-v="list" class="${rankView === 'list' ? 'on' : ''}">🔢 Ranking</button>
+      <button data-v="tier" class="${rankView === 'tier' ? 'on' : ''}">🏷️ Tierlist</button></div>`;
+  }
+  if (its.length && rankView === 'grid'){
+    // todos los ítems en recuadros: imagen + nota promedio (o 🔒 si aún no se revela)
+    const order = visible.concat(hidden.map(it => ({...it, st: stats(it.id)})));
+    h += '<div class="rgrid">' + order.map(x => {
+      const see = canSee(x) && x.st.n, pos = see ? visible.findIndex(y => y.id === x.id) + 1 : 0, md = media(x.url, itImg(x));
+      const mine = R.votes[x.id] && R.votes[x.id][me.id];
+      const T = see && isTier() ? tiers()[tierOf(x.st)] : null;
+      const info = x.st.n + ' voto' + (x.st.n === 1 ? '' : 's') + (mine != null ? ' · tú ' + fmtVal(mine) : '');
+      const foot = see ? `<div class="gfoot" ${T ? `style="background:${esc(T.c)};color:#111"` : ''}><b>${esc(T ? T.n : fmtAvg(x.st))}</b><small>${esc(info)}</small></div>`
+        : `<div class="gfoot lk"><b>${x.st.n ? '🔒' : '—'}</b><small>${esc(info)}</small></div>`;
+      return `<button class="gt ${pos && pos <= 3 ? 'p' + pos : ''}" data-go="${x.id}">
+        <div class="gtt"><span>${esc(x.t || 'Sin título')}</span></div>
+        <div class="gimg" ${thumbStyle(md)}>${thumbIcon(md)}${pos ? `<span class="gpos">${pos <= 3 ? ['🥇','🥈','🥉'][pos - 1] : '#' + pos}</span>` : ''}</div>
+        ${foot}</button>`;
+    }).join('') + '</div>';
+    if (hidden.length) h += `<div class="mut" style="font-size:12px;text-align:center;margin:-4px 0 10px">🔒 = nota oculta hasta ${st === 'done' ? 'que el admin cierre los 🆕 nuevos' : m.reveal === 'item' ? 'que el admin cierre ese ítem' : 'el final'}</div>`;
+    if (st === 'done' && isAdmin() && openNew().length) h += `<button class="btn" id="rEndNew" style="margin-bottom:12px">🏁 Cerrar y revelar los nuevos (${openNew().length})</button>`;
+  } else if (visible.length){
+    if (rankView === 'tier'){
+      const T = tiers();
+      h += '<div class="tl">' + T.map((t, ti) => {
+        const inT = visible.filter(x => tierOf(x.st) === ti);
+        return `<div class="row1"><div class="lab" style="background:${esc(t.c)}">${esc(t.n)}</div><div class="its">${inT.map(x =>
+          `<div class="chip">${thumbHTML(x)}<span>${esc(x.t)}</span></div>`).join('')}</div></div>`;
+      }).join('') + '</div>';
+    } else {
+      h += visible.map(x => {
+        const pos = visible.indexOf(x) + 1, mine = R.votes[x.id] && R.votes[x.id][me.id];
+        let row = `<button class="rk p${pos}" data-id="${x.id}"><div class="pos">${pos <= 3 ? ['🥇','🥈','🥉'][pos - 1] : pos}</div>${thumbHTML(x)}
+          <div class="info"><b>${esc(x.t)}</b><div class="bar"><i style="width:${Math.round(x.st.nrm * 100)}%"></i></div></div>
+          <div class="sc">${isTier() ? `<span style="background:${esc(tiers()[tierOf(x.st)].c)};color:#111;padding:2px 8px;border-radius:7px">${esc(fmtAvg(x.st))}</span>` : fmtAvg(x.st)}<small>${x.st.n} votos${mine != null ? ' · tú ' + esc(fmtVal(mine)) : ''}</small></div></button>`;
+        if (openDet[x.id] && m.showWho){
+          row += '<div class="det">' + x.st.vs.slice().sort((a, b) => norm(b[1]) - norm(a[1])).map(([uid, v]) =>
+            `<span class="voter ok">${avHTML(pname(uid), uid, 24)}${esc(pname(uid))} <em>${esc(fmtVal(v))}</em></span>`).join('') + '</div>';
+        }
+        return row;
+      }).join('');
+      if (m.showWho) h += '<div class="mut" style="font-size:12px;text-align:center;margin:4px 0 10px">Toca un ítem para ver la nota de cada uno</div>';
+    }
+  }
+  if (hidden.length && rankView !== 'grid'){
+    const n = hidden.length;
+    h += `<div class="card" style="margin-top:12px"><h3>🔒 ${st === 'reveal' ? 'REVELANDO…' : st === 'done' ? '🆕 NUEVOS EN VOTACIÓN' : 'AÚN OCULTOS'} (${n})</h3>
+      <div class="mut" style="font-size:13px;margin-bottom:8px">${st === 'done' ? 'Se agregaron después de terminar. Se ven cuando el admin los cierre.' : m.reveal === 'item' && st === 'voting' ? 'Se muestran cuando el admin cierra cada ítem.' : 'Se verán cuando el admin revele el ranking final.'}</div>
+      <div class="items">${hidden.map(it => {
+        const s2 = stats(it.id), mine = R.votes[it.id] && R.votes[it.id][me.id];
+        return `<div class="it">${thumbHTML(it)}<div class="info"><b>${esc(it.t)}</b><span>${s2.n} votos${mine != null ? ' · tu voto: ' + esc(fmtVal(mine)) : ''}</span></div></div>`;
+      }).join('')}</div></div>`;
+  }
+  if (!its.length) h += '<div class="empty"><div class="e">🏆</div>Cuando haya votos, aquí sale el ranking.</div>';
+  if (st === 'done') h += statsHTML();
+  box.innerHTML = h;
+  box.querySelectorAll('#rView button').forEach(b => b.onclick = () => { rankView = b.dataset.v; renderRank(); hydrateAv(box); });
+  box.querySelectorAll('[data-go]').forEach(b => b.onclick = () => goItem(b.dataset.go));
+  box.querySelectorAll('.rk').forEach(b => b.onclick = () => { if (!m.showWho) return; openDet[b.dataset.id] = !openDet[b.dataset.id]; renderRank(); hydrateAv(box); });
+  if ($('rExp')) $('rExp').onclick = exportFile;
+  if ($('rEndNew')) $('rEndNew').onclick = revealNew;
+  if ($('rImg')) $('rImg').onclick = () => { $('rImg').disabled = true; $('rImg').textContent = '⏳ Creando…'; rankImage().finally(() => { if ($('rImg')){ $('rImg').disabled = false; $('rImg').textContent = '🖼️ Descargar imagen'; } }); };
+  if ($('rCopy')) $('rCopy').onclick = () => copyText(waText()).then(ok => toast(ok ? 'Copiado, pégalo en WhatsApp' : 'No se pudo copiar'));
+  if ($('rReopen')) $('rReopen').onclick = () => { if (confirm('¿Reabrir la votación? El ranking vuelve a ocultarse según el modo.')) db.ref(rp('meta')).update({status: 'voting', step: 0}).catch(fbErr); };
+  if ($('rReplay')) $('rReplay').onclick = () => db.ref(rp('meta')).update({status: 'reveal', step: 0}).catch(fbErr);
+}
+// Promedio general de todas las notas visibles (y el de cada persona)
+function avgOf(vals){ return vals.length ? vals.reduce((a, b) => a + b, 0) / vals.length : null; }
+function fmtNum(v){
+  if (v == null) return '—';
+  if (isTier()){ const T = tiers(), i = Math.max(0, Math.min(T.length - 1, Math.round(v))); return T[i].n; }
+  return scale().max >= 100 ? v.toFixed(1) : v.toFixed(2);
+}
+function generalAvg(items){
+  const all = [], per = {};
+  items.forEach(x => x.st.vs.forEach(([uid, v]) => { all.push(v); (per[uid] = per[uid] || []).push(v); }));
+  return {avg: avgOf(all), n: all.length, items: items.length,
+    per: Object.entries(per).map(([uid, a]) => ({uid, avg: avgOf(a), n: a.length})).sort((a, b) => isTier() ? a.avg - b.avg : b.avg - a.avg)};
+}
+function avgCardHTML(items){
+  const g = generalAvg(items); if (!g.n) return '';
+  const T = tiers(), ti = isTier() ? Math.max(0, Math.min(T.length - 1, Math.round(g.avg))) : 0;
+  const max = isTier() ? '' : ' <small>/ ' + scale().max + '</small>';
+  const big = isTier() ? `<span style="background:${esc(T[ti].c)};color:#111;padding:2px 14px;border-radius:12px;text-shadow:none">${esc(T[ti].n)}</span>` : fmtNum(g.avg) + max;
+  return `<div class="avgCard"><div class="num">${big}</div><div class="grow"><b>Nota promedio general</b>
+      <span class="mut" style="font-size:13px">de ${g.n} voto${g.n === 1 ? '' : 's'} en ${g.items} ítem${g.items === 1 ? '' : 's'}</span></div></div>
+    ${g.per.length > 1 ? `<div class="lbl" style="margin-top:0">Promedio de cada uno</div><div class="pavg">${g.per.map(p =>
+      `<span class="voter ok">${avHTML(pname(p.uid), p.uid, 24)}${esc(pname(p.uid))} <em>${esc(fmtNum(p.avg))}</em></span>`).join('')}</div>` : ''}`;
+}
+function statsHTML(){
+  const all = ranked().filter(canSee); if (!all.length) return '';
+  const per = {};
+  const vis = new Set(all.map(x => x.id));
+  Object.entries(R.votes || {}).forEach(([iid, vs]) => { if (!vis.has(iid)) return; Object.entries(vs || {}).forEach(([uid, v]) => { (per[uid] = per[uid] || []).push(norm(v)); }); });
+  const people = Object.entries(per).filter(([, a]) => a.length >= 2).map(([uid, a]) => ({uid, avg: a.reduce((x, y) => x + y, 0) / a.length, n: a.length}));
+  const multi = all.filter(x => x.st.n >= 2);
+  const out = [];
+  if (people.length >= 2){
+    const s = people.slice().sort((a, b) => b.avg - a.avg);
+    out.push(['😇 Más generoso', pname(s[0].uid)], ['🧐 Más exigente', pname(s[s.length - 1].uid)]);
+  }
+  if (multi.length){
+    const s = multi.slice().sort((a, b) => b.st.sd - a.st.sd);
+    out.push(['🔥 Más polémico', s[0].t], ['🤝 Más unánime', s[s.length - 1].t]);
+  }
+  const top = Object.entries(per).sort((a, b) => b[1].length - a[1].length)[0];
+  if (top) out.push(['🗳️ Votó más', pname(top[0]) + ' (' + top[1].length + ')']);
+  out.push(['👑 Ganador', all[0].t]);
+  return `<div class="card" style="margin-top:12px"><h3>DATOS CURIOSOS</h3><div class="stats">${out.map(([a, b]) => `<div>${a}<b>${esc(b)}</b></div>`).join('')}</div></div>`;
+}
+function waText(){
+  const all = ranked().filter(canSee), med = ['🥇', '🥈', '🥉'];
+  let t = '*🏆 ' + R.meta.title + '*\n_' + (isTier() ? 'Tierlist' : 'Nota ' + scale().label) + ' · ' + playersList().length + ' participantes_\n\n';
+  if (rankView === 'tier'){
+    tiers().forEach((tr, ti) => { const inT = all.filter(x => tierOf(x.st) === ti); t += '*' + tr.n + '*: ' + (inT.map(x => x.t).join(', ') || '—') + '\n'; });
+  } else {
+    all.forEach((x, i) => { t += (med[i] || (i + 1) + '.') + ' ' + x.t + ' — *' + fmtAvg(x.st) + '* (' + x.st.n + ')\n'; });
+  }
+  const g = generalAvg(all);
+  if (g.n) t += '\n📊 *Promedio general: ' + fmtNum(g.avg) + '* (' + g.n + ' votos)\n';
+  return t + '\n' + location.origin + location.pathname + '?sala=' + code;
+}
+
+// ============ REVELACIÓN FINAL (cuenta regresiva sincronizada) ============
+// Cierra los nuevos: quedan con su nota y entran al ranking final
+function revealNew(){
+  const nw = openNew(); if (!nw.length) return;
+  const sin = nw.filter(x => !stats(x.id).n).length;
+  if (!confirm('¿Cerrar la votación de los ' + nw.length + ' nuevos y mostrarlos en el ranking?' + (sin ? '\n(' + sin + ' sin votos no entran)' : ''))) return;
+  const u = {}; nw.forEach(x => u['items/' + x.id + '/closed'] = true);
+  db.ref(rp()).update(u).then(() => { toast('🏆 Nuevos revelados'); setTab('pRank'); try { confetti(); } catch(e){} }).catch(fbErr);
+}
+function startReveal(){
+  const r = ranked();
+  if (!r.length) return toast('Todavía no hay votos');
+  const sinVoto = itemsSorted().length - r.length;
+  if (!confirm('¿Terminar la votación y revelar el ranking a todos?' + (sinVoto ? '\n(' + sinVoto + ' ítem(s) sin votos no entran)' : ''))) return;
+  const u = {'meta/status': 'reveal', 'meta/step': 0};
+  itemsSorted().forEach(x => { if (x.extra) u['items/' + x.id + '/extra'] = null; });
+  db.ref(rp()).update(u).catch(fbErr);
+}
+let revShown = -1;
+function renderReveal(){
+  const box = $('revBox');
+  if (status() !== 'reveal'){ box.innerHTML = ''; revShown = -1; return; }
+  const all = ranked(), N = all.length, step = Math.min(R.meta.step || 0, N), admin = isAdmin();
+  if (revShown === step && box.firstChild) { bindReveal(N, step); return; }
+  revShown = step;
+  let h = '<div class="rev">';
+  if (step === 0){
+    h += `<div class="k">RANKING FINAL</div><div class="name" style="font-family:var(--fx);font-size:30px">${esc(R.meta.title)}</div>
+      <div class="mut">${N} rankeados · se revela del último al primero</div><div style="font-size:70px;margin:20px 0">🥁</div>
+      ${admin ? '' : '<div class="mut">Esperando a que el admin empiece…</div>'}`;
+  } else {
+    const x = all[N - step], pos = N - step + 1, T = tiers()[tierOf(x.st)];
+    h += `<div class="k">PUESTO</div><div class="pos">#${pos}</div>${thumbHTML(x).replace('class="th"', 'class="th"')}
+      <div class="name">${esc(x.t)}</div>
+      <div class="score">${isTier() ? `<span style="background:${esc(T.c)};color:#111;padding:4px 18px;border-radius:12px">${esc(T.n)}</span>` : fmtAvg(x.st)}</div>
+      <div class="mut" style="margin-top:4px">${x.st.n} votos${isTier() ? '' : ' · tier ' + esc(T.n)}</div>
+      ${R.meta.showWho ? '<div class="who">' + x.st.vs.slice().sort((a, b) => norm(b[1]) - norm(a[1])).map(([uid, v]) =>
+        `<span class="voter ok">${avHTML(pname(uid), uid, 24)}${esc(pname(uid))} <em>${esc(fmtVal(v))}</em></span>`).join('') + '</div>' : ''}`;
+  }
+  h += '<div class="ctl">';
+  if (admin){
+    if (step < N) h += `<button class="btn g" id="rvSkip">Mostrar todo</button><button class="btn" id="rvNext">${step === 0 ? '▶ Empezar' : step === N - 1 ? '👑 ¡Revelar el #1!' : 'Siguiente ▶'}</button>`;
+    else h += `<button class="btn" id="rvDone">🏆 Ver resultados</button>`;
+  } else h += `<div class="mut" style="width:100%">${step >= N ? 'Esperando al admin…' : 'El admin controla la revelación'}</div>`;
+  h += '</div></div>';
+  box.innerHTML = h;
+  hydrateAv(box);
+  if (step === N && N) confetti();
+  else if (step > 0 && navigator.vibrate) try { navigator.vibrate(30); } catch(e){}
+  bindReveal(N, step);
+}
+function bindReveal(N, step){
+  if ($('rvNext')) $('rvNext').onclick = () => db.ref(rp('meta/step')).set(step + 1).catch(fbErr);
+  if ($('rvSkip')) $('rvSkip').onclick = () => db.ref(rp('meta')).update({status: 'done'}).catch(fbErr);
+  if ($('rvDone')) $('rvDone').onclick = () => db.ref(rp('meta')).update({status: 'done'}).catch(fbErr);
+}
+function confetti(){
+  const cv = document.createElement('canvas'); cv.className = 'confetti'; document.body.appendChild(cv);
+  const W = cv.width = innerWidth, H = cv.height = innerHeight, cx = cv.getContext('2d');
+  const cols = ['#ff2e97', '#ffd54a', '#22d3ee', '#7bd88f', '#fff'];
+  const ps = Array.from({length: 160}, () => ({x: W / 2, y: H * .4, vx: (Math.random() - .5) * 14, vy: -Math.random() * 14 - 4, s: 4 + Math.random() * 6, c: cols[Math.floor(Math.random() * 5)], r: Math.random() * 6}));
+  let f = 0;
+  (function tick(){
+    cx.clearRect(0, 0, W, H);
+    ps.forEach(p => { p.vy += .35; p.vx *= .99; p.x += p.vx; p.y += p.vy; p.r += .2; cx.save(); cx.translate(p.x, p.y); cx.rotate(p.r); cx.fillStyle = p.c; cx.fillRect(-p.s / 2, -p.s / 2, p.s, p.s * .6); cx.restore(); });
+    if (++f < 170) requestAnimationFrame(tick); else cv.remove();
+  })();
+}
+
+// ============ XP COMPARTIDA ============
+function giveXP(){
+  if (!me.acc || !window.ClubXP || !R.meta) return;
+  let n = 0; Object.values(R.votes || {}).forEach(v => { if (v && v[me.id] != null) n++; });
+  if (!n) return;
+  try { ClubXP.add(Math.min(120, 20 + n * 4), GAME, {key: code + '_' + (R.meta.created || 0)}); } catch(e){ console.warn(e); }
+}
+
+// ============ PESTAÑA GENTE ============
+function renderPeople(){
+  const pl = playersList(), admin = isAdmin(), N = itemsSorted().length;
+  const cnt = id => Object.values(R.votes || {}).filter(v => v && v[id] != null).length;
+  let h = `<div class="card"><b>Invita a quien quieras</b> — no hay límite de personas.<div class="row" style="margin-top:10px">
+      <button class="btn c sm grow" id="pShare">📤 Compartir link</button><button class="btn g sm grow" id="pCopy">📋 Copiar código ${esc(code)}</button></div></div>`;
+  h += pl.map(p => `<div class="pp">${avHTML(p.n, p.id, 38)}<div class="info"><b>${esc(p.n)}${p.id === me.id ? ' (tú)' : ''}${R.meta.admin === p.id ? ' 👑' : ''}</b>
+      <span class="mut" style="font-size:13px"><span class="dot ${p.on ? 'on' : ''}"></span>${p.on ? 'conectado' : 'fuera'} · votó ${cnt(p.id)}/${N}</span></div>
+      ${admin && p.id !== me.id ? `<button class="btn g sm" data-adm="${esc(p.id)}">👑</button><button class="btn g sm" data-kick="${esc(p.id)}">✕</button>` : ''}</div>`).join('');
+  $('pPeople').innerHTML = h;
+  $('pShare').onclick = share; $('pCopy').onclick = () => copyText(code).then(() => toast('Código copiado'));
+  $('pPeople').querySelectorAll('[data-adm]').forEach(b => b.onclick = () => {
+    if (confirm('¿Pasarle el admin a ' + pname(b.dataset.adm) + '? Dejarás de ser admin.')) db.ref(rp('meta')).update({admin: b.dataset.adm, adminName: pname(b.dataset.adm)}).catch(fbErr);
+  });
+  $('pPeople').querySelectorAll('[data-kick]').forEach(b => b.onclick = () => {
+    if (!confirm('¿Sacar a ' + pname(b.dataset.kick) + '? Sus votos se quedan.')) return;
+    db.ref(rp('players/' + b.dataset.kick)).remove().catch(fbErr);
+    db.ref(PRES + '/' + code + '/' + b.dataset.kick).remove().catch(() => {});
+  });
+}
+function share(){
+  const url = location.origin + location.pathname + '?sala=' + code, t = 'Únete a «' + R.meta.title + '» en Rankeo';
+  if (navigator.share) navigator.share({title: t, text: t, url}).catch(() => {});
+  else copyText(url).then(() => toast('Link copiado'));
+}
+
+// ============ AJUSTES DEL ADMIN ============
+function openCfg(){
+  const m = R.meta;
+  const sh = openModal(`<h3>AJUSTES DE LA SALA</h3>
+    <div class="lbl" style="margin-top:0">Título</div><input id="cT" maxlength="60" value="${esc(m.title)}">
+    <div class="lbl">Cuándo se ven las notas</div>
+    <select id="cR"><option value="end">🔒 Al final</option><option value="item">⏭️ Al cerrar cada ítem</option><option value="live">⚡ En vivo</option></select>
+    <label class="chk"><input type="checkbox" id="cW" ${m.showWho ? 'checked' : ''}> Mostrar quién votó qué</label>
+    <div class="lbl">⏱️ Tiempo para ver / escuchar</div><select id="cTW"><option value="0">Sin límite</option><option value="15">15 s</option><option value="30">30 s</option><option value="45">45 s</option><option value="60">1 min</option><option value="90">1 min 30 s</option><option value="120">2 min</option><option value="180">3 min</option><option value="300">5 min</option></select>
+    <div class="lbl">⏱️ Temporizador para votar</div><select id="cTV"><option value="0">Sin temporizador</option><option value="10">10 s</option><option value="15">15 s</option><option value="20">20 s</option><option value="30">30 s</option><option value="45">45 s</option><option value="60">1 min</option><option value="90">1 min 30 s</option></select>
+    <label class="chk"><input type="checkbox" id="cTA" ${m.tAll ? 'checked' : ''}> ⚡ Si ya votaron todos, pasar antes</label>
+    <div class="lbl">Categoría</div>
+    <select id="cC">${Object.entries(CATS).map(([k, c]) => `<option value="${k}">${c.l}</option>`).join('')}</select>
+    <label class="chk"><input type="checkbox" id="cRnd" ${m.randOrd ? 'checked' : ''}> 🎲 Lo nuevo entra en posición al azar</label>
+    <div class="lbl">Quién pone los links</div>
+    <select id="cA"><option value="all">👥 Todos</option><option value="admin">👑 Solo el admin</option></select>
+    <div id="cLimBox"><div class="lbl">Máximo por persona</div>
+      <div class="row"><label class="chk" style="flex:0 0 auto"><input type="checkbox" id="cNoLim" ${+m.perUser ? '' : 'checked'}> Sin límite</label>
+      <input id="cLim" type="number" min="1" max="9999" value="${+m.perUser || 5}" inputmode="numeric" style="max-width:120px"><span class="mut" id="cLimTxt" style="white-space:nowrap">por persona</span></div>
+      <label class="chk" id="cAdmFreeBox"><input type="checkbox" id="cAdmFree" ${m.adminFree ? 'checked' : ''}> 👑 El admin puede agregar sin límite</label></div>
+    <div class="mut" style="font-size:12px;margin:6px 0 12px">La forma de votar y los niveles no se cambian después de crear la sala para no romper los votos.</div>
+    <div class="row"><button class="btn g" id="cX">Cancelar</button><button class="btn" id="cOk">Guardar</button></div>
+    <div style="height:16px"></div>
+    <button class="btn c" id="cExp">💾 Exportar sala (para seguir después)</button>
+    <div class="mut" style="font-size:12px;margin:6px 0 10px">Descarga un archivo con la lista, los votos y la configuración. Desde el inicio, «Continuar desde un archivo» la vuelve a abrir.</div>
+    <button class="btn g" id="cReset">🧹 Borrar todos los votos</button>
+    <div style="height:8px"></div>
+    <button class="btn g" id="cDel" style="color:var(--bad)">🗑 Eliminar la sala</button>`);
+  $('cR').value = m.reveal || 'end';
+  $('cA').value = m.anyoneAdd ? 'all' : 'admin';
+  $('cC').value = m.cat || 'todo';
+  $('cTW').value = String(m.tWatch || 0); $('cTV').value = String(m.tVote || 0);
+  bindLim('cNoLim', 'cLim', 'cLimTxt', 'cAdmFreeBox');
+  const cl = () => $('cLimBox').classList.toggle('hide', $('cA').value !== 'all'); $('cA').onchange = cl; cl();
+  $('cX').onclick = closeModal;
+  $('cExp').onclick = exportFile;
+  $('cOk').onclick = () => {
+    db.ref(rp('meta')).update({title: $('cT').value.trim() || m.title, reveal: $('cR').value, showWho: $('cW').checked, anyoneAdd: $('cA').value === 'all', perUser: readLim('cNoLim', 'cLim'), adminFree: $('cAdmFree').checked, cat: $('cC').value, randOrd: $('cRnd').checked,
+      tWatch: +$('cTW').value, tVote: +$('cTV').value, tAll: $('cTA').checked, auto: +$('cTW').value > 0 || +$('cTV').value > 0, phase: null})
+      .then(() => { closeModal(); toast('Guardado'); }).catch(fbErr);
+  };
+  $('cReset').onclick = () => { if (confirm('¿Borrar TODOS los votos de la sala?')) db.ref(rp()).update({votes: null, 'meta/status': 'voting', 'meta/step': 0}).then(closeModal).catch(fbErr); };
+  $('cDel').onclick = () => {
+    if (!confirm('¿Eliminar la sala para todos? No se puede deshacer.')) return;
+    const c = code; closeModal(); leave(); wipeRoom(c).catch(fbErr);
+    LS.set('recent', LS.get('recent', []).filter(r => r.c !== c)); renderHome();
+  };
+}
+
+// ============ IMAGEN DEL RANKING (se dibuja en un canvas, igual que en la página) ============
+function loadImg(src){
+  return new Promise(ok => {
+    if (!src) return ok(null);
+    const im = new Image(); if (!/^data:/.test(src)) im.crossOrigin = 'anonymous';
+    const t = setTimeout(() => ok(null), 5000);
+    im.onload = () => { clearTimeout(t); ok(im); }; im.onerror = () => { clearTimeout(t); ok(null); };
+    im.src = src;
+  });
+}
+function rr(cx, x, y, w, h, r){ cx.beginPath(); cx.moveTo(x + r, y); cx.arcTo(x + w, y, x + w, y + h, r); cx.arcTo(x + w, y + h, x, y + h, r); cx.arcTo(x, y + h, x, y, r); cx.arcTo(x, y, x + w, y, r); cx.closePath(); }
+function wrapLines(cx, text, maxW, maxLines){
+  const words = String(text || '').split(/\s+/), lines = []; let cur = '';
+  for (const w of words){
+    const t = cur ? cur + ' ' + w : w;
+    if (cx.measureText(t).width <= maxW) cur = t;
+    else { if (cur) lines.push(cur); cur = w; if (lines.length === maxLines) break; }
+  }
+  if (lines.length < maxLines && cur) lines.push(cur);
+  if (lines.length > maxLines) lines.length = maxLines;
+  const used = lines.join(' ').split(/\s+/).length;
+  if (used < words.length && lines.length){
+    let l = lines[lines.length - 1]; while (l && cx.measureText(l + '…').width > maxW) l = l.slice(0, -1); lines[lines.length - 1] = l + '…';
+  }
+  lines.forEach((l, i) => { while (cx.measureText(l).width > maxW && l.length > 1) l = l.slice(0, -2) + '…'; lines[i] = l; });
+  return lines;
+}
+function coverFit(cx, im, x, y, w, h){
+  const r = Math.max(w / im.width, h / im.height), sw = w / r, sh = h / r;
+  cx.drawImage(im, (im.width - sw) / 2, (im.height - sh) / 2, sw, sh, x, y, w, h);
+}
+async function rankImage(){
+  const all = ranked().filter(canSee); if (!all.length) return toast('Todavía no hay notas para mostrar');
+  try { await Promise.all(['900 40px Orbitron', '700 20px Rajdhani', '600 20px Rajdhani'].map(f => document.fonts.load(f))); } catch(e){}
+  const FX = 'Orbitron, Rajdhani, sans-serif', F = 'Rajdhani, system-ui, sans-serif';
+  const W = 1080, P = 48, COLS = all.length <= 4 ? 2 : all.length <= 12 ? 3 : 4, GAP = 18;
+  const TW = (W - P * 2 - GAP * (COLS - 1)) / COLS, IH = Math.round(TW * 10 / 16), TH_T = COLS >= 4 ? 60 : 74, FH = COLS >= 4 ? 78 : 92;
+  const TILE = TH_T + IH + FH, rows = Math.ceil(all.length / COLS);
+  const g = generalAvg(all), people = g.per.length > 1 ? g.per : [];
+  const HEAD = 230, AVG = g.n ? 190 : 0, PPL = people.length ? 70 + Math.ceil(people.length / 4) * 58 : 0;
+  const H = HEAD + AVG + PPL + rows * (TILE + GAP) + 110;
+  const cv = document.createElement('canvas'); cv.width = W; cv.height = H;
+  const cx = cv.getContext('2d');
+  // fondo
+  const bg = cx.createLinearGradient(0, 0, W, H); bg.addColorStop(0, '#2a0c4e'); bg.addColorStop(.5, '#0b0618'); bg.addColorStop(1, '#062a3a');
+  cx.fillStyle = bg; cx.fillRect(0, 0, W, H);
+  // cabecera
+  cx.textAlign = 'center'; cx.textBaseline = 'alphabetic';
+  const lg = cx.createLinearGradient(W / 2 - 160, 0, W / 2 + 160, 0); lg.addColorStop(0, '#ff2e97'); lg.addColorStop(.5, '#ffd54a'); lg.addColorStop(1, '#22d3ee');
+  cx.fillStyle = lg; cx.font = '900 34px ' + FX; cx.fillText('🏆 RANKEO', W / 2, 74);
+  cx.fillStyle = '#fff'; cx.font = '700 52px ' + F;
+  wrapLines(cx, R.meta.title, W - P * 2, 1).forEach(l => cx.fillText(l, W / 2, 140));
+  cx.fillStyle = '#a9a2cc'; cx.font = '600 26px ' + F;
+  const sub = [(R.meta.cat && R.meta.cat !== 'todo') ? catOf().l : '', isTier() ? 'Tierlist' : 'Nota ' + scale().label, playersList().length + ' participantes', new Date().toLocaleDateString()].filter(Boolean).join('  ·  ');
+  cx.fillText(sub, W / 2, 186);
+  let y = HEAD;
+  // promedio general
+  if (g.n){
+    rr(cx, P, y, W - P * 2, 160, 28);
+    const cg = cx.createLinearGradient(P, y, W - P, y + 160); cg.addColorStop(0, 'rgba(255,46,151,.22)'); cg.addColorStop(1, 'rgba(34,211,238,.18)');
+    cx.fillStyle = cg; cx.fill(); cx.strokeStyle = 'rgba(255,255,255,.2)'; cx.lineWidth = 2; cx.stroke();
+    cx.textAlign = 'left';
+    if (isTier()){
+      const T = tiers()[Math.max(0, Math.min(tiers().length - 1, Math.round(g.avg)))];
+      rr(cx, P + 36, y + 32, 140, 96, 18); cx.fillStyle = T.c; cx.fill();
+      cx.fillStyle = '#111'; cx.font = '900 56px ' + FX; cx.textAlign = 'center'; cx.fillText(T.n.slice(0, 4), P + 106, y + 102); cx.textAlign = 'left';
+    } else {
+      cx.fillStyle = '#ffd54a'; cx.font = '900 92px ' + FX; cx.shadowColor = 'rgba(255,213,74,.5)'; cx.shadowBlur = 24;
+      const txt = fmtNum(g.avg); cx.fillText(txt, P + 36, y + 115); cx.shadowBlur = 0;
+      const tw = cx.measureText(txt).width; cx.fillStyle = '#a9a2cc'; cx.font = '700 30px ' + FX; cx.fillText('/ ' + scale().max, P + 48 + tw, y + 112);
+    }
+    cx.fillStyle = '#fff'; cx.font = '700 38px ' + F; cx.fillText('Nota promedio general', P + 470, y + 76);
+    cx.fillStyle = '#a9a2cc'; cx.font = '600 26px ' + F; cx.fillText('de ' + g.n + ' votos en ' + g.items + ' ítems', P + 470, y + 116);
+    y += AVG;
+  }
+  // promedio de cada uno
+  if (people.length){
+    cx.textAlign = 'left'; cx.fillStyle = '#a9a2cc'; cx.font = '700 26px ' + F; cx.fillText('Promedio de cada uno', P, y + 8); y += 30;
+    const cw = (W - P * 2 - 3 * 12) / 4;
+    people.forEach((pp, i) => {
+      const x = P + (i % 4) * (cw + 12), yy = y + Math.floor(i / 4) * 58;
+      rr(cx, x, yy, cw, 46, 23); cx.fillStyle = 'rgba(61,220,132,.12)'; cx.fill(); cx.strokeStyle = 'rgba(61,220,132,.6)'; cx.lineWidth = 2; cx.stroke();
+      cx.fillStyle = '#fff'; cx.font = '700 24px ' + F; const nm = wrapLines(cx, pname(pp.uid), cw - 110, 1)[0] || ''; cx.fillText(nm, x + 18, yy + 31);
+      cx.fillStyle = '#ffd54a'; cx.font = '900 22px ' + FX; cx.textAlign = 'right'; cx.fillText(fmtNum(pp.avg), x + cw - 16, yy + 32); cx.textAlign = 'left';
+    });
+    y += Math.ceil(people.length / 4) * 58 + 30;
+  }
+  // recuadros
+  const imgs = await Promise.all(all.map(x => loadImg(media(x.url, itImg(x)).th || '')));
+  all.forEach((x, i) => {
+    const col = i % COLS, row = Math.floor(i / COLS), tx = P + col * (TW + GAP), ty = y + row * (TILE + GAP), pos = i + 1;
+    cx.save(); rr(cx, tx, ty, TW, TILE, 22); cx.clip();
+    cx.fillStyle = '#1b1230'; cx.fillRect(tx, ty, TW, TILE);
+    // título arriba al centro
+    cx.fillStyle = '#fff'; cx.textAlign = 'center'; cx.font = '700 ' + (COLS >= 4 ? 22 : 26) + 'px ' + F;
+    const ls = wrapLines(cx, x.t || 'Sin título', TW - 24, 2), lh = COLS >= 4 ? 23 : 27;
+    ls.forEach((l, k) => cx.fillText(l, tx + TW / 2, ty + TH_T / 2 + (k - (ls.length - 1) / 2) * lh + 9));
+    // imagen
+    const iy = ty + TH_T;
+    cx.fillStyle = '#251a40'; cx.fillRect(tx, iy, TW, IH);
+    if (imgs[i]) { try { coverFit(cx, imgs[i], tx, iy, TW, IH); } catch(e){} }
+    else { cx.font = Math.round(IH * .38) + 'px sans-serif'; cx.fillText(thumbIcon(media(x.url, itImg(x))) || '🎬', tx + TW / 2, iy + IH / 2 + IH * .13); }
+    // medalla / puesto
+    cx.textAlign = 'left'; const medal = pos <= 3 ? ['🥇', '🥈', '🥉'][pos - 1] : '#' + pos;
+    cx.font = (pos <= 3 ? '34px sans-serif' : '900 24px ' + FX); const mw = cx.measureText(medal).width + 20;
+    rr(cx, tx + 10, iy + 10, mw, 44, 12); cx.fillStyle = 'rgba(0,0,0,.7)'; cx.fill(); cx.fillStyle = '#fff'; cx.fillText(medal, tx + 20, iy + 43);
+    // franja de nota
+    const fy = iy + IH, T = isTier() ? tiers()[tierOf(x.st)] : null;
+    if (T){ cx.fillStyle = T.c; } else { const fg = cx.createLinearGradient(0, fy, 0, fy + FH); fg.addColorStop(0, '#ffe27a'); fg.addColorStop(1, '#ffb627'); cx.fillStyle = fg; }
+    cx.fillRect(tx, fy, TW, FH);
+    cx.textAlign = 'center'; cx.fillStyle = T ? '#111' : '#2a1700';
+    cx.font = '900 ' + (COLS >= 4 ? 40 : 48) + 'px ' + FX; cx.fillText(T ? T.n : fmtAvg(x.st), tx + TW / 2, fy + FH * .58);
+    cx.font = '700 ' + (COLS >= 4 ? 18 : 21) + 'px ' + F; cx.globalAlpha = .75; cx.fillText(x.st.n + ' votos', tx + TW / 2, fy + FH - 12); cx.globalAlpha = 1;
+    cx.restore();
+    if (pos <= 3){ rr(cx, tx, ty, TW, TILE, 22); cx.strokeStyle = ['#ffd54a', '#d7dde8', '#e0965a'][pos - 1]; cx.lineWidth = 4; cx.stroke(); }
+  });
+  // pie
+  cx.textAlign = 'center'; cx.fillStyle = '#a9a2cc'; cx.font = '600 24px ' + F;
+  cx.fillText('Rankeo · Club Campestre', W / 2, H - 44);
+  const blob = await new Promise(ok => { try { cv.toBlob(ok, 'image/png'); } catch(e){ ok(null); } });
+  if (!blob) return toast('No se pudo crear la imagen');
+  const name = 'rankeo-' + String(R.meta.title || 'ranking').toLowerCase().replace(/[^a-z0-9áéíóúñ]+/gi, '-').replace(/^-|-$/g, '').slice(0, 40) + '.png';
+  const file = typeof File === 'function' ? new File([blob], name, {type: 'image/png'}) : null;
+  if (file && navigator.canShare && navigator.canShare({files: [file]}) && /Android|iPhone|iPad/i.test(navigator.userAgent)){
+    navigator.share({files: [file], title: R.meta.title}).catch(() => download(blob, name));
+  } else download(blob, name);
+}
+
+// ============ EXPORTAR / CONTINUAR DESPUÉS ============
+function snapshot(){
+  if (!R.meta) return null;
+  const players = {};
+  Object.entries(R.players || {}).forEach(([id, p]) => players[id] = {n: p.n || '', acc: !!p.acc});
+  return {app: 'rankeo', v: 1, at: Date.now(), code, meta: R.meta, items: R.items || {}, votes: R.votes || {}, covers: R.covers || {}, players};
+}
+const savedList = () => { const l = LS.get('saved', []); return Array.isArray(l) ? l : []; };
+// copia automática en este celular (máx. 6 salas); si no entra por las imágenes, se guarda sin ellas
+function saveLocal(){
+  const d = snapshot(); if (!d || !Object.keys(d.items).length) return;
+  const entry = x => ({t: d.meta.title || 'Ranking', at: d.at, n: Object.keys(d.items).length, code: d.code, data: x});
+  const put = x => { const l = savedList().filter(e => e.code !== d.code); l.unshift(entry(x)); localStorage.setItem('rk_saved', JSON.stringify(l.slice(0, 6))); };
+  try { put(d); }
+  catch(e){
+    try {
+      const lite = JSON.parse(JSON.stringify(d));
+      Object.values(lite.items).forEach(it => { if (it.img && /^data:/.test(it.img)) it.img = ''; });
+      lite.covers = {};
+      put(lite);
+    } catch(e2){ console.warn('no se pudo guardar copia local', e2); }
+  }
+}
+function exportFile(){
+  const d = snapshot(); if (!d) return;
+  saveLocal();
+  const name = 'rankeo-' + String(d.meta.title || 'ranking').toLowerCase().replace(/[^a-z0-9áéíóúñ]+/gi, '-').replace(/^-|-$/g, '').slice(0, 40) + '-' + new Date().toISOString().slice(0, 10) + '.json';
+  const blob = new Blob([JSON.stringify(d)], {type: 'application/json'});
+  const file = typeof File === 'function' ? new File([blob], name, {type: 'application/json'}) : null;
+  if (file && navigator.canShare && navigator.canShare({files: [file]}) && /Android|iPhone|iPad/i.test(navigator.userAgent)){
+    navigator.share({files: [file], title: d.meta.title}).catch(() => download(blob, name));
+  } else download(blob, name);
+}
+function download(blob, name){
+  const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = name;
+  document.body.appendChild(a); a.click(); setTimeout(() => { URL.revokeObjectURL(a.href); a.remove(); }, 2000);
+  toast('Archivo guardado: ' + name, 3500);
+}
+async function restoreRoom(d){
+  if (!d || d.app !== 'rankeo' || !d.meta) return toast('Ese archivo no es de Rankeo');
+  if (!needName()) return;
+  try {
+    let c = genCode();
+    for (let i = 0; i < 5; i++){ const s = await db.ref(ROOT + '/' + c + '/meta').once('value'); if (!s.exists()) break; c = genCode(); }
+    const players = {};
+    Object.entries(d.players || {}).forEach(([id, p]) => players[id] = {n: String(p.n || 'alguien').slice(0, 20), acc: !!p.acc, on: false});
+    const meta = {...d.meta, admin: me.id, adminName: me.name, step: 0, syncOn: false, created: firebase.database.ServerValue.TIMESTAMP,
+      status: d.meta.status === 'done' ? 'done' : 'voting', from: d.code || ''};
+    if (meta.cur && !(d.items || {})[meta.cur]) meta.cur = '';
+    await db.ref(ROOT + '/' + c).set({meta, items: d.items || {}, votes: d.votes || {}, covers: d.covers || {}, players});
+    await db.ref(IDX + '/' + c).set({last: firebase.database.ServerValue.TIMESTAMP});
+    toast('Sala restaurada con código ' + c + ' — pásales el nuevo código', 4000);
+    await enter(c);
+  } catch(e){ fbErr(e); }
+}
+
+// ============ LIMPIEZA AUTOMÁTICA ============
+// Salas abandonadas (todos cerraron la app sin tocar «salir»): sin nadie conectado por 15 min, o 24 h sin movimiento.
+// Solo lee el índice y la presencia (livianos), nunca las salas completas. Como mucho cada 10 min por celular.
+async function cleanupOld(){
+  if (!db) return;
+  try {
+    if (Date.now() - (+LS.get('clean', 0) || 0) < 10 * 60e3) return;
+    LS.set('clean', Date.now());
+    const [is, ps] = await Promise.all([db.ref(IDX).once('value'), db.ref(PRES).once('value')]);
+    const idx = is.val() || {}, prs = ps.val() || {}, t = now(), upd = {};
+    for (const c in idx){
+      if (c === code) continue;
+      const last = +(idx[c] && idx[c].last) || 0, online = Object.keys(prs[c] || {}).length;
+      if ((!online && t - last > GRACE) || t - last > 24 * 3600e3){ upd[ROOT + '/' + c] = null; upd[PRES + '/' + c] = null; upd[IDX + '/' + c] = null; }
+    }
+    for (const c in prs) if (!idx[c] && c !== code) upd[PRES + '/' + c] = null;
+    const n = Object.keys(upd).length;
+    if (n) await db.ref().update(upd);
+    console.log('limpieza rankeo: ' + n + ' entradas borradas');
+  } catch(e){ console.warn('limpieza', e); }
+}
+
+// ============ PESTAÑAS ============
+function setTab(t){
+  tab = t;
+  document.querySelectorAll('.tabs button').forEach(b => b.classList.toggle('on', b.dataset.t === t));
+  document.querySelectorAll('.pane').forEach(p => p.classList.toggle('on', p.id === t));
+  window.scrollTo(0, 0);
+}
+
+// ============ ARRANQUE ============
+async function boot(){
+  initNew();
+  document.querySelectorAll('.tabs button').forEach(b => b.onclick = () => setTab(b.dataset.t));
+  $('bLeave').onclick = async () => {
+    try {
+      const s = await db.ref(PRES + '/' + code).once('value'), others = Object.keys(s.val() || {}).filter(k => k !== me.id).length;
+      if (!others && !confirm('Eres el último en la sala. Si sales, la sala se borra de internet (queda una copia en este celular para continuarla después desde el inicio). ¿Salir?')) return;
+    } catch(e){}
+    leave();
+  };
+  $('bCode').onclick = share;
+  $('bCfg').onclick = openCfg;
+  $('bNew').onclick = () => { if (needName()) show('sNew'); };
+  $('bJoin').onclick = () => joinRoom($('codeIn').value);
+  $('loadFile').onchange = async () => {
+    const f = $('loadFile').files[0]; $('loadFile').value = ''; if (!f) return;
+    try { const d = JSON.parse(await f.text()); restoreRoom(d); } catch(e){ toast('No se pudo leer el archivo'); }
+  };
+  $('codeIn').onkeydown = e => { if (e.key === 'Enter') joinRoom($('codeIn').value); };
+  if (!await loadFirebase()){ $('homeMsg').innerHTML = 'No se pudo cargar Firebase. Revisa tu internet y <a href="">recarga</a>.'; return; }
+  try {
+    if (!firebase.apps.length) firebase.initializeApp(firebaseConfig);
+    db = firebase.database();
+  } catch(e){ console.error(e); $('homeMsg').textContent = 'Error al iniciar Firebase'; return; }
+  db.ref('.info/serverTimeOffset').on('value', s => { offset = +s.val() || 0; });
+  // cuenta de Club Campestre (si existe); si tarda, se entra como invitado
+  let user = null;
+  if (firebase.auth){
+    try {
+      fauth = firebase.auth();
+      user = await new Promise(ok => { const t = setTimeout(() => ok(null), 3000); const un = fauth.onAuthStateChanged(u => { clearTimeout(t); un(); ok(u); }); });
+    } catch(e){ console.warn(e); }
+  }
+  if (window.ClubAvatar){ try { ClubAvatar.init({db}); avOk = true; } catch(e){} }
+  setIdentity(user);
+  setTimeout(cleanupOld, 3000);
+  const q = new URLSearchParams(location.search).get('sala') || LS.get('room', '');
+  if (q){
+    if (me.name) joinRoom(q);
+    else { $('codeIn').value = String(q).toUpperCase(); toast('Escribe tu nombre y toca «Entrar»', 4000); }
+  }
+  document.addEventListener('visibilitychange', () => {
+    if (document.hidden && code) saveLocal();
+    if (!document.hidden && code && presRef){ presRef.update({on: true}).catch(() => {}); if (onlineRef) onlineRef.set(true).catch(() => {}); }
+  });
+}
+boot();
+</script>
+</body>
+</html>
