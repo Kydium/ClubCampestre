@@ -65,6 +65,8 @@ details.adv>summary::after{content:'▾';margin-left:auto;color:var(--mut);trans
 details.adv[open]>summary::after{transform:rotate(180deg)}
 details.adv>summary .mut{font-weight:500;font-size:13px}
 details.adv>*:not(summary){margin-left:16px;margin-right:16px}
+details.adv>select,details.adv>input,details.adv>textarea{width:calc(100% - 32px);display:block}
+select{max-width:100%;text-overflow:ellipsis}
 details.adv[open]{padding-bottom:16px}
 details.adv h4{margin:14px 16px 6px;font-size:12px;letter-spacing:1px;text-transform:uppercase;color:var(--gold)}
 .seg.chips button{flex:0 1 auto;min-width:0;padding:9px 12px;font-size:14px}
@@ -261,7 +263,7 @@ details.adv h4{margin:14px 16px 6px;font-size:12px;letter-spacing:1px;text-trans
       <div class="lbl" style="margin-top:0">Tu nombre</div>
       <div class="me" id="meBox"></div>
       <div class="sp" style="height:14px"></div>
-      <button class="btn" id="bNew">➕ Crear sala</button>
+      <div class="row" style="gap:8px"><button class="btn grow" id="bNew">➕ Crear sala</button><button class="btn c grow" id="bFind">🔎 Buscar sala</button></div>
       <div class="lbl">¿Te pasaron un código?</div>
       <div class="row">
         <input id="codeIn" maxlength="5" placeholder="CÓDIGO" autocapitalize="characters" style="text-transform:uppercase;font-family:var(--fx);letter-spacing:3px">
@@ -325,6 +327,7 @@ details.adv h4{margin:14px 16px 6px;font-size:12px;letter-spacing:1px;text-trans
       <h4>Otros</h4>
       <label class="chk"><input type="checkbox" id="nWho" checked> Mostrar quién votó qué al revelar</label>
       <label class="chk"><input type="checkbox" id="nRand"> Lo nuevo entra en un lugar al azar de la lista</label>
+      <label class="chk"><input type="checkbox" id="nPub" checked> Aparece en «Buscar sala» (si no, solo con código)</label>
     </details>
     <button class="btn" id="bCreate">🚀 Crear y entrar</button>
     <div style="height:30px"></div>
@@ -664,10 +667,10 @@ async function createRoom(){
     await db.ref(ROOT + '/' + c).set({
       meta: {title, admin: me.id, adminName: me.name, mode: nf.mode, scale: nf.scale, tiers, reveal: nf.reveal,
              showWho: $('nWho').checked, tWatch: +$('nTW').value, tVote: +$('nTV').value, tAll: $('nTA').checked,
-             auto: +$('nTW').value > 0 || +$('nTV').value > 0, randOrd: $('nRand').checked, cat: nf.cat, anyoneAdd: nf.whoAdd === 'all', perUser: readLim('nNoLim', 'nLim'), adminFree: $('nAdmFree').checked, status: 'voting', cur: '', step: 0,
+             auto: +$('nTW').value > 0 || +$('nTV').value > 0, randOrd: $('nRand').checked, pub: $('nPub').checked, cat: nf.cat, anyoneAdd: nf.whoAdd === 'all', perUser: readLim('nNoLim', 'nLim'), adminFree: $('nAdmFree').checked, status: 'voting', cur: '', step: 0,
              created: firebase.database.ServerValue.TIMESTAMP, syncOn: false}
     });
-    await db.ref(IDX + '/' + c).set({last: firebase.database.ServerValue.TIMESTAMP});
+    await db.ref(IDX + '/' + c).set({last: firebase.database.ServerValue.TIMESTAMP, t: title, cat: nf.cat, adm: me.name, pub: $('nPub').checked, st: 'voting', n: 0});
     await enter(c);
   } catch(e){ fbErr(e); }
   $('bCreate').disabled = false;
@@ -712,7 +715,19 @@ async function enter(c){
   show('sRoom');
 }
 let onlineRef = null;
-function touch(){ if (code) db.ref(IDX + '/' + code).set({last: firebase.database.ServerValue.TIMESTAMP}).catch(() => {}); }
+// Índice liviano de salas: sirve para la limpieza y para «Buscar sala»
+function idxData(){
+  const m = R.meta || {};
+  return {last: firebase.database.ServerValue.TIMESTAMP, t: String(m.title || '').slice(0, 60), cat: m.cat || 'todo', adm: String(m.adminName || '').slice(0, 20),
+    pub: m.pub !== false, st: m.status || 'voting', mode: m.mode || 'score', n: Object.keys(R.items || {}).length};
+}
+function touch(){ if (code) db.ref(IDX + '/' + code).update(idxData()).catch(() => {}); }
+let lastIdx = '';
+function touchIfChanged(){
+  if (!code || !R.meta) return;
+  const d = idxData(), k = JSON.stringify({...d, last: 0});
+  if (k !== lastIdx){ lastIdx = k; touch(); }
+}
 // Borra la sala completa (datos, presencia e índice)
 function wipeRoom(c){ const u = {}; u[ROOT + '/' + c] = null; u[PRES + '/' + c] = null; u[IDX + '/' + c] = null; return db.ref().update(u); }
 function leave(silent){
@@ -801,6 +816,7 @@ function onRoom(k){
   if (k === 'players' && R.players && R.players[me.id]) seenMe = true;
   if (k === 'players' && seenMe && R.players && !R.players[me.id] && presRef){ toast('El admin te sacó de la sala'); leave(); return; }
   addRecent(code, R.meta.title);
+  if (k === 'meta' || k === 'items') touchIfChanged();
   const st = status();
   if (st !== prevStatus){
     if (st === 'done' && prevStatus) { setTab('pRank'); giveXP(); }
@@ -1809,6 +1825,7 @@ function openCfg(){
     <div class="lbl">Categoría</div>
     <select id="cC">${Object.entries(CATS).map(([k, c]) => `<option value="${k}">${c.l}</option>`).join('')}</select>
     <label class="chk"><input type="checkbox" id="cRnd" ${m.randOrd ? 'checked' : ''}> 🎲 Lo nuevo entra en posición al azar</label>
+    <label class="chk"><input type="checkbox" id="cPub" ${m.pub !== false ? 'checked' : ''}> 🔎 Aparece en «Buscar sala»</label>
     <div class="lbl">Quién pone los links</div>
     <select id="cA"><option value="all">👥 Todos</option><option value="admin">👑 Solo el admin</option></select>
     <div id="cLimBox"><div class="lbl">Máximo por persona</div>
@@ -1832,7 +1849,7 @@ function openCfg(){
   $('cX').onclick = closeModal;
   $('cExp').onclick = exportFile;
   $('cOk').onclick = () => {
-    db.ref(rp('meta')).update({title: $('cT').value.trim() || m.title, reveal: $('cR').value, showWho: $('cW').checked, anyoneAdd: $('cA').value === 'all', perUser: readLim('cNoLim', 'cLim'), adminFree: $('cAdmFree').checked, cat: $('cC').value, randOrd: $('cRnd').checked,
+    db.ref(rp('meta')).update({title: $('cT').value.trim() || m.title, reveal: $('cR').value, showWho: $('cW').checked, anyoneAdd: $('cA').value === 'all', perUser: readLim('cNoLim', 'cLim'), adminFree: $('cAdmFree').checked, cat: $('cC').value, randOrd: $('cRnd').checked, pub: $('cPub').checked,
       tWatch: +$('cTW').value, tVote: +$('cTV').value, tAll: $('cTA').checked, auto: +$('cTW').value > 0 || +$('cTV').value > 0, phase: null})
       .then(() => { closeModal(); toast('Guardado'); }).catch(fbErr);
   };
@@ -2028,6 +2045,35 @@ async function restoreRoom(d){
   } catch(e){ fbErr(e); }
 }
 
+// ============ BUSCAR SALA ============
+// Lista las salas públicas con gente conectada (lee solo el índice y la presencia, que son livianos)
+async function findRooms(){
+  const sh = openModal(`<div class="row" style="margin-bottom:10px"><h3 class="grow" style="margin:0">🔎 SALAS ABIERTAS</h3><button class="tool" id="frRe">↻ Actualizar</button></div>
+    <div id="frList"><div class="mut" style="padding:16px;text-align:center">Buscando…</div></div>
+    <div style="height:12px"></div><button class="btn g" id="frX">Cerrar</button>`);
+  $('frX').onclick = closeModal; $('frRe').onclick = () => { closeModal(); findRooms(); };
+  try {
+    const [is, ps] = await Promise.all([db.ref(IDX).once('value'), db.ref(PRES).once('value')]);
+    const idx = is.val() || {}, prs = ps.val() || {}, t = now();
+    let rows = Object.entries(idx).map(([c, v]) => ({c, ...(v || {}), on: Object.keys(prs[c] || {}).length}))
+      .filter(r => r.pub !== false && (r.on > 0 || t - (+r.last || 0) < GRACE));
+    // salas viejas que aún no tienen nombre en el índice: se lee su título
+    await Promise.all(rows.filter(r => !r.t).map(async r => {
+      try { const m = (await db.ref(ROOT + '/' + r.c + '/meta').once('value')).val(); if (!m || m.pub === false) r.skip = 1; else { r.t = m.title; r.cat = m.cat; r.adm = m.adminName; r.st = m.status; } } catch(e){ r.skip = 1; }
+    }));
+    rows = rows.filter(r => !r.skip).sort((a, b) => b.on - a.on || (+b.last || 0) - (+a.last || 0));
+    if (!$('frList')) return;
+    if (!rows.length){ $('frList').innerHTML = '<div class="empty" style="padding:20px 6px"><div class="e">🌙</div>No hay salas abiertas ahora.<br>¡Crea una e invita a tus amigos!</div>'; return; }
+    $('frList').innerHTML = '<div class="recent" style="margin-top:-8px">' + rows.map(r => {
+      const cat = (CATS[r.cat] || CATS.todo).l, st = r.st === 'done' ? '🏁 Terminada' : r.st === 'reveal' ? '🥁 Revelando' : '🗳️ Votando';
+      return `<button data-c="${esc(r.c)}"><b>${esc(r.c)}</b><span class="grow" style="min-width:0"><span style="display:block;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${esc(r.t || 'Ranking')}</span>
+        <span class="mut" style="font-size:12px">${esc(cat)} · ${st}${r.n ? ' · ' + r.n + ' ítems' : ''}${r.adm ? ' · 👑 ' + esc(r.adm) : ''}</span></span>
+        <span class="pill ${r.on ? 'c' : ''}" style="flex:0 0 auto">${r.on ? '🟢 ' + r.on : '💤'}</span></button>`;
+    }).join('') + '</div>';
+    $('frList').querySelectorAll('button[data-c]').forEach(b => b.onclick = () => { closeModal(); joinRoom(b.dataset.c); });
+  } catch(e){ if ($('frList')) $('frList').innerHTML = '<div class="mut" style="padding:16px;text-align:center">No se pudo buscar. Revisa tu conexión.</div>'; }
+}
+
 // ============ LIMPIEZA AUTOMÁTICA ============
 // Salas abandonadas (todos cerraron la app sin tocar «salir»): sin nadie conectado por 15 min, o 24 h sin movimiento.
 // Solo lee el índice y la presencia (livianos), nunca las salas completas. Como mucho cada 10 min por celular.
@@ -2072,6 +2118,7 @@ async function boot(){
   $('bCode').onclick = share;
   $('bCfg').onclick = openCfg;
   $('bNew').onclick = () => { if (needName()) show('sNew'); };
+  $('bFind').onclick = () => { if (needName()) findRooms(); };
   $('bJoin').onclick = () => joinRoom($('codeIn').value);
   $('loadFile').onchange = async () => {
     const f = $('loadFile').files[0]; $('loadFile').value = ''; if (!f) return;

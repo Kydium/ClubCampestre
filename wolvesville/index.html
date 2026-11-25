@@ -593,6 +593,7 @@ window.__ldIv=setInterval(function(){var e=document.getElementById('ld-msg');if(
 <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-auth-compat.js"></script>
 <script src="../club-xp.js"></script>
 <script src="../club-avatar.js"></script>
+<script src="../club-name.js"></script>
 <script>
 'use strict';
 // ===================== CONFIG =====================
@@ -1933,6 +1934,8 @@ function closeRole(){$('modal').classList.remove('on');}
 const A={menu,menuclose,reroll,m_stats:()=>{menuclose();stats();},m_rank:()=>{menuclose();rank();},m_ranks:()=>{menuclose();showRanks();},m_ver:()=>{menuclose();show('news');window.scrollTo(0,0);},m_help:()=>{menuclose();const o={};ROLE_ORDER.concat(['villager']).forEach(r=>{o[r]=1;});$('help-roles').innerHTML=roleChips(o);show('help');window.scrollTo(0,0);},stats,rooms,home,joinroom,wseer,aura,guard,witch,wdone,wmode,wsmode,kill:killp,cupid,shadow,cfgmode,myrole:()=>openRole(myRole()),reload:()=>location.reload(),gmode,skip,ver:showVersion,jailpick,jshoot,jspare,sendJail:()=>sendChat('jail'),sendDead:()=>sendChat('dead'),revive,rdone,ranks:showRanks,create,join,leave,rejoin,dismiss,cfg,start,again,ack,wolf,seer,doc,douse,pmode,ignite,vote,shoot,noshoot,share,role:openRole,closeRole,noop(){},sendDay:()=>sendChat('day'),sendWolf:()=>sendChat('wolf')};
 document.addEventListener('click',e=>{const el=e.target.closest('[data-act]');if(!el||el.disabled)return;const fn=A[el.dataset.act];if(!fn)return;e.preventDefault();if(TAPV.has(el.dataset.act)&&navigator.vibrate){try{navigator.vibrate(12);}catch(_){}}let fxk=null;try{if(S&&ACTFX[el.dataset.act])fxk=ACTFX[el.dataset.act](el.dataset.id);}catch(_){}try{fn(el.dataset.id,el);if(fxk)deathFx(el.dataset.id,fxk,0,false);}catch(err){console.error(err);toast('Error: '+err.message,true);}});
 $('h-name').value=NAME;
+// Nombre = el de la cuenta del Club Campestre (no se cambia aquí)
+if(window.ClubName)ClubName.lock(['h-name'],n=>{NAME=n.slice(0,14);localStorage.setItem('wv_name',NAME);});
 document.querySelectorAll('.cl-in').forEach(e=>{e.innerHTML=CHANGELOG.map(([v,t],i)=>'<details'+(i===0?' open':'')+'><summary>v'+v+(i===0?' · actual':'')+'</summary><p>'+t+'</p></details>').join('');});
 {const mv=document.getElementById('m-ver');if(mv)mv.textContent='v'+VERSION;}
 document.querySelectorAll('.ver-lbl').forEach(e=>{e.textContent='📦 Wolvevilles v'+VERSION+' · Novedades';});

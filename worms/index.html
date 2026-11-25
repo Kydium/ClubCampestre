@@ -10,6 +10,7 @@
 <script src="https://cdn.jsdelivr.net/npm/firebase@9.22.2/firebase-auth-compat.js"></script>
 <script src="../club-avatar.js"></script>
 <script src="../club-xp.js"></script>
+<script src="../club-name.js"></script>
 <style>
 *{box-sizing:border-box;-webkit-tap-highlight-color:transparent;-webkit-user-select:none;user-select:none}
 html,body{margin:0;height:100%;background:#0b1020;color:#e8eefc;font-family:system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;overflow:hidden;overscroll-behavior:none;-webkit-text-size-adjust:100%}
@@ -10921,6 +10922,8 @@ function cuentaIniciar(){
  });
 }
 cuentaIniciar();
+// Nombre = el de la cuenta del Club Campestre (no se cambia aquí ni en Personalizar)
+if(window.ClubName)ClubName.lock(['nm','cuName'],n=>{try{localStorage.setItem('wm_name',n.slice(0,12))}catch(e){}});
 /* ================= MENÚ ESTILO WMD ================= */
 const THKEYS=Object.keys(THN);
 function previewTheme(c,key){

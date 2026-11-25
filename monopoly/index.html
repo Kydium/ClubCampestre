@@ -19,6 +19,7 @@
 <script defer src="https://cdn.jsdelivr.net/npm/firebase@9.22.2/firebase-auth-compat.js"></script>
 <script defer src="../club-xp.js"></script>
 <script defer src="../club-avatar.js"></script>
+<script defer src="../club-name.js"></script>
 <style>
 *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
 :root{--fh:"Lilita One","Trebuchet MS","Segoe UI",system-ui,sans-serif}
@@ -5029,6 +5030,8 @@ function boot(){
   try{firebase.initializeApp(FBCFG);db=firebase.database();}
   catch(e){$('app').innerHTML=fatal('Error al iniciar Firebase',esc(e.message));if(window.BOOT)BOOT.flag('connected');return;}
   monoCuenta();
+  // Nombre = el de la cuenta del Club Campestre (no se cambia aquí)
+  if(window.ClubName)ClubName.lock(['nm'],n=>{try{store.set('mono_name',n.slice(0,14))}catch(e){}});
   db.ref('.info/serverTimeOffset').on('value',s=>{ui.srvOff=+s.val()||0;});
   setTimeout(sweepRooms,5000);setInterval(sweepRooms,300000);
   db.ref('.info/connected').on('value',s=>{connected=!!s.val();const d=$('dot');if(d)d.className='dot '+(connected?'on':'off');if(connected&&window.BOOT){BOOT.stage(88,'Entrando…');BOOT.flag('connected');}});

@@ -12,6 +12,7 @@
 <script src="https://cdn.jsdelivr.net/npm/firebase@9.23.0/firebase-auth-compat.js"></script>
 <script src="../club-xp.js"></script>
 <script src="../club-avatar.js"></script>
+<script src="../club-name.js"></script>
 <style>
 :root{
   --felt:#0e2620; --felt2:#143429; --felt3:#1b4235; --line:#24503f;
@@ -480,6 +481,8 @@ const money = (c,v) => `${c} ${(+v||0).toFixed(2)}`;
 const PID = localStorage.getItem('ba_pid') || Math.random().toString(36).slice(2,12);
 localStorage.setItem('ba_pid',PID);
 $('inName').value = localStorage.getItem('ba_name')||'';
+// Nombre = el de la cuenta del Club Campestre (no se cambia aquí)
+if(window.ClubName) ClubName.lock(['inName'], n=>localStorage.setItem('ba_name',n));
 
 function show(id){document.querySelectorAll('.screen').forEach(s=>s.classList.toggle('on',s.id===id));window.scrollTo(0,0)}
 let tt;function toast(m){clearTimeout(tt);$('toast').textContent=m;$('toast').classList.add('on');tt=setTimeout(()=>$('toast').classList.remove('on'),2600)}
