@@ -129,7 +129,7 @@ details.adv h4{margin:14px 16px 6px;font-size:12px;letter-spacing:1px;text-trans
 .big{font-family:var(--fx);font-size:40px;min-width:96px;text-align:center;color:var(--gold)}
 .tierBtns{display:flex;flex-direction:column;gap:7px}
 .tierBtns button{display:flex;align-items:center;gap:12px;padding:0;border-radius:12px;overflow:hidden;background:rgba(0,0,0,.35);border:2px solid transparent;text-align:left;transition:transform .08s}
-.tierBtns button b{width:64px;min-height:48px;display:flex;align-items:center;justify-content:center;font-family:var(--fx);font-size:22px;color:#111;flex:0 0 auto;padding:4px;word-break:break-all;text-align:center}
+.tierBtns button b{width:var(--labw,64px);min-height:48px;display:flex;align-items:center;justify-content:center;font-family:var(--fx);font-size:22px;color:#111;flex:0 0 auto;padding:4px 6px;overflow-wrap:anywhere;hyphens:auto;text-align:center}
 .tierBtns button.on{border-color:#fff;box-shadow:0 0 16px rgba(255,255,255,.35)}
 .tierBtns button span{font-weight:700;color:var(--mut)}
 .tierBtns button.on span{color:#fff}
@@ -166,7 +166,7 @@ details.adv h4{margin:14px 16px 6px;font-size:12px;letter-spacing:1px;text-trans
 .rk .sc small{display:block;font-family:var(--f);font-size:11px;color:var(--mut)}
 .det{margin:-4px 0 10px 44px;display:flex;flex-wrap:wrap;gap:6px}
 .tl .row1{display:flex;min-height:76px;border-radius:12px;overflow:hidden;margin-bottom:6px;background:rgba(0,0,0,.35)}
-.tl .lab{width:70px;flex:0 0 auto;display:flex;align-items:center;justify-content:center;font-family:var(--fx);font-size:22px;color:#111;padding:4px;text-align:center;word-break:break-all}
+.tl .lab{width:var(--labw,70px);flex:0 0 auto;display:flex;align-items:center;justify-content:center;font-family:var(--fx);font-size:22px;color:#111;padding:4px 6px;text-align:center;overflow-wrap:anywhere;hyphens:auto}
 .tl .its{flex:1;display:flex;flex-wrap:wrap;gap:6px;padding:6px;align-items:flex-start}
 .tl .chip{width:92px;border-radius:9px;overflow:hidden;background:#1d1433;font-size:11px;font-weight:700;line-height:1.15}
 .tl .chip .th{width:92px;height:56px;border-radius:0}
@@ -246,6 +246,9 @@ details.adv h4{margin:14px 16px 6px;font-size:12px;letter-spacing:1px;text-trans
 .ssn input[type=number]{max-width:66px;padding:9px 6px}
 .ssn summary{font-size:13px;color:var(--mut);cursor:pointer;margin-top:8px}
 .ssn textarea{margin-top:6px;font-size:14px}
+.lobby{border-radius:16px;background:#000;border:1px solid var(--line);padding:46px 18px 30px;text-align:center;
+  background:radial-gradient(circle at 50% 0,rgba(255,46,151,.18),transparent 60%),#05030b}
+.lobby .e{font-size:54px;margin-bottom:8px}.lobby b{display:block;font-size:22px;margin-bottom:4px}
 .empty{text-align:center;padding:30px 10px;color:var(--mut)}
 .empty .e{font-size:44px}
 </style>
@@ -445,6 +448,15 @@ const DEF_TIERS = [
   {n:'C', c:'#7bd88f'}, {n:'D', c:'#4dabf7'}, {n:'F', c:'#b197fc'}
 ];
 const arr = o => Array.isArray(o) ? o : o ? Object.values(o) : [];
+// Nombres de nivel que son palabras (no solo S, A, B): letra más pequeña y fuente angosta para que quepan
+function tStyle(n, base){
+  const L = String(n || '').length;
+  if (L <= 2) return `font-size:${base}px`;
+  const px = Math.max(12, Math.round(base * (L <= 4 ? .82 : L <= 7 ? .74 : L <= 12 ? .66 : .56)));
+  return `font-size:${px}px;font-family:var(--f);font-weight:800;letter-spacing:0;line-height:1.05`;
+}
+// ancho de la columna de niveles según el nombre más largo (todas las filas iguales)
+function tierLabW(min){ const L = Math.max(...tiers().map(t => String(t.n).length)); return Math.min(150, Math.max(min, L <= 2 ? min : 30 + L * 7)); }
 
 // ============ CATEGORÍAS DE SALA ============
 // Qué se puede agregar en cada categoría (para que en un ranking de música no aparezcan capítulos, etc.)
@@ -667,7 +679,7 @@ async function createRoom(){
     await db.ref(ROOT + '/' + c).set({
       meta: {title, admin: me.id, adminName: me.name, mode: nf.mode, scale: nf.scale, tiers, reveal: nf.reveal,
              showWho: $('nWho').checked, tWatch: +$('nTW').value, tVote: +$('nTV').value, tAll: $('nTA').checked,
-             auto: +$('nTW').value > 0 || +$('nTV').value > 0, randOrd: $('nRand').checked, pub: $('nPub').checked, cat: nf.cat, anyoneAdd: nf.whoAdd === 'all', perUser: readLim('nNoLim', 'nLim'), adminFree: $('nAdmFree').checked, status: 'voting', cur: '', step: 0,
+             auto: +$('nTW').value > 0 || +$('nTV').value > 0, randOrd: $('nRand').checked, pub: $('nPub').checked, cat: nf.cat, anyoneAdd: nf.whoAdd === 'all', perUser: readLim('nNoLim', 'nLim'), adminFree: $('nAdmFree').checked, status: 'voting', started: false, cur: '', step: 0,
              created: firebase.database.ServerValue.TIMESTAMP}
     });
     await db.ref(IDX + '/' + c).set({last: firebase.database.ServerValue.TIMESTAMP, t: title, cat: nf.cat, adm: me.name, pub: $('nPub').checked, st: 'voting', n: 0});
@@ -719,7 +731,7 @@ let onlineRef = null;
 function idxData(){
   const m = R.meta || {};
   return {last: firebase.database.ServerValue.TIMESTAMP, t: String(m.title || '').slice(0, 60), cat: m.cat || 'todo', adm: String(m.adminName || '').slice(0, 20),
-    pub: m.pub !== false, st: m.status || 'voting', mode: m.mode || 'score', n: Object.keys(R.items || {}).length};
+    pub: m.pub !== false, st: m.started === false ? 'lobby' : (m.status || 'voting'), mode: m.mode || 'score', n: Object.keys(R.items || {}).length};
 }
 function touch(){ if (code) db.ref(IDX + '/' + code).update(idxData()).catch(() => {}); }
 let lastIdx = '';
@@ -799,7 +811,9 @@ function canSee(it){
   if (m.reveal === 'item') return !!it.closed;
   return false;
 }
-const canVote = it => !!it && !it.closed && (status() === 'voting' || (status() === 'done' && !!it.extra));
+// La sala empieza «en negro»: nadie ve lo que se agrega hasta que el admin toca ▶ Empezar
+const started = () => !R.meta || R.meta.started !== false;
+const canVote = it => started() && !!it && !it.closed && (status() === 'voting' || (status() === 'done' && !!it.extra));
 const canAdd = () => isAdmin() || !!(R.meta && R.meta.anyoneAdd);
 
 // ============ AL CAMBIAR LA SALA ============
@@ -839,8 +853,31 @@ function render(){
 
 // ============ PESTAÑA VOTAR (reproductor + voto) ============
 let lastStage = '', sliding = false, pendingRender = false, sliderPend = {};
+function renderLobby(box, its){
+  destroyYT(); lastStage = '';
+  const admin = isAdmin(), mine = its.filter(x => x.by === me.id).length, on = playersList().filter(p => p.on).length;
+  box.innerHTML = `<div class="lobby">
+      <div class="e">🎬</div>
+      <b>${admin ? 'Todo listo para empezar' : 'Esperando que el admin empiece'}</b>
+      <div class="mut">${its.length} en la lista · ${on} conectado${on === 1 ? '' : 's'}${mine ? ' · ' + mine + ' tuyo' + (mine === 1 ? '' : 's') : ''}</div>
+      ${admin ? `<button class="btn" id="bStart" ${its.length ? '' : 'disabled'} style="max-width:320px;margin:18px auto 0">▶ Empezar</button>
+        ${its.length ? '' : '<div class="mut" style="font-size:13px;margin-top:8px">Primero agrega algo a la lista</div>'}` : ''}
+    </div>
+    ${canAdd() ? `<button class="btn ${admin ? 'g' : ''}" id="eAdd" style="max-width:320px;margin:14px auto 0" ${quota() <= 0 ? 'disabled' : ''}>➕ Agregar a la lista</button>` : ''}
+    <div class="hint" style="text-align:center;margin-top:12px">Lo que se agrega queda oculto hasta empezar.</div>`;
+  if ($('eAdd')) $('eAdd').onclick = openAdd;
+  if ($('bStart')) $('bStart').onclick = startRoom;
+}
+function startRoom(){
+  const its = itemsSorted(); if (!its.length) return toast('Agrega algo a la lista primero');
+  const first = R.meta.randOrd ? its[Math.floor(Math.random() * its.length)] : its[0];
+  const u = {'meta/started': true, 'meta/cur': first.id, 'meta/phase': null}; u['meta/shown/' + first.id] = true;
+  viewId = first.id;
+  db.ref(rp()).update(u).then(() => toast('🎬 ¡Empezó!')).catch(fbErr);
+}
 function renderVote(){
   const box = $('pVote'), its = itemsSorted(), it = R.items[viewId] ? {id: viewId, ...R.items[viewId]} : null;
+  if (!started()) return renderLobby(box, its);
   if (!it){
     destroyYT(); lastStage = '';
     box.innerHTML = `<div class="empty"><div class="e">📭</div><p>La lista está vacía.<br>${canAdd() ? 'Agrega canciones, videos, imágenes, links o solo nombres.' : 'Espera a que el admin agregue cosas.'}</p>
@@ -882,7 +919,7 @@ function renderVote(){
   h += '<div class="vote">' + voteHTML(it, mine) + '</div>';
   // resultado o candado
   if (see && st.n){
-    h += `<div class="result">${isTier() ? `<span class="tbadge" style="background:${esc(tiers()[tierOf(st)].c)};color:#111;font-family:var(--fx);font-size:30px;padding:6px 14px;border-radius:10px">${esc(fmtAvg(st))}</span>` : `<span class="big">${fmtAvg(st)}</span>`}
+    h += `<div class="result">${isTier() ? `<span class="tbadge" style="background:${esc(tiers()[tierOf(st)].c)};color:#111;font-family:var(--fx);font-size:30px;padding:6px 14px;border-radius:10px;${tStyle(fmtAvg(st), 30)}">${esc(fmtAvg(st))}</span>` : `<span class="big">${fmtAvg(st)}</span>`}
       <div class="grow"><b>Nota del grupo</b><div class="mut" style="font-size:13px">${st.n} voto${st.n === 1 ? '' : 's'}${!isTier() ? '' : ' · promedio'}</div></div></div>`;
   } else if (!see){
     h += `<div class="locked">🔒 ${status() === 'done' ? 'Nota oculta hasta que el admin cierre los nuevos' : R.meta.reveal === 'item' ? 'Nota oculta hasta que el admin cierre este ítem' : 'Notas ocultas hasta el final'}</div>`;
@@ -949,7 +986,7 @@ function voteHTML(it, mine){
   else if (dis) h += '<div class="mut" style="margin-bottom:8px">Este ítem está cerrado</div>';
   else h += `<div class="lbl" style="margin-top:0">${mine != null ? 'Tu voto · puedes cambiarlo' : 'Tu voto'}</div>`;
   if (isTier()){
-    h += '<div class="tierBtns">' + tiers().map((t, i) => `<button data-v="${i}" class="${mine === i ? 'on' : ''}" ${d}><b style="background:${esc(t.c)}">${esc(t.n)}</b><span>${mine === i ? '✓ Tu elección' : ''}</span></button>`).join('') + '</div>';
+    h += `<div class="tierBtns" style="--labw:${tierLabW(64)}px">` + tiers().map((t, i) => `<button data-v="${i}" class="${mine === i ? 'on' : ''}" ${d}><b style="background:${esc(t.c)};${tStyle(t.n, 22)}">${esc(t.n)}</b><span>${mine === i ? '✓ Tu elección' : ''}</span></button>`).join('') + '</div>';
   } else {
     const s = scale();
     if (s.stars){
@@ -1145,7 +1182,7 @@ function startTimers(){
 }
 function driveAuto(){
   const m = R.meta;
-  if (driveBusy || !code || !m || !isAdmin() || !m.auto || status() !== 'voting') return;
+  if (driveBusy || !code || !m || !isAdmin() || !m.auto || status() !== 'voting' || !started()) return;
   const cur = m.cur; if (!cur || !R.items[cur]) return;
   const ph = m.phase, t = now();
   if (!ph || ph.id !== cur){
@@ -1219,11 +1256,13 @@ function stopMedia(){
 
 // ============ PESTAÑA LISTA ============
 function renderList(){
-  const its = itemsSorted(), admin = isAdmin();
-  let h = `<div class="row" style="margin-bottom:10px"><h3 class="grow" style="margin:0;font-family:var(--fx);font-size:14px;color:var(--gold)">LISTA (${its.length})</h3>
+  const admin = isAdmin(), all0 = itemsSorted(), hideOthers = !started() && !admin;
+  const its = hideOthers ? all0.filter(x => x.by === me.id) : all0;
+  let h = `<div class="row" style="margin-bottom:10px"><h3 class="grow" style="margin:0;font-family:var(--fx);font-size:14px;color:var(--gold)">LISTA (${all0.length})</h3>
     ${canAdd() ? `<button class="btn sm" id="lAdd" ${quota() <= 0 ? 'disabled' : ''}>➕ Agregar</button>` : ''}</div>
-    <div class="mut" style="font-size:13px;margin:-4px 0 10px">${R.meta.anyoneAdd ? '👥 Todos agregan' : '👑 Solo el admin agrega'}${R.meta.anyoneAdd ? (+R.meta.perUser ? ' · máx. ' + R.meta.perUser + ' por persona' : ' · sin límite') : ''}${limTxt() ? ' · ' + limTxt() : ''}</div>`;
-  if (!its.length) h += '<div class="empty"><div class="e">📋</div>Aún no hay nada.</div>';
+    <div class="mut" style="font-size:13px;margin:-4px 0 10px">${R.meta.anyoneAdd ? '👥 Todos agregan' : '👑 Solo el admin agrega'}${R.meta.anyoneAdd ? (+R.meta.perUser ? ' · máx. ' + R.meta.perUser + ' por persona' : ' · sin límite') : ''}${limTxt() ? ' · ' + limTxt() : ''}</div>
+    ${hideOthers ? `<div class="locked" style="margin:0 0 10px">🔒 Hasta que empiece solo ves lo tuyo (${its.length} de ${all0.length})</div>` : ''}`;
+  if (!its.length) h += `<div class="empty"><div class="e">📋</div>${hideOthers ? 'Aún no agregaste nada.' : 'Aún no hay nada.'}</div>`;
   h += '<div class="items">' + its.map((it, i) => {
     const st = stats(it.id), mine = R.votes[it.id] && R.votes[it.id][me.id];
     const mineOk = (it.by === me.id);
@@ -1604,6 +1643,7 @@ function shrinkImg(file){
 // ============ PESTAÑA RANKING ============
 function renderRank(){
   const box = $('pRank'), its = itemsSorted(), st = status(), m = R.meta;
+  if (!started()){ box.innerHTML = '<div class="empty"><div class="e">🏆</div>El ranking aparece cuando el admin toque ▶ Empezar.</div>'; return; }
   const all = ranked(), visible = all.filter(canSee);
   const hidden = its.filter(it => !canSee(it));
   let h = '';
@@ -1632,7 +1672,7 @@ function renderRank(){
       const mine = R.votes[x.id] && R.votes[x.id][me.id];
       const T = see && isTier() ? tiers()[tierOf(x.st)] : null;
       const info = x.st.n + ' voto' + (x.st.n === 1 ? '' : 's') + (mine != null ? ' · tú ' + fmtVal(mine) : '');
-      const foot = see ? `<div class="gfoot" ${T ? `style="background:${esc(T.c)};color:#111"` : ''}><b>${esc(T ? T.n : fmtAvg(x.st))}</b><small>${esc(info)}</small></div>`
+      const foot = see ? `<div class="gfoot" ${T ? `style="background:${esc(T.c)};color:#111"` : ''}><b ${T ? `style="${tStyle(T.n, 19)}"` : ''}>${esc(T ? T.n : fmtAvg(x.st))}</b><small>${esc(info)}</small></div>`
         : `<div class="gfoot lk"><b>${x.st.n ? '🔒' : '—'}</b><small>${esc(info)}</small></div>`;
       return `<button class="gt ${pos && pos <= 3 ? 'p' + pos : ''}" data-go="${x.id}">
         <div class="gtt"><span>${esc(x.t || 'Sin título')}</span></div>
@@ -1644,9 +1684,9 @@ function renderRank(){
   } else if (visible.length){
     if (rankView === 'tier'){
       const T = tiers();
-      h += '<div class="tl">' + T.map((t, ti) => {
+      h += `<div class="tl" style="--labw:${tierLabW(70)}px">` + T.map((t, ti) => {
         const inT = visible.filter(x => tierOf(x.st) === ti);
-        return `<div class="row1"><div class="lab" style="background:${esc(t.c)}">${esc(t.n)}</div><div class="its">${inT.map(x =>
+        return `<div class="row1"><div class="lab" style="background:${esc(t.c)};${tStyle(t.n, 22)}">${esc(t.n)}</div><div class="its">${inT.map(x =>
           `<div class="chip">${thumbHTML(x)}<span>${esc(x.t)}</span></div>`).join('')}</div></div>`;
       }).join('') + '</div>';
     } else {
@@ -1654,7 +1694,7 @@ function renderRank(){
         const pos = visible.indexOf(x) + 1, mine = R.votes[x.id] && R.votes[x.id][me.id];
         let row = `<button class="rk p${pos}" data-id="${x.id}"><div class="pos">${pos <= 3 ? ['🥇','🥈','🥉'][pos - 1] : pos}</div>${thumbHTML(x)}
           <div class="info"><b>${esc(x.t)}</b><div class="bar"><i style="width:${Math.round(x.st.nrm * 100)}%"></i></div></div>
-          <div class="sc">${isTier() ? `<span style="background:${esc(tiers()[tierOf(x.st)].c)};color:#111;padding:2px 8px;border-radius:7px">${esc(fmtAvg(x.st))}</span>` : fmtAvg(x.st)}<small>${x.st.n} votos${mine != null ? ' · tú ' + esc(fmtVal(mine)) : ''}</small></div></button>`;
+          <div class="sc">${isTier() ? `<span style="background:${esc(tiers()[tierOf(x.st)].c)};color:#111;padding:2px 8px;border-radius:7px;${tStyle(fmtAvg(x.st), 18)}">${esc(fmtAvg(x.st))}</span>` : fmtAvg(x.st)}<small>${x.st.n} votos${mine != null ? ' · tú ' + esc(fmtVal(mine)) : ''}</small></div></button>`;
         if (openDet[x.id] && m.showWho){
           row += '<div class="det">' + x.st.vs.slice().sort((a, b) => norm(b[1]) - norm(a[1])).map(([uid, v]) =>
             `<span class="voter ok">${avHTML(pname(uid), uid, 24)}${esc(pname(uid))} <em>${esc(fmtVal(v))}</em></span>`).join('') + '</div>';
@@ -1703,7 +1743,7 @@ function avgCardHTML(items){
   const g = generalAvg(items); if (!g.n) return '';
   const T = tiers(), ti = isTier() ? Math.max(0, Math.min(T.length - 1, Math.round(g.avg))) : 0;
   const max = isTier() ? '' : ' <small>/ ' + scale().max + '</small>';
-  const big = isTier() ? `<span style="background:${esc(T[ti].c)};color:#111;padding:2px 14px;border-radius:12px;text-shadow:none">${esc(T[ti].n)}</span>` : fmtNum(g.avg) + max;
+  const big = isTier() ? `<span style="background:${esc(T[ti].c)};color:#111;padding:2px 14px;border-radius:12px;text-shadow:none;display:inline-block;${tStyle(T[ti].n, 44)}">${esc(T[ti].n)}</span>` : fmtNum(g.avg) + max;
   return `<div class="avgCard"><div class="num">${big}</div><div class="grow"><b>Nota promedio general</b>
       <span class="mut" style="font-size:13px">de ${g.n} voto${g.n === 1 ? '' : 's'} en ${g.items} ítem${g.items === 1 ? '' : 's'}</span></div></div>
     ${g.per.length > 1 ? `<div class="lbl" style="margin-top:0">Promedio de cada uno</div><div class="pavg">${g.per.map(p =>
@@ -1777,7 +1817,7 @@ function renderReveal(){
     const x = all[N - step], pos = N - step + 1, T = tiers()[tierOf(x.st)];
     h += `<div class="k">PUESTO</div><div class="pos">#${pos}</div>${thumbHTML(x).replace('class="th"', 'class="th"')}
       <div class="name">${esc(x.t)}</div>
-      <div class="score">${isTier() ? `<span style="background:${esc(T.c)};color:#111;padding:4px 18px;border-radius:12px">${esc(T.n)}</span>` : fmtAvg(x.st)}</div>
+      <div class="score">${isTier() ? `<span style="background:${esc(T.c)};color:#111;padding:4px 18px;border-radius:12px;display:inline-block;max-width:90vw;${tStyle(T.n, 40)}">${esc(T.n)}</span>` : fmtAvg(x.st)}</div>
       <div class="mut" style="margin-top:4px">${x.st.n} votos${isTier() ? '' : ' · tier ' + esc(T.n)}</div>
       ${R.meta.showWho ? '<div class="who">' + x.st.vs.slice().sort((a, b) => norm(b[1]) - norm(a[1])).map(([uid, v]) =>
         `<span class="voter ok">${avHTML(pname(uid), uid, 24)}${esc(pname(uid))} <em>${esc(fmtVal(v))}</em></span>`).join('') + '</div>' : ''}`;
@@ -1923,6 +1963,30 @@ function wrapLines(cx, text, maxW, maxLines){
   lines.forEach((l, i) => { while (cx.measureText(l).width > maxW && l.length > 1) l = l.slice(0, -2) + '…'; lines[i] = l; });
   return lines;
 }
+// Escribe el texto centrado dentro del cuadro: baja la letra y parte en líneas hasta que quepa
+function fitText(cx, text, x, y, w, h, maxPx, weight, family){
+  text = String(text || '');
+  for (let px = maxPx; px >= 12; px -= 2){
+    cx.font = weight + ' ' + px + 'px ' + family;
+    const words = text.split(/\s+/), lines = []; let cur = '';
+    for (let wd of words){
+      while (cx.measureText(wd).width > w && wd.length > 1){   // palabra muy larga: se parte
+        let k = wd.length; while (k > 1 && cx.measureText(wd.slice(0, k)).width > w) k--;
+        if (cur){ lines.push(cur); cur = ''; } lines.push(wd.slice(0, k)); wd = wd.slice(k);
+      }
+      const t = cur ? cur + ' ' + wd : wd;
+      if (cx.measureText(t).width <= w) cur = t; else { if (cur) lines.push(cur); cur = wd; }
+    }
+    if (cur) lines.push(cur);
+    const lh = px * 1.08;
+    if (lines.length * lh <= h || px <= 12){
+      cx.textAlign = 'center'; cx.textBaseline = 'middle';
+      lines.forEach((l, i) => cx.fillText(l, x + w / 2, y + h / 2 + (i - (lines.length - 1) / 2) * lh));
+      cx.textBaseline = 'alphabetic';
+      return;
+    }
+  }
+}
 function coverFit(cx, im, x, y, w, h){
   const r = Math.max(w / im.width, h / im.height), sw = w / r, sh = h / r;
   cx.drawImage(im, (im.width - sw) / 2, (im.height - sh) / 2, sw, sh, x, y, w, h);
@@ -1935,10 +1999,13 @@ async function rankImage(){
   const TW = (W - P * 2 - GAP * (COLS - 1)) / COLS, IH = Math.round(TW * 10 / 16), TH_T = COLS >= 4 ? 60 : 74, FH = COLS >= 4 ? 78 : 92;
   const TILE = TH_T + IH + FH, rows = Math.ceil(all.length / COLS);
   const g = generalAvg(all), people = g.per.length > 1 ? g.per : [];
-  const HEAD = 230, AVG = g.n ? 190 : 0, PPL = people.length ? 70 + Math.ceil(people.length / 4) * 58 : 0;
+  const HEAD = 230, AVG = g.n ? 190 : 0, PC = isTier() ? 3 : 4, PPL = people.length ? 70 + Math.ceil(people.length / PC) * 58 : 0;
   // la imagen copia la vista que está abierta: cuadrícula, ranking o tierlist
   const VIEW = rankView === 'list' ? 'list' : rankView === 'tier' ? 'tier' : 'grid';
-  const LROW = 120, LAB = 140, CW = 176, CIH = Math.round(CW * 9 / 16), CH = CIH + 46, CGAP = 12;
+  const cx0 = document.createElement('canvas').getContext('2d');
+  cx0.font = '900 40px ' + F;
+  const LAB = Math.min(300, Math.max(140, ...tiers().map(t => t.n.length > 2 ? cx0.measureText(t.n).width * .8 + 40 : 0)));
+  const LROW = 120, CW = 176, CIH = Math.round(CW * 9 / 16), CH = CIH + 46, CGAP = 12;
   const CPL = Math.max(1, Math.floor((W - P * 2 - LAB - 16 + CGAP) / (CW + CGAP)));
   const tierRows = tiers().map((t, ti) => { const its = all.filter(x => tierOf(x.st) === ti); return {t, its, h: its.length ? Math.ceil(its.length / CPL) * (CH + CGAP) + 4 : 90}; });
   const BODY = VIEW === 'list' ? all.length * (LROW + 12) : VIEW === 'tier' ? tierRows.reduce((a, r) => a + r.h + 10, 0) : rows * (TILE + GAP);
@@ -1967,7 +2034,7 @@ async function rankImage(){
     if (isTier()){
       const T = tiers()[Math.max(0, Math.min(tiers().length - 1, Math.round(g.avg)))];
       rr(cx, P + 36, y + 32, 140, 96, 18); cx.fillStyle = T.c; cx.fill();
-      cx.fillStyle = '#111'; cx.font = '900 56px ' + FX; cx.textAlign = 'center'; cx.fillText(T.n.slice(0, 4), P + 106, y + 102); cx.textAlign = 'left';
+      cx.fillStyle = '#111'; fitText(cx, T.n, P + 42, y + 36, 128, 88, 56, '900', T.n.length > 2 ? F : FX); cx.textAlign = 'left';
     } else {
       cx.fillStyle = '#ffd54a'; cx.font = '900 92px ' + FX; cx.shadowColor = 'rgba(255,213,74,.5)'; cx.shadowBlur = 24;
       const txt = fmtNum(g.avg); cx.fillText(txt, P + 36, y + 115); cx.shadowBlur = 0;
@@ -1980,14 +2047,15 @@ async function rankImage(){
   // promedio de cada uno
   if (people.length){
     cx.textAlign = 'left'; cx.fillStyle = '#a9a2cc'; cx.font = '700 26px ' + F; cx.fillText('Promedio de cada uno', P, y + 8); y += 30;
-    const cw = (W - P * 2 - 3 * 12) / 4;
+    const cw = (W - P * 2 - (PC - 1) * 12) / PC;
     people.forEach((pp, i) => {
-      const x = P + (i % 4) * (cw + 12), yy = y + Math.floor(i / 4) * 58;
+      const x = P + (i % PC) * (cw + 12), yy = y + Math.floor(i / PC) * 58;
       rr(cx, x, yy, cw, 46, 23); cx.fillStyle = 'rgba(61,220,132,.12)'; cx.fill(); cx.strokeStyle = 'rgba(61,220,132,.6)'; cx.lineWidth = 2; cx.stroke();
-      cx.fillStyle = '#fff'; cx.font = '700 24px ' + F; const nm = wrapLines(cx, pname(pp.uid), cw - 110, 1)[0] || ''; cx.fillText(nm, x + 18, yy + 31);
-      cx.fillStyle = '#ffd54a'; cx.font = '900 22px ' + FX; cx.textAlign = 'right'; cx.fillText(fmtNum(pp.avg), x + cw - 16, yy + 32); cx.textAlign = 'left';
+      const val = fmtNum(pp.avg); cx.font = '900 22px ' + (isTier() ? F : FX); const vw = Math.min(cw * .55, cx.measureText(val).width);
+      cx.fillStyle = '#fff'; cx.font = '700 24px ' + F; const nm = wrapLines(cx, pname(pp.uid), cw - vw - 46, 1)[0] || ''; cx.fillText(nm, x + 18, yy + 31);
+      cx.fillStyle = '#ffd54a'; cx.font = '900 22px ' + (isTier() ? F : FX); cx.textAlign = 'right'; cx.fillText(wrapLines(cx, val, cw * .55, 1)[0] || '', x + cw - 16, yy + 32); cx.textAlign = 'left';
     });
-    y += Math.ceil(people.length / 4) * 58 + 30;
+    y += Math.ceil(people.length / PC) * 58 + 30;
   }
   const imgs = await Promise.all(all.map(x => loadImg(media(x.url, itImg(x)).th || '')));
   const imgOf = x => imgs[all.indexOf(x)];
@@ -2011,7 +2079,7 @@ async function rankImage(){
     rr(cx, tx2, ty + LROW - 30, tw, 10, 5); cx.fillStyle = 'rgba(0,0,0,.4)'; cx.fill();
     if (x.st.nrm > 0){ rr(cx, tx2, ty + LROW - 30, Math.max(10, tw * x.st.nrm), 10, 5); const bg2 = cx.createLinearGradient(tx2, 0, tx2 + tw, 0); bg2.addColorStop(0, '#ff2e97'); bg2.addColorStop(1, '#ffd54a'); cx.fillStyle = bg2; cx.fill(); }
     cx.textAlign = 'right';
-    if (T){ cx.font = '900 40px ' + FX; const w2 = cx.measureText(T.n).width + 30; rr(cx, sx - w2, ty + 22, w2, 56, 12); cx.fillStyle = T.c; cx.fill(); cx.fillStyle = '#111'; cx.fillText(T.n, sx - 15, ty + 64); }
+    if (T){ cx.font = '900 40px ' + (T.n.length > 2 ? F : FX); const w2 = Math.min(200, cx.measureText(T.n).width + 30); rr(cx, sx - w2, ty + 22, w2, 56, 12); cx.fillStyle = T.c; cx.fill(); cx.fillStyle = '#111'; fitText(cx, T.n, sx - w2 + 8, ty + 24, w2 - 16, 52, 40, '900', T.n.length > 2 ? F : FX); cx.textAlign = 'right'; }
     else { cx.fillStyle = '#ffd54a'; cx.font = '900 44px ' + FX; cx.fillText(fmtAvg(x.st), sx, ty + 66); }
     cx.fillStyle = '#a9a2cc'; cx.font = '600 22px ' + F; cx.fillText(x.st.n + ' votos', sx, ty + LROW - 18);
   });
@@ -2021,8 +2089,7 @@ async function rankImage(){
     tierRows.forEach(r => {
       rr(cx, P, ty, W - P * 2, r.h, 16); cx.fillStyle = 'rgba(0,0,0,.35)'; cx.fill();
       cx.save(); rr(cx, P, ty, W - P * 2, r.h, 16); cx.clip(); cx.fillStyle = r.t.c; cx.fillRect(P, ty, LAB, r.h); cx.restore();
-      cx.fillStyle = '#111'; cx.textAlign = 'center'; cx.font = '900 ' + (r.t.n.length > 3 ? 28 : 52) + 'px ' + FX;
-      wrapLines(cx, r.t.n, LAB - 16, 2).forEach((l, k, a) => cx.fillText(l, P + LAB / 2, ty + r.h / 2 + 18 + (k - (a.length - 1) / 2) * 32));
+      cx.fillStyle = '#111'; fitText(cx, r.t.n, P + 10, ty + 8, LAB - 20, r.h - 16, 52, '900', r.t.n.length > 2 ? F : FX);
       r.its.forEach((x, k) => {
         const cxp = P + LAB + 16 + (k % CPL) * (CW + CGAP), cyp = ty + 8 + Math.floor(k / CPL) * (CH + CGAP);
         cx.save(); rr(cx, cxp, cyp, CW, CH, 12); cx.clip();
@@ -2058,7 +2125,9 @@ async function rankImage(){
     if (T){ cx.fillStyle = T.c; } else { const fg = cx.createLinearGradient(0, fy, 0, fy + FH); fg.addColorStop(0, '#ffe27a'); fg.addColorStop(1, '#ffb627'); cx.fillStyle = fg; }
     cx.fillRect(tx, fy, TW, FH);
     cx.textAlign = 'center'; cx.fillStyle = T ? '#111' : '#2a1700';
-    cx.font = '900 ' + (COLS >= 4 ? 40 : 48) + 'px ' + FX; cx.fillText(T ? T.n : fmtAvg(x.st), tx + TW / 2, fy + FH * .58);
+    if (T) fitText(cx, T.n, tx + 10, fy + 4, TW - 20, FH * .62, COLS >= 4 ? 40 : 48, '900', T.n.length > 2 ? F : FX);
+    else { cx.font = '900 ' + (COLS >= 4 ? 40 : 48) + 'px ' + FX; cx.fillText(fmtAvg(x.st), tx + TW / 2, fy + FH * .58); }
+    cx.textAlign = 'center'; cx.fillStyle = '#2a1700'; if (T) cx.fillStyle = '#111';
     cx.font = '700 ' + (COLS >= 4 ? 18 : 21) + 'px ' + F; cx.globalAlpha = .75; cx.fillText(x.st.n + ' votos', tx + TW / 2, fy + FH - 12); cx.globalAlpha = 1;
     cx.restore();
     if (pos <= 3){ rr(cx, tx, ty, TW, TILE, 22); cx.strokeStyle = ['#ffd54a', '#d7dde8', '#e0965a'][pos - 1]; cx.lineWidth = 4; cx.stroke(); }
@@ -2122,7 +2191,7 @@ async function restoreRoom(d){
     const players = {};
     Object.entries(d.players || {}).forEach(([id, p]) => players[id] = {n: String(p.n || 'alguien').slice(0, 20), acc: !!p.acc, on: false});
     const meta = {...d.meta, admin: me.id, adminName: me.name, step: 0, created: firebase.database.ServerValue.TIMESTAMP,
-      status: d.meta.status === 'done' ? 'done' : 'voting', from: d.code || ''};
+      status: d.meta.status === 'done' ? 'done' : 'voting', started: true, from: d.code || ''};
     if (meta.cur && !(d.items || {})[meta.cur]) meta.cur = '';
     await db.ref(ROOT + '/' + c).set({meta, items: d.items || {}, votes: d.votes || {}, covers: d.covers || {}, players});
     await db.ref(IDX + '/' + c).set({last: firebase.database.ServerValue.TIMESTAMP});
@@ -2151,7 +2220,7 @@ async function findRooms(){
     if (!$('frList')) return;
     if (!rows.length){ $('frList').innerHTML = '<div class="empty" style="padding:20px 6px"><div class="e">🌙</div>No hay salas abiertas ahora.<br>¡Crea una e invita a tus amigos!</div>'; return; }
     $('frList').innerHTML = '<div class="recent" style="margin-top:-8px">' + rows.map(r => {
-      const cat = (CATS[r.cat] || CATS.todo).l, st = r.st === 'done' ? '🏁 Terminada' : r.st === 'reveal' ? '🥁 Revelando' : '🗳️ Votando';
+      const cat = (CATS[r.cat] || CATS.todo).l, st = r.st === 'done' ? '🏁 Terminada' : r.st === 'reveal' ? '🥁 Revelando' : r.st === 'lobby' ? '⏳ Por empezar' : '🗳️ Votando';
       return `<button data-c="${esc(r.c)}"><b>${esc(r.c)}</b><span class="grow" style="min-width:0"><span style="display:block;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${esc(r.t || 'Ranking')}</span>
         <span class="mut" style="font-size:12px">${esc(cat)} · ${st}${r.n ? ' · ' + r.n + ' ítems' : ''}${r.adm ? ' · 👑 ' + esc(r.adm) : ''}</span></span>
         <span class="pill ${r.on ? 'c' : ''}" style="flex:0 0 auto">${r.on ? '🟢 ' + r.on : '💤'}</span></button>`;
