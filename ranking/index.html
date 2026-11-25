@@ -668,7 +668,7 @@ async function createRoom(){
       meta: {title, admin: me.id, adminName: me.name, mode: nf.mode, scale: nf.scale, tiers, reveal: nf.reveal,
              showWho: $('nWho').checked, tWatch: +$('nTW').value, tVote: +$('nTV').value, tAll: $('nTA').checked,
              auto: +$('nTW').value > 0 || +$('nTV').value > 0, randOrd: $('nRand').checked, pub: $('nPub').checked, cat: nf.cat, anyoneAdd: nf.whoAdd === 'all', perUser: readLim('nNoLim', 'nLim'), adminFree: $('nAdmFree').checked, status: 'voting', cur: '', step: 0,
-             created: firebase.database.ServerValue.TIMESTAMP, syncOn: false}
+             created: firebase.database.ServerValue.TIMESTAMP}
     });
     await db.ref(IDX + '/' + c).set({last: firebase.database.ServerValue.TIMESTAMP, t: title, cat: nf.cat, adm: me.name, pub: $('nPub').checked, st: 'voting', n: 0});
     await enter(c);
@@ -851,7 +851,9 @@ function renderVote(){
   const idx = its.findIndex(x => x.id === it.id), key = it.id + '|' + (it.url || '') + '|' + itImg(it).length;
   if (!$('stage') || lastStage !== key){
     destroyYT();
-    box.innerHTML = `<div class="stage" id="stage"></div><div id="vRest"></div>`;
+    box.innerHTML = `<div class="stage" id="stage"></div>
+      <div class="tmr hide" id="tmr"><div class="row"><span id="tmrL">⏱️</span><span class="t" id="tmrT"></span></div><div class="prog"><i id="tmrB" style="width:0;transition:none"></i></div></div>
+      <div id="vRest"></div>`;
     mountStage($('stage'), it); lastStage = key;
   }
   const st = stats(it.id), mine = R.votes && R.votes[it.id] ? R.votes[it.id][me.id] : undefined;
@@ -871,15 +873,12 @@ function renderVote(){
   const tl = [];
   if (admin && !isCur) tl.push('<button class="tool p" id="aHere">📍 Mostrar este a todos</button>');
   if (admin && (voting || (status() === 'done' && it.extra))) tl.push(`<button class="tool ${it.closed ? 'on' : ''}" id="aClose">${it.closed ? '🔓 Reabrir' : (R.meta.reveal === 'item' ? '🔒 Cerrar y mostrar nota' : '🔒 Cerrar votación')}</button>`);
-  if (admin && yt1) tl.push(`<button class="tool ${R.meta.syncOn ? 'on' : ''}" id="aSync">📡 Ver juntos${R.meta.syncOn ? ' ✓' : ''}</button>`);
   if (admin && (R.meta.tWatch || R.meta.tVote) && voting) tl.push(`<button class="tool ${R.meta.auto ? 'on' : ''}" id="aAuto">${R.meta.auto ? '⏸️ Pausar tiempos' : '▶️ Reanudar tiempos'}</button>`);
   if (admin) tl.push(`<button class="tool" id="aShuf" ${its.length < 2 ? 'disabled' : ''}>🔀 Mezclar</button>`);
   if (!admin && it.closed) tl.push('<span class="tool">🔒 Cerrado</span>');
-  if (!admin && R.meta.syncOn && yt1 && follow) tl.push('<span class="tool on">📡 Sincronizado</span>');
   if (it.url) tl.push(`<a class="tool" href="${esc(it.url)}" target="_blank" rel="noopener">↗ Abrir original</a>`);
   if (it.ext) tl.push(`<a class="tool" href="${esc(it.ext)}" target="_blank" rel="noopener">↗ Ficha del anime</a>`);
   if (tl.length) h += '<div class="tools">' + tl.join('') + '</div>';
-  if ((R.meta.tWatch || R.meta.tVote) && isCur) h += `<div class="tmr" id="tmr"><div class="row"><span id="tmrL">⏱️</span><span class="t" id="tmrT"></span></div><div class="prog"><i id="tmrB" style="width:0"></i></div></div>`;
   h += '<div class="vote">' + voteHTML(it, mine) + '</div>';
   // resultado o candado
   if (see && st.n){
@@ -905,6 +904,7 @@ function renderVote(){
   if (sliding) { pendingRender = true; return; }
   $('vRest').innerHTML = h;
   bindVote(it);
+  tickTimer();
   const go = d => { const j = idx + d; if (its[j]) { if (admin) setCur(its[j].id); else { follow = false; viewId = its[j].id; render(); } } };
   if ($('bFollow')) $('bFollow').onclick = () => { follow = !follow; if (follow && R.meta.cur) viewId = R.meta.cur; render(); applySync(); };
   if ($('nPrev')) $('nPrev').onclick = () => go(-1);
@@ -914,7 +914,6 @@ function renderVote(){
   if ($('aAuto')) $('aAuto').onclick = () => db.ref(rp('meta')).update({auto: !R.meta.auto, phase: null}).catch(fbErr);
   if ($('aShuf')) $('aShuf').onclick = shuffleItems;
   if ($('aClose')) $('aClose').onclick = () => db.ref(rp('items/' + it.id + '/closed')).set(!it.closed).catch(fbErr);
-  if ($('aSync')) $('aSync').onclick = () => { db.ref(rp('meta/syncOn')).set(!R.meta.syncOn).catch(fbErr); if (!R.meta.syncOn) setTimeout(() => pushSync(), 300); };
   if ($('aEnd')) $('aEnd').onclick = startReveal;
   if ($('aEndNew')) $('aEndNew').onclick = revealNew;
 }
@@ -994,7 +993,11 @@ function bindVote(it){
 // ============ REPRODUCTOR ============
 function mountStage(el, it){
   const md = media(it.url, itImg(it));
-  setTimeout(() => el.querySelectorAll('video,audio').forEach(v => v.addEventListener('play', () => { if (isAdmin()) startTimers(); })), 0);
+  setTimeout(() => el.querySelectorAll('video,audio').forEach(v => {
+    v.addEventListener('play', () => { if (isAdmin()){ startTimers(); pushSync(); } });
+    ['pause', 'seeked'].forEach(ev => v.addEventListener(ev, () => { if (isAdmin()) pushSync(); }));
+    v.addEventListener('loadedmetadata', () => applySync());
+  }), 0);
   if (md.k === 'yt'){
     el.innerHTML = `<div class="${md.short ? 'vert' : 'ratio'}" style="${md.short ? 'max-width:360px' : ''}"><div id="ytp"></div></div>`;
     mountYT(md, it.id);
@@ -1054,7 +1057,7 @@ function mountYT(md, itemId){
         onError: e => ytFail(md, e && e.data),
         onStateChange: e => {
           if (e.data === 1 && isAdmin()) startTimers();
-          if (isAdmin() && R.meta && R.meta.syncOn && (e.data === 1 || e.data === 2)) pushSync();
+          if (isAdmin() && (e.data === 1 || e.data === 2)) pushSync();
         }
       }
     });
@@ -1073,22 +1076,45 @@ function ytFail(md, code){
     <a class="btn sm" style="text-decoration:none" href="https://www.youtube.com/watch?v=${esc(md.id)}${md.start ? '&t=' + md.start + 's' : ''}" target="_blank" rel="noopener">▶ Ver en YouTube</a></div></div>`;
 }
 function destroyYT(){ if (yt){ try { yt.destroy(); } catch(e){} } yt = null; ytReady = false; ytFor = ''; }
-function pushSync(){
-  if (!yt || !ytReady || !isAdmin() || !code) return;
-  let t = 0, st = 'pause';
-  try { t = yt.getCurrentTime() || 0; st = yt.getPlayerState() === 1 ? 'play' : 'pause'; } catch(e){ return; }
-  db.ref(rp('sync')).set({id: ytFor, st, t, at: firebase.database.ServerValue.TIMESTAMP}).catch(() => {});
+// ---- Sincronización: quien sigue al admin ve/escucha lo mismo y en el mismo segundo ----
+// Funciona con YouTube y con video/audio directos. El admin avisa al dar play, pausa o adelantar.
+function player(){
+  if (yt && ytReady) return {
+    t: () => yt.getCurrentTime() || 0, seek: x => yt.seekTo(x, true), play: () => yt.playVideo(), pause: () => yt.pauseVideo(),
+    on: () => yt.getPlayerState() === 1, id: ytFor
+  };
+  const st = $('stage'), el = st && st.querySelector('video,audio');
+  if (el) return {
+    t: () => el.currentTime || 0, seek: x => { try { el.currentTime = x; } catch(e){} }, play: () => el.play(), pause: () => el.pause(),
+    on: () => !el.paused && !el.ended, id: viewId
+  };
+  return null;
 }
-setInterval(() => { if (isAdmin() && R.meta && R.meta.syncOn && yt && ytReady) { try { if (yt.getPlayerState() === 1) pushSync(); } catch(e){} } }, 8000);
+let syncMuteUntil = 0;
+function pushSync(){
+  if (!isAdmin() || !code || viewId !== (R.meta && R.meta.cur)) return;
+  const p = player(); if (!p) return;
+  let t = 0, st = 'pause';
+  try { t = p.t(); st = p.on() ? 'play' : 'pause'; } catch(e){ return; }
+  db.ref(rp('sync')).set({id: p.id || viewId, st, t, at: firebase.database.ServerValue.TIMESTAMP}).catch(() => {});
+}
+// mientras el admin reproduce, avisa cada 5 s (así quien entra tarde se pone al día)
+setInterval(() => { if (isAdmin()){ const p = player(); try { if (p && p.on()) pushSync(); } catch(e){} } }, 5000);
+// quien sigue al admin corrige el desfase cada 2 s
+setInterval(() => applySync(), 2000);
+let syncWarned = '';
 function applySync(){
   const s = R.sync;
-  if (isAdmin() || !follow || !R.meta || !R.meta.syncOn || !s || !yt || !ytReady || s.id !== ytFor) return;
+  if (isAdmin() || !follow || !R.meta || !s || s.id !== viewId || viewId !== R.meta.cur) return;
+  const p = player(); if (!p) return;
   try {
     const target = s.st === 'play' ? s.t + Math.max(0, now() - (s.at || now())) / 1000 : s.t;
-    if (Math.abs((yt.getCurrentTime() || 0) - target) > 1.5) yt.seekTo(target, true);
-    const ps = yt.getPlayerState();
-    if (s.st === 'play' && ps !== 1) { yt.playVideo(); setTimeout(() => { try { if (yt && yt.getPlayerState() !== 1) toast('Toca ▶ en el video para unirte a la reproducción'); } catch(e){} }, 1500); }
-    if (s.st === 'pause' && ps === 1) yt.pauseVideo();
+    if (Math.abs(p.t() - target) > 1.5){ syncMuteUntil = Date.now() + 800; p.seek(target); }
+    if (s.st === 'play' && !p.on()){
+      const r = p.play(); if (r && r.catch) r.catch(() => {});
+      setTimeout(() => { try { const q = player(); if (q && !q.on() && syncWarned !== s.id + s.at){ syncWarned = s.id + s.at; toast('Toca ▶ en el video para unirte (tu navegador no deja empezar solo)'); } } catch(e){} }, 1500);
+    }
+    if (s.st === 'pause' && p.on()) p.pause();
   } catch(e){}
 }
 
@@ -1142,12 +1168,15 @@ function driveAuto(){
   if (ph.k === 'result') nextItem();
 }
 let stopped = {};
+const setTxt = (el, v) => { if (el && el.textContent !== v) el.textContent = v; };
+const setCls = (el, v) => { if (el && el.className !== v) el.className = v; };
 function tickTimer(){
   driveAuto();
   const m = R.meta; if (!code || !m) return;
   const ph = m.phase, el = $('tmr');
+  if (el) el.classList.toggle('hide', !((m.tWatch || m.tVote) && viewId === m.cur && R.items[viewId]));
   if (!ph || ph.id !== m.cur){
-    if (el){ $('tmrL').textContent = m.auto ? '⏱️ Empezando…' : '⏸️ Tiempos en pausa'; $('tmrT').textContent = ''; $('tmrB').style.width = '0'; el.className = 'tmr'; }
+    if (el){ setTxt($('tmrL'), m.auto ? '⏱️ Preparando…' : '⏸️ Tiempos en pausa'); setTxt($('tmrT'), ''); $('tmrB').style.width = '0'; setCls(el, 'tmr' + (el.classList.contains('hide') ? ' hide' : '')); }
     return;
   }
   const t = now(), end = (+ph.st || t) + (+ph.dur || 0) * 1000, left = Math.max(0, end - t);
@@ -1155,20 +1184,26 @@ function tickTimer(){
   const key = ph.id + '|' + ph.st;
   if (ph.k !== 'watch' && +m.tWatch > 0 && viewId === ph.id && !stopped[key]){ stopped[key] = 1; stopMedia(); }
   if (!el) return;
+  const hid = el.classList.contains('hide') ? ' hide' : '';
   if (ph.k === 'ready'){
-    $('tmrL').innerHTML = isAdmin() ? '⏳ El tiempo empieza al darle ▶ play' : '⏳ Esperando que empiece…';
+    setTxt($('tmrL'), isAdmin() ? '⏳ El tiempo empieza al darle ▶ play' : '⏳ Esperando que empiece…');
     if (isAdmin() && !$('tmrGo')){ $('tmrT').innerHTML = '<button class="btn sm" id="tmrGo" style="padding:6px 10px;font-size:14px">▶️ Empezar ya</button>'; $('tmrGo').onclick = startTimers; }
-    if (!isAdmin()) $('tmrT').textContent = '';
-    $('tmrB').style.width = '0'; el.className = 'tmr';
+    if (!isAdmin()) setTxt($('tmrT'), '');
+    $('tmrB').style.width = '0'; setCls(el, 'tmr' + hid);
     return;
   }
-  $('tmrL').textContent = {watch: '👀 Tiempo para ver / escuchar', vote: '🗳️ ¡Vota! Pasa al siguiente en', result: '✅ Resultado · sigue en', manual: '🗳️ Vota · el admin pasa al siguiente'}[ph.k] || '⏱️';
-  const sec = Math.ceil(left / 1000);
-  $('tmrT').textContent = ph.dur ? Math.floor(sec / 60) + ':' + String(sec % 60).padStart(2, '0') : '';
-  $('tmrB').style.width = ph.dur ? (100 * left / (ph.dur * 1000)).toFixed(1) + '%' : '0';
-  el.className = 'tmr ' + ({watch: 'w', vote: 'v', result: 'r', manual: 'v'}[ph.k] || '') + (ph.k === 'vote' && ph.dur && sec <= 5 ? ' hurry' : '');
+  if ($('tmrGo')) $('tmrT').textContent = '';
+  setTxt($('tmrL'), {watch: '👀 Tiempo para ver / escuchar', vote: '🗳️ ¡Vota! Pasa al siguiente en', result: '✅ Resultado · sigue en', manual: '🗳️ Vota · el admin pasa al siguiente'}[ph.k] || '⏱️');
+  // la cuenta nunca sube dentro de una misma fase (evita saltos si el reloj del servidor se corrige)
+  const pk = ph.id + '|' + ph.k + '|' + ph.dur;
+  if (pk !== tLast.k){ tLast = {k: pk, left}; } else if (left > tLast.left && left - tLast.left < 1500){ /* se queda */ } else tLast.left = left;
+  const lf = Math.min(left, tLast.left), sec = Math.ceil(lf / 1000);
+  setTxt($('tmrT'), ph.dur ? Math.floor(sec / 60) + ':' + String(sec % 60).padStart(2, '0') : '');
+  $('tmrB').style.width = ph.dur ? (100 * lf / (ph.dur * 1000)).toFixed(1) + '%' : '0';
+  setCls(el, 'tmr ' + ({watch: 'w', vote: 'v', result: 'r', manual: 'v'}[ph.k] || '') + (ph.k === 'vote' && ph.dur && sec <= 5 ? ' hurry' : '') + hid);
 }
-setInterval(tickTimer, 250);
+let tLast = {k: '', left: 0};
+setInterval(tickTimer, 200);
 function stopMedia(){
   const st = $('stage'); if (!st) return;
   if (yt && ytReady){ try { yt.pauseVideo(); } catch(e){} }
@@ -2035,7 +2070,7 @@ async function restoreRoom(d){
     for (let i = 0; i < 5; i++){ const s = await db.ref(ROOT + '/' + c + '/meta').once('value'); if (!s.exists()) break; c = genCode(); }
     const players = {};
     Object.entries(d.players || {}).forEach(([id, p]) => players[id] = {n: String(p.n || 'alguien').slice(0, 20), acc: !!p.acc, on: false});
-    const meta = {...d.meta, admin: me.id, adminName: me.name, step: 0, syncOn: false, created: firebase.database.ServerValue.TIMESTAMP,
+    const meta = {...d.meta, admin: me.id, adminName: me.name, step: 0, created: firebase.database.ServerValue.TIMESTAMP,
       status: d.meta.status === 'done' ? 'done' : 'voting', from: d.code || ''};
     if (meta.cur && !(d.items || {})[meta.cur]) meta.cur = '';
     await db.ref(ROOT + '/' + c).set({meta, items: d.items || {}, votes: d.votes || {}, covers: d.covers || {}, players});
