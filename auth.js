@@ -63,72 +63,60 @@ export async function registerUser(usuario, clave) {
   const cred = await createUserWithEmailAndPassword(auth, aCorreo(u), clave);
   await updateProfile(cred.user, { displayName: u });
   await set(nameRef(u), { uid: cred.user.uid, email: cred.user.email }).catch(() => {});
-  const code = await crearCodigo(cred.user.uid, clave).catch(() => "");
-  return { user: cred.user, code };
+  return { user: cred.user, needWord: true };
 }
 
-// Devuelve { user, code }: code solo viene si la cuenta aún no tenía código de recuperación.
+// needWord = la cuenta todavía no tiene palabra de recuperación (el menú la pide una vez)
 export async function loginUser(usuario, clave) {
   const cred = await signInWithEmailAndPassword(auth, await correoDe(usuario), clave);
   await anotarNombre(cred.user);
-  let code = "";
   const tiene = await get(recRef(cred.user.uid)).then(s => s.exists()).catch(() => true);
-  if (!tiene) code = await crearCodigo(cred.user.uid, clave).catch(() => "");
-  return { user: cred.user, code };
+  return { user: cred.user, needWord: !tiene };
 }
 
 // ---------------------------------------------------------------------------
-// Código de recuperación (sin correo).
-// Se guarda la contraseña CIFRADA con el código (PBKDF2 + AES-GCM) en cc_rec/<uid>.
-// Sin el código no se puede leer; con usuario + código se pone una contraseña nueva.
+// Palabra de recuperación (sin correo): cada uno elige una palabra que recuerde.
+// Se guarda la contraseña CIFRADA con esa palabra en cc_rec/<uid>; con usuario + palabra
+// se pone una contraseña nueva. No importan mayúsculas, tildes ni espacios de más.
 // ---------------------------------------------------------------------------
-const ABC = "ABCDEFGHJKMNPQRSTUVWXYZ23456789";
 const b64 = buf => btoa(String.fromCharCode(...new Uint8Array(buf)));
 const unb64 = t => Uint8Array.from(atob(t), c => c.charCodeAt(0));
-export const limpiarCodigo = c => String(c || "").toUpperCase().replace(/[^A-Z0-9]/g, "");
+export const limpiarPalabra = w => String(w || "").normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase().trim().replace(/\s+/g, " ");
+const limpiarCodigoViejo = c => String(c || "").toUpperCase().replace(/[^A-Z0-9]/g, "");   // cuentas con el código de antes
 
-function nuevoCodigo() {
-  const r = crypto.getRandomValues(new Uint8Array(10));
-  const c = Array.from(r, x => ABC[x % ABC.length]).join("");
-  return c.slice(0, 5) + "-" + c.slice(5);
-}
-async function claveDesde(code, salt) {
-  const base = await crypto.subtle.importKey("raw", new TextEncoder().encode(limpiarCodigo(code)), "PBKDF2", false, ["deriveKey"]);
-  return crypto.subtle.deriveKey({ name: "PBKDF2", salt, iterations: 250000, hash: "SHA-256" }, base,
+async function claveDesde(secreto, salt, vueltas = 150000) {
+  const base = await crypto.subtle.importKey("raw", new TextEncoder().encode(secreto), "PBKDF2", false, ["deriveKey"]);
+  return crypto.subtle.deriveKey({ name: "PBKDF2", salt, iterations: vueltas, hash: "SHA-256" }, base,
     { name: "AES-GCM", length: 256 }, false, ["encrypt", "decrypt"]);
 }
-async function guardarCifrado(uid, code, clave) {
+async function guardarCifrado(uid, palabra, clave) {
   const salt = crypto.getRandomValues(new Uint8Array(16)), iv = crypto.getRandomValues(new Uint8Array(12));
-  const ct = await crypto.subtle.encrypt({ name: "AES-GCM", iv }, await claveDesde(code, salt), new TextEncoder().encode(clave));
-  await set(recRef(uid), { v: 1, s: b64(salt), i: b64(iv), c: b64(ct), t: Date.now() });
-}
-async function crearCodigo(uid, clave) {
-  const code = nuevoCodigo();
-  await guardarCifrado(uid, code, clave);
-  return code;
+  const ct = await crypto.subtle.encrypt({ name: "AES-GCM", iv }, await claveDesde(limpiarPalabra(palabra), salt), new TextEncoder().encode(clave));
+  await set(recRef(uid), { v: 2, s: b64(salt), i: b64(iv), c: b64(ct), t: Date.now() });
 }
 
-// «Olvidé mi contraseña»: usuario + código → contraseña nueva (y queda dentro de la cuenta)
-export async function recoverPassword(usuario, code, nueva) {
+// Guarda (o cambia) la palabra de recuperación. Pide la contraseña actual.
+export async function saveRecoveryWord(palabra, clave) {
+  const user = auth.currentUser; if (!user) throw errorCodigo("cc/no-user");
+  if (limpiarPalabra(palabra).length < 3) throw errorCodigo("cc/short-word");
+  await reauthenticateWithCredential(user, EmailAuthProvider.credential(user.email, clave));
+  await guardarCifrado(user.uid, palabra, clave);
+}
+
+// «Olvidé mi contraseña»: usuario + palabra → contraseña nueva (y queda dentro de la cuenta)
+export async function recoverPassword(usuario, palabra, nueva) {
   const dir = (await get(nameRef(usuario)).catch(() => null))?.val();
   const rec = dir && (await get(recRef(dir.uid)).catch(() => null))?.val();
-  if (!dir || !rec) throw errorCodigo("cc/no-code");
+  if (!dir || !rec) throw errorCodigo("cc/no-word");
   let vieja;
   try {
-    const k = await claveDesde(code, unb64(rec.s));
+    const k = rec.v === 1 ? await claveDesde(limpiarCodigoViejo(palabra), unb64(rec.s), 250000) : await claveDesde(limpiarPalabra(palabra), unb64(rec.s));
     vieja = new TextDecoder().decode(await crypto.subtle.decrypt({ name: "AES-GCM", iv: unb64(rec.i) }, k, unb64(rec.c)));
-  } catch (e) { throw errorCodigo("cc/bad-code"); }
+  } catch (e) { throw errorCodigo("cc/bad-word"); }
   const cred = await signInWithEmailAndPassword(auth, dir.email, vieja);
   await updatePassword(cred.user, nueva);
-  await guardarCifrado(cred.user.uid, code, nueva);   // el mismo código sigue sirviendo
+  await guardarCifrado(cred.user.uid, palabra, nueva);   // la misma palabra sigue sirviendo
   return cred.user;
-}
-
-// Código nuevo (pide la contraseña actual para confirmar que eres tú)
-export async function newRecoveryCode(clave) {
-  const user = auth.currentUser; if (!user) throw errorCodigo("cc/no-user");
-  await reauthenticateWithCredential(user, EmailAuthProvider.credential(user.email, clave));
-  return crearCodigo(user.uid, clave);
 }
 
 // ---------------------------------------------------------------------------
@@ -187,8 +175,9 @@ export function currentUsername() {
 export function friendlyError(err) {
   switch (err && err.code) {
     case "auth/email-already-in-use": return "Ese usuario ya existe. Elige otro.";
-    case "cc/no-code": return "Ese usuario no tiene código de recuperación (se crea al entrar una vez con la contraseña).";
-    case "cc/bad-code": return "El código no es correcto.";
+    case "cc/no-word": return "Ese usuario no tiene palabra de recuperación.";
+    case "cc/bad-word": return "La palabra no es correcta.";
+    case "cc/short-word": return "La palabra debe tener al menos 3 letras.";
     case "cc/same-name": return "Ese ya es tu nombre de usuario.";
     case "auth/requires-recent-login": return "Por seguridad, sal y vuelve a entrar, y repite el cambio.";
     case "PERMISSION_DENIED":
