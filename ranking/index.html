@@ -249,6 +249,7 @@ details.adv h4{margin:14px 16px 6px;font-size:12px;letter-spacing:1px;text-trans
 .ssn input[type=number]{max-width:66px;padding:9px 6px}
 .ssn summary{font-size:13px;color:var(--mut);cursor:pointer;margin-top:8px}
 .ssn textarea{margin-top:6px;font-size:14px}
+.ytl{position:absolute;inset:0}.ytl.off{opacity:0;pointer-events:none}.ytl iframe{width:100%;height:100%;border:0}
 .curtain{position:absolute;inset:0;z-index:5;background:radial-gradient(circle at 50% 30%,#1b0f33,#000 70%);display:flex;flex-direction:column;
   align-items:center;justify-content:center;text-align:center;padding:14px;gap:4px;min-height:140px}
 .curtain .e{font-size:40px}.curtain b{font-size:19px}.curtain .btn{width:auto;margin-top:10px;padding:11px 18px}
@@ -915,7 +916,9 @@ function renderVote(){
   const idx = its.findIndex(x => x.id === it.id), key = it.id + '|' + (it.url || '') + '|' + itImg(it).length;
   const mdNow = media(it.url, itImg(it));
   const reuseYT = $('stage') && lastStage !== key && mdNow.k === 'yt' && lastKind === 'yt' && lastShort === !!mdNow.short && yt && ytReady && !NO_WEB;
-  if (reuseYT){
+  if (reuseYT && swapToStandby(it, mdNow)){
+    lastStage = key;            // el siguiente ya estaba cargado por detrás
+  } else if (reuseYT){
     // mismo reproductor, otro video: mucho más rápido que crear uno nuevo
     ytFor = it.id; ytStart = mdNow.start || 0;
     try { yt.cueVideoById({videoId: mdNow.id, startSeconds: mdNow.start || 0}); } catch(e){}
@@ -928,7 +931,7 @@ function renderVote(){
     mountStage($('stage'), it); lastStage = key; lastKind = mdNow.k; lastShort = !!mdNow.short;
     setTimeout(() => prepareStage(it), 0);
   }
-  if (isAdmin()) preloadNext();
+  preloadNext();
   const st = stats(it.id), mine = R.votes && R.votes[it.id] ? R.votes[it.id][me.id] : undefined;
   const pl = playersList(), on = pl.filter(p => p.on || (R.votes[it.id] && R.votes[it.id][p.id] != null));
   const isCur = R.meta.cur === it.id, admin = isAdmin(), see = canSee(it);
@@ -1072,12 +1075,16 @@ function bindVote(it){
 function mountStage(el, it){
   const md = media(it.url, itImg(it));
   setTimeout(() => el.querySelectorAll('video,audio').forEach(v => {
-    v.addEventListener('play', () => { if (isAdmin() && !covered(itemById(viewId))) pushSync(); });
+    v.addEventListener('play', () => {
+      if (covered(itemById(viewId))){ v.pause(); try { v.currentTime = 0; } catch(e){} return; }
+      if (isAdmin()) pushSync();
+    });
     ['pause', 'seeked'].forEach(ev => v.addEventListener(ev, () => { if (isAdmin() && !covered(itemById(viewId))) pushSync(); }));
     v.addEventListener('loadedmetadata', () => applySync());
   }), 0);
   if (md.k === 'yt'){
-    el.innerHTML = `<div class="${md.short ? 'vert' : 'ratio'}" style="${md.short ? 'max-width:360px' : ''}"><div id="ytp"></div></div>`;
+    el.innerHTML = md.short ? `<div class="vert" style="max-width:360px"><div id="ytp"></div></div>`
+      : `<div class="ratio" id="ytBox"><div class="ytl" id="ytL1"><div id="ytp"></div></div><div class="ytl off" id="ytL2"><div id="ytp2"></div></div></div>`;
     mountYT(md, it.id);
   } else if (md.k === 'frame'){
     el.innerHTML = md.h ? `<iframe referrerpolicy="strict-origin-when-cross-origin" src="${esc(md.src)}" style="width:100%;height:${md.h}px;border:0;display:block" allow="autoplay; encrypted-media; fullscreen; clipboard-write; picture-in-picture" allowfullscreen loading="lazy"></iframe>`
@@ -1127,15 +1134,18 @@ function mountYT(md, itemId){
   };
   loadYTApi().then(() => {
     if (ytFor !== itemId || !$('ytp')) return;
-    yt = new YT.Player('ytp', {
+    const pl = yt = new YT.Player('ytp', {
       videoId: md.id, width: '100%', height: '100%',
       playerVars: {playsinline: 1, rel: 0, start: md.start || 0, enablejsapi: 1, origin: location.origin, widget_referrer: location.href},
       events: {
-        onReady: () => { ytReady = true; try { yt.getIframe().setAttribute('referrerpolicy', 'strict-origin-when-cross-origin'); } catch(e){}
+        onReady: () => { ytReady = true; pl.__layer = $('ytL1'); try { yt.getIframe().setAttribute('referrerpolicy', 'strict-origin-when-cross-origin'); } catch(e){}
           if (prep.id === ytFor && !prep.ld) ytPrime(); else applySync(); },
         onError: e => ytFail(md, e && e.data),
         onStateChange: e => {
+          if (pl !== yt) return standbyState(pl, e);                                          // ahora es el de atrás
           if (ytPriming && ytPriming === ytFor){ if (e.data === 1) finishPrime(); return; }   // cargando en silencio
+          // con la pantalla en negro nunca suena: si arranca solo, se pausa al instante
+          if (e.data === 1 && covered(itemById(ytFor))){ try { yt.pauseVideo(); yt.seekTo(ytStart, true); } catch(err){} return; }
           if (e.data === 5 && prep.id === ytFor && !prep.ld) ytPrime();                       // video nuevo listo para cargar
           if (isAdmin() && (e.data === 1 || e.data === 2) && !covered(itemById(ytFor))) pushSync();
         }
@@ -1155,7 +1165,65 @@ function ytFail(md, code){
     <div style="font-size:13px">${esc(why)}</div>
     <a class="btn sm" style="text-decoration:none" href="https://www.youtube.com/watch?v=${esc(md.id)}${md.start ? '&t=' + md.start + 's' : ''}" target="_blank" rel="noopener">▶ Ver en YouTube</a></div></div>`;
 }
-function destroyYT(){ if (yt){ try { yt.destroy(); } catch(e){} } yt = null; ytReady = false; ytFor = ''; }
+function destroyYT(){
+  if (yt){ try { yt.destroy(); } catch(e){} }
+  if (ytN.p){ try { ytN.p.destroy(); } catch(e){} }
+  yt = null; ytReady = false; ytFor = ''; ytN = {p: null, ready: false, item: '', ld: false, priming: false, start: 0};
+}
+// ---- Reproductor de atrás: mientras se ve un video, ya va cargando el siguiente (en silencio y oculto) ----
+let ytN = {p: null, ready: false, item: '', ld: false, priming: false, start: 0}, liveSince = 0;
+function standbyState(pl, e){
+  if (pl !== ytN.p) return;
+  if (e.data === 5 && ytN.item && !ytN.ld && !ytN.priming) nPrime();
+  if (e.data === 1){
+    try { pl.pauseVideo(); pl.seekTo(ytN.start, true); } catch(err){}   // el de atrás nunca se queda sonando
+    if (ytN.priming){ ytN.priming = false; ytN.ld = true; }
+  }
+}
+function nPrime(){
+  if (!ytN.p || !ytN.ready || ytN.ld || ytN.priming) return;
+  ytN.priming = true;
+  try { ytN.p.mute(); ytN.p.seekTo(ytN.start, true); ytN.p.playVideo(); } catch(e){}
+  const it = ytN.item; setTimeout(() => { if (ytN.item === it && ytN.priming){ ytN.priming = false; ytN.ld = true; try { ytN.p.pauseVideo(); } catch(e){} } }, 9000);
+}
+function ensureStandby(){
+  if (NO_WEB || !yt || !ytReady || !$('ytBox') || !window.YT || !YT.Player) return;
+  const its = itemsSorted(), i = its.findIndex(x => x.id === R.meta.cur), nx = its[i + 1];
+  const md = nx && media(nx.url, itImg(nx));
+  if (!md || md.k !== 'yt' || md.short || ytN.item === nx.id) return;
+  ytN.item = nx.id; ytN.ld = false; ytN.priming = false; ytN.start = md.start || 0;
+  if (ytN.p && ytN.ready){ try { ytN.p.mute(); ytN.p.cueVideoById({videoId: md.id, startSeconds: ytN.start}); } catch(e){} return; }
+  if (ytN.p || !$('ytp2')) return;
+  const pl = ytN.p = new YT.Player('ytp2', {
+    videoId: md.id, width: '100%', height: '100%',
+    playerVars: {playsinline: 1, rel: 0, start: ytN.start, enablejsapi: 1, origin: location.origin, widget_referrer: location.href},
+    events: {
+      onReady: () => { pl.__layer = $('ytL2'); try { pl.getIframe().setAttribute('referrerpolicy', 'strict-origin-when-cross-origin'); pl.mute(); } catch(e){} if (pl === ytN.p){ ytN.ready = true; nPrime(); } },
+      onStateChange: e => { if (pl === yt) return activeState(e); standbyState(pl, e); }
+    }
+  });
+}
+// Cambia al reproductor de atrás si ya tiene listo este ítem (sin esperar a que cargue)
+function swapToStandby(it, md){
+  if (!ytN.p || !ytN.ready || ytN.item !== it.id || !$('ytBox')) return false;
+  const old = yt, oldLayer = old && old.__layer, wasLd = ytN.ld;
+  yt = ytN.p; ytReady = true; ytFor = it.id; ytStart = md.start || 0;
+  if (yt.__layer) yt.__layer.classList.remove('off');
+  if (oldLayer) oldLayer.classList.add('off');
+  try { old.pauseVideo(); old.mute(); } catch(e){}
+  ytN = {p: old, ready: true, item: '', ld: false, priming: false, start: 0};
+  prep = {id: it.id, ld: false};
+  if (!covered(it)){ prep.ld = true; reportLoad(); try { yt.unMute(); } catch(e){} applySync(); return true; }
+  if (wasLd){ markLoaded(it.id); } else { reportLoad(); ytPriming = ''; ytPrime(); }
+  return true;
+}
+// manejador del reproductor activo cuando antes fue el de atrás
+function activeState(e){
+  if (ytPriming && ytPriming === ytFor){ if (e.data === 1) finishPrime(); return; }
+  if (e.data === 1 && covered(itemById(ytFor))){ try { yt.pauseVideo(); yt.seekTo(ytStart, true); } catch(err){} return; }
+  if (e.data === 5 && prep.id === ytFor && !prep.ld) ytPrime();
+  if (isAdmin() && (e.data === 1 || e.data === 2) && !covered(itemById(ytFor))) pushSync();
+}
 // ---- Sincronización: quien sigue al admin ve/escucha lo mismo y en el mismo segundo ----
 // Funciona con YouTube y con video/audio directos. El admin avisa al dar play, pausa o adelantar.
 function player(){
@@ -1306,9 +1374,12 @@ function liveTick(){
       } catch(e){}
     }
     if (isAdmin()) setTimeout(pushSync, 700);
+    liveSince = Date.now();
     render();
   }
   paintCurtain();
+  const cur = itemById(R.meta.cur);
+  if (cur && viewId === cur.id && !covered(cur) && (!liveSince || Date.now() - liveSince > 3000)) ensureStandby();
 }
 setInterval(liveTick, 150);
 // Precarga en segundo plano el siguiente video/audio directo (YouTube ya queda conectado y reutiliza su reproductor)
@@ -1390,7 +1461,7 @@ function stopMedia(){
   if (yt && ytReady){ try { yt.pauseVideo(); } catch(e){} }
   st.querySelectorAll('video,audio').forEach(v => { try { v.pause(); } catch(e){} });
   let ytFrame = null; try { ytFrame = yt && yt.getIframe ? yt.getIframe() : null; } catch(e){}
-  const fr = [...st.querySelectorAll('iframe')].find(f => f !== ytFrame);
+  const fr = [...st.querySelectorAll('iframe')].find(f => f !== ytFrame && !f.closest('.ytl'));
   if (fr){   // Spotify, TikTok, etc. no se pueden pausar desde fuera: se quita el reproductor
     const it = R.items[viewId] || {}, md = media(it.url, itImg(it));
     st.innerHTML = `<div class="linkCard" ${md.th ? `style="background:linear-gradient(rgba(0,0,0,.65),rgba(0,0,0,.65)),url('${esc(md.th)}') center/cover"` : ''}><div style="font-size:40px">⏱️</div><b>Se acabó el tiempo para ver / escuchar</b><div class="mut" style="margin-top:4px">¡Ahora vota!</div></div>`;
