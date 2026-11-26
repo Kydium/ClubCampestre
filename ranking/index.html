@@ -73,6 +73,9 @@ select{max-width:100%;text-overflow:ellipsis}
 details.adv[open]{padding-bottom:16px}
 details.adv h4{margin:14px 16px 6px;font-size:12px;letter-spacing:1px;text-transform:uppercase;color:var(--gold)}
 .seg.chips button{flex:0 1 auto;min-width:0;padding:9px 12px;font-size:14px}
+.sheet h4.sec{margin:18px 0 8px;padding-top:12px;border-top:1px solid var(--line);font-size:12px;letter-spacing:1px;text-transform:uppercase;color:var(--gold)}
+.sheet h3+h4.sec{margin-top:4px;padding-top:0;border-top:0}
+.row2c{display:grid;grid-template-columns:1fr 1fr;gap:10px}
 .hint{font-size:13px;color:var(--mut);margin-top:8px;line-height:1.35}
 .tiersEd .t{display:flex;gap:6px;margin-bottom:6px;align-items:center}
 .tiersEd input[type=text]{flex:1}
@@ -130,6 +133,19 @@ details.adv h4{margin:14px 16px 6px;font-size:12px;letter-spacing:1px;text-trans
 .slider{display:flex;align-items:center;gap:10px}
 .slider input[type=range]{flex:1;padding:0;border:0;background:none;accent-color:var(--pink);height:40px}
 .big{font-family:var(--fx);font-size:40px;min-width:96px;text-align:center;color:var(--gold)}
+.tray{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:8px;padding:8px;border-radius:12px;border:1px dashed rgba(255,46,151,.6);background:rgba(255,46,151,.08)}
+.tray .mut{font-size:13px;flex:1;min-width:140px}
+.board .brow{display:flex;min-height:64px;margin-bottom:6px;border-radius:12px;overflow:hidden;background:rgba(0,0,0,.35);cursor:pointer}
+.board .lab{width:var(--labw,58px);flex:0 0 auto;display:flex;align-items:center;justify-content:center;font-family:var(--fx);font-size:20px;color:#111;padding:4px 6px;text-align:center;overflow-wrap:anywhere}
+.board .bits{flex:1;display:flex;flex-wrap:wrap;gap:5px;padding:5px;align-items:center;min-width:0}
+.bchip{width:70px;border-radius:8px;overflow:hidden;background:#1d1433;font-size:10px;font-weight:700;line-height:1.1;touch-action:none;user-select:none;-webkit-user-select:none;cursor:grab;flex:0 0 auto}
+.bchip .th{width:70px;height:40px;border-radius:0;font-size:18px}
+.bchip span{display:block;padding:3px 4px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.bchip.cur{outline:2px solid var(--pink);outline-offset:-2px;box-shadow:0 0 12px rgba(255,46,151,.5)}
+.bchip.lock{opacity:.55;cursor:default}
+.bchip.dragging{opacity:.25}
+.bchip.ghost{position:fixed;z-index:300;pointer-events:none;transform:translate(-50%,-60%) scale(1.12);box-shadow:0 12px 26px rgba(0,0,0,.6)}
+.bph{width:5px;height:52px;border-radius:3px;background:var(--pink);box-shadow:0 0 10px var(--pink);flex:0 0 auto}
 .tierBtns{display:flex;flex-direction:column;gap:7px}
 .tierBtns button{display:flex;align-items:center;gap:12px;padding:0;border-radius:12px;overflow:hidden;background:rgba(0,0,0,.35);border:2px solid transparent;text-align:left;transition:transform .08s}
 .tierBtns button b{width:var(--labw,64px);min-height:48px;display:flex;align-items:center;justify-content:center;font-family:var(--fx);font-size:22px;color:#111;flex:0 0 auto;padding:4px 6px;overflow-wrap:anywhere;hyphens:auto;text-align:center}
@@ -1029,6 +1045,8 @@ function voteHTML(it, mine){
   else if (!dis && it.extra && status() === 'done') h += '<div class="pill c" style="margin-bottom:8px">🆕 Nuevo: este sí se puede votar</div>';
   else if (dis) h += '<div class="mut" style="margin-bottom:8px">Este ítem está cerrado</div>';
   else h += `<div class="lbl" style="margin-top:0">${mine != null ? 'Tu voto · puedes cambiarlo' : 'Tu voto'}</div>`;
+  if (isTier() && !dis) return h.replace(/<div class="lbl"[^>]*>[^<]*<\/div>$/, '') + boardHTML(it, mine) +
+    (mine != null ? '<div style="text-align:center;margin-top:8px"><button class="mut" id="vDel" style="font-size:13px;text-decoration:underline">Quitar mi voto</button></div>' : '');
   if (isTier()){
     h += `<div class="tierBtns" style="--labw:${tierLabW(64)}px">` + tiers().map((t, i) => `<button data-v="${i}" class="${mine === i ? 'on' : ''}" ${d}><b style="background:${esc(t.c)};${tStyle(t.n, 22)}">${esc(t.n)}</b><span>${mine === i ? '✓ Tu elección' : ''}</span></button>`).join('') + '</div>';
   } else {
@@ -1055,6 +1073,7 @@ function castVote(id, v){
 }
 function bindVote(it){
   const box = $('vRest');
+  if (isTier()) bindBoard(it);
   box.querySelectorAll('.tierBtns button,.stars button,.grid10 button').forEach(b => b.onclick = () => castVote(it.id, +b.dataset.v));
   const rg = $('sRange');
   if (rg){
@@ -1069,6 +1088,95 @@ function bindVote(it){
     if ($('sSave')) $('sSave').onclick = () => { castVote(it.id, +rg.value); delete sliderPend[it.id]; };
   }
   if ($('vDel')) $('vDel').onclick = () => db.ref(rp('votes/' + it.id + '/' + me.id)).remove().catch(fbErr);
+}
+
+// ============ TIERLIST PARA ARRASTRAR ============
+// Cada uno arma su propia tierlist: arrastra el ítem a un nivel y lo ubica en la fila.
+// Más a la izquierda = mejor dentro del nivel. El voto guarda nivel + posición (p. ej. S y 1.º de la fila).
+const POS_SPAN = 0.45;   // la posición mueve el voto dentro del nivel sin cambiar de nivel
+function myBoard(){
+  const T = tiers(), rows = T.map(() => []);
+  Object.entries(R.votes || {}).forEach(([id, vs]) => {
+    if (!R.items[id] || !vs || typeof vs[me.id] !== 'number') return;
+    const v = vs[me.id], i = Math.max(0, Math.min(T.length - 1, Math.round(v)));
+    rows[i].push({id, v});
+  });
+  rows.forEach(r => r.sort((a, b) => a.v - b.v));
+  return rows.map(r => r.map(x => x.id));
+}
+// Pone el ítem en el nivel ti, en la posición pos (0 = primero / mejor) y reacomoda esa fila
+function placeItem(id, ti, pos){
+  if (!canVote(itemById(id))) return;
+  const rows = myBoard();
+  rows.forEach(r => { const k = r.indexOf(id); if (k >= 0) r.splice(k, 1); });
+  const row = rows[ti]; pos = Math.max(0, Math.min(row.length, pos == null ? row.length : pos)); row.splice(pos, 0, id);
+  const u = {}, n = row.length;
+  row.forEach((x, k) => { if (canVote(itemById(x))) u['votes/' + x + '/' + me.id] = ti + (n > 1 ? k / (n - 1) * POS_SPAN : 0); });
+  db.ref(rp()).update(u).catch(fbErr);
+  if (navigator.vibrate) try { navigator.vibrate(15); } catch(e){}
+}
+function boardChip(id, cur){
+  const it = itemById(id); if (!it) return '';
+  const md = media(it.url, itImg(it)), lock = !canVote(it), hid = covered(it);
+  return `<div class="bchip ${id === cur ? 'cur' : ''} ${lock ? 'lock' : ''}" data-id="${id}">
+    <div class="th" ${hid ? '' : thumbStyle(md)}>${hid ? '🎬' : thumbIcon(md)}</div><span>${hid ? '¿Qué será?' : esc(it.t || 'Sin título')}</span></div>`;
+}
+function boardHTML(it, mine){
+  const T = tiers(), rows = myBoard(), can = canVote(it);
+  let h = '';
+  if (mine == null && can) h += `<div class="tray"><div class="mut">Arrástralo a su nivel (o toca un nivel):</div>${boardChip(it.id, it.id)}</div>`;
+  else if (can) h += '<div class="mut" style="font-size:13px;margin-bottom:6px">Arrastra para cambiarlo de nivel o de lugar · más a la izquierda = mejor</div>';
+  h += `<div class="board" style="--labw:${tierLabW(58)}px">` + T.map((t, i) => `<div class="brow" data-t="${i}">
+      <div class="lab" style="background:${esc(t.c)};${tStyle(t.n, 20)}">${esc(t.n)}</div>
+      <div class="bits">${rows[i].map(id => boardChip(id, it.id)).join('')}</div></div>`).join('') + '</div>';
+  return h;
+}
+// Arrastrar con el dedo o el mouse (funciona en celular)
+function bindBoard(it){
+  const box = $('vRest'); if (!box || !box.querySelector('.board')) return;
+  box.querySelectorAll('.brow').forEach(row => row.addEventListener('click', e => {
+    if (boardDrag.moved || e.target.closest('.bchip')) return;
+    if (canVote(it)) placeItem(it.id, +row.dataset.t, null);   // tocar un nivel: va al final de esa fila
+  }));
+  box.querySelectorAll('.bchip:not(.lock)').forEach(ch => ch.addEventListener('pointerdown', e => startDrag(e, ch)));
+}
+let boardDrag = {moved: false};
+function startDrag(e, ch){
+  e.preventDefault();
+  const id = ch.dataset.id, sx = e.clientX, sy = e.clientY;
+  boardDrag = {moved: false, id};
+  sliding = true;
+  let ghost = null, ph = null, target = null;
+  const move = ev => {
+    if (!boardDrag.moved && Math.hypot(ev.clientX - sx, ev.clientY - sy) < 6) return;
+    if (!boardDrag.moved){
+      boardDrag.moved = true; ch.classList.add('dragging');
+      ghost = ch.cloneNode(true); ghost.classList.add('ghost'); document.body.appendChild(ghost);
+      ph = document.createElement('div'); ph.className = 'bph';
+    }
+    ghost.style.left = ev.clientX + 'px'; ghost.style.top = ev.clientY + 'px';
+    const el = document.elementFromPoint(ev.clientX, ev.clientY), row = el && el.closest && el.closest('.brow');
+    if (!row){ ph.remove(); target = null; return; }
+    const bits = row.querySelector('.bits'), chips = [...bits.querySelectorAll('.bchip:not(.dragging)')];
+    // posición: antes del primer chip que esté a la derecha del dedo (o en una línea más abajo)
+    let pos = chips.length;
+    for (let k = 0; k < chips.length; k++){
+      const r = chips[k].getBoundingClientRect();
+      if (ev.clientY < r.top) { pos = k; break; }
+      if (ev.clientY <= r.bottom && ev.clientX < r.left + r.width / 2){ pos = k; break; }
+    }
+    if (pos < chips.length) bits.insertBefore(ph, chips[pos]); else bits.appendChild(ph);
+    target = {ti: +row.dataset.t, pos};
+  };
+  const up = () => {
+    document.removeEventListener('pointermove', move); document.removeEventListener('pointerup', up); document.removeEventListener('pointercancel', up);
+    if (ghost) ghost.remove(); if (ph) ph.remove(); ch.classList.remove('dragging');
+    sliding = false;
+    if (boardDrag.moved && target) placeItem(id, target.ti, target.pos);
+    setTimeout(() => { boardDrag.moved = false; }, 0);
+    if (pendingRender){ pendingRender = false; renderVote(); }
+  };
+  document.addEventListener('pointermove', move); document.addEventListener('pointerup', up); document.addEventListener('pointercancel', up);
 }
 
 // ============ REPRODUCTOR ============
@@ -2104,24 +2212,31 @@ function share(){
 // ============ AJUSTES DEL ADMIN ============
 function openCfg(){
   const m = R.meta;
+  const OW = [0,15,30,45,60,90,120,180,300], OV = [0,10,15,20,30,45,60,90];
+  const lab = (v, z) => v === 0 ? z : v < 60 ? v + ' s' : (v % 60 ? Math.floor(v / 60) + ' min ' + (v % 60) + ' s' : v / 60 + ' min');
   const sh = openModal(`<h3>AJUSTES DE LA SALA</h3>
+    <h4 class="sec">General</h4>
     <div class="lbl" style="margin-top:0">Título</div><input id="cT" maxlength="60" value="${esc(m.title)}">
+    <div class="lbl">Categoría</div>
+    <select id="cC">${Object.entries(CATS).map(([k, c]) => `<option value="${k}">${c.l}</option>`).join('')}</select>
     <div class="lbl">Cuándo se ven las notas</div>
     <select id="cR"><option value="end">🔒 Al final</option><option value="item">⏭️ Al cerrar cada ítem</option><option value="live">⚡ En vivo</option></select>
     <label class="chk"><input type="checkbox" id="cW" ${m.showWho ? 'checked' : ''}> Mostrar la nota de cada persona</label>
-    <div class="lbl">⏱️ Ver / escuchar</div><select id="cTW"><option value="0">Sin límite</option><option value="15">15 s</option><option value="30">30 s</option><option value="45">45 s</option><option value="60">1 min</option><option value="90">1 min 30 s</option><option value="120">2 min</option><option value="180">3 min</option><option value="300">5 min</option></select>
-    <div class="lbl">⏱️ Votar</div><select id="cTV"><option value="0">Sin temporizador</option><option value="10">10 s</option><option value="15">15 s</option><option value="20">20 s</option><option value="30">30 s</option><option value="45">45 s</option><option value="60">1 min</option><option value="90">1 min 30 s</option></select>
-    <label class="chk"><input type="checkbox" id="cTA" ${m.tAll ? 'checked' : ''}> Si todos votan, saltar al tiempo de votar</label>
-    <div class="lbl">Categoría</div>
-    <select id="cC">${Object.entries(CATS).map(([k, c]) => `<option value="${k}">${c.l}</option>`).join('')}</select>
-    <label class="chk"><input type="checkbox" id="cRnd" ${m.randOrd ? 'checked' : ''}> Agregar en orden aleatorio</label>
     <label class="chk"><input type="checkbox" id="cPub" ${m.pub !== false ? 'checked' : ''}> Sala pública (sale en «Buscar sala»)</label>
-    <div class="lbl">Quién agrega</div>
+    <h4 class="sec">⏱️ Tiempos</h4>
+    <div class="row2c">
+      <div><div class="lbl" style="margin-top:0">Ver / escuchar</div><select id="cTW">${OW.map(v => `<option value="${v}">${lab(v, 'Sin límite')}</option>`).join('')}</select></div>
+      <div><div class="lbl" style="margin-top:0">Votar</div><select id="cTV">${OV.map(v => `<option value="${v}">${lab(v, 'Sin límite')}</option>`).join('')}</select></div>
+    </div>
+    <label class="chk"><input type="checkbox" id="cTA" ${m.tAll ? 'checked' : ''}> Si todos votan, saltar al tiempo de votar</label>
+    <h4 class="sec">📋 Lista</h4>
+    <div class="lbl" style="margin-top:0">Quién agrega</div>
     <select id="cA"><option value="all">👥 Todos</option><option value="admin">👑 Solo el admin</option></select>
-    <div id="cLimBox"><div class="lbl">Máximo por persona</div>
-      <div class="row"><label class="chk" style="flex:0 0 auto"><input type="checkbox" id="cNoLim" ${+m.perUser ? '' : 'checked'}> Sin límite</label>
-      <input id="cLim" type="number" min="1" max="9999" value="${+m.perUser || 5}" inputmode="numeric" style="max-width:120px"><span class="mut" id="cLimTxt" style="white-space:nowrap">por persona</span></div>
+    <div id="cLimBox">
+      <div class="row" style="flex-wrap:wrap;margin-top:6px"><label class="chk" style="flex:0 0 auto"><input type="checkbox" id="cNoLim" ${+m.perUser ? '' : 'checked'}> Sin límite por persona</label>
+      <input id="cLim" type="number" min="1" max="9999" value="${+m.perUser || 5}" inputmode="numeric" style="max-width:90px"><span class="mut" id="cLimTxt" style="white-space:nowrap">por persona</span></div>
       <label class="chk" id="cAdmFreeBox"><input type="checkbox" id="cAdmFree" ${m.adminFree ? 'checked' : ''}> 👑 Admin sin límite</label></div>
+    <label class="chk"><input type="checkbox" id="cRnd" ${m.randOrd ? 'checked' : ''}> Agregar en orden aleatorio</label>
     <div class="mut" style="font-size:12px;margin:6px 0 12px">La forma de votar y los niveles no se cambian después de crear la sala para no romper los votos.</div>
     <div class="row"><button class="btn g" id="cX">Cancelar</button><button class="btn" id="cOk">Guardar</button></div>
     <div style="height:16px"></div>
