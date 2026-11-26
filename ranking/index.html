@@ -10,6 +10,9 @@
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <title>Rankeo · Rankings y tierlists con amigos</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://www.youtube.com">
+<link rel="preconnect" href="https://i.ytimg.com">
+<link rel="dns-prefetch" href="https://www.google.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@700;900&family=Rajdhani:wght@500;600;700&display=swap" rel="stylesheet">
 <style>
@@ -246,6 +249,10 @@ details.adv h4{margin:14px 16px 6px;font-size:12px;letter-spacing:1px;text-trans
 .ssn input[type=number]{max-width:66px;padding:9px 6px}
 .ssn summary{font-size:13px;color:var(--mut);cursor:pointer;margin-top:8px}
 .ssn textarea{margin-top:6px;font-size:14px}
+.curtain{position:absolute;inset:0;z-index:5;background:radial-gradient(circle at 50% 30%,#1b0f33,#000 70%);display:flex;flex-direction:column;
+  align-items:center;justify-content:center;text-align:center;padding:14px;gap:4px;min-height:140px}
+.curtain .e{font-size:40px}.curtain b{font-size:19px}.curtain .btn{width:auto;margin-top:10px;padding:11px 18px}
+.stage{min-height:140px}
 .lobby{border-radius:16px;background:#000;border:1px solid var(--line);padding:46px 18px 30px;text-align:center;
   background:radial-gradient(circle at 50% 0,rgba(255,46,151,.18),transparent 60%),#05030b}
 .lobby .e{font-size:54px;margin-bottom:8px}.lobby b{display:block;font-size:22px;margin-bottom:4px}
@@ -740,6 +747,8 @@ async function enter(c){
   });
   setTab('pVote');
   show('sRoom');
+  // si hay videos de YouTube, se carga su reproductor desde ya (así el primero no tarda)
+  setTimeout(() => { try { if (code && Object.values(R.items || {}).some(x => media(x.url).k === 'yt') && !NO_WEB) loadYTApi().catch(() => {}); } catch(e){} }, 1500);
 }
 let onlineRef = null;
 // Índice liviano de salas: sirve para la limpieza y para «Buscar sala»
@@ -869,6 +878,7 @@ function render(){
 }
 
 // ============ PESTAÑA VOTAR (reproductor + voto) ============
+let lastKind = '', lastShort = false;
 let lastStage = '', sliding = false, pendingRender = false, sliderPend = {};
 function renderLobby(box, its){
   destroyYT(); lastStage = '';
@@ -888,7 +898,7 @@ function renderLobby(box, its){
 function startRoom(){
   const its = itemsSorted(); if (!its.length) return toast('Agrega algo a la lista primero');
   const first = R.meta.randOrd ? its[Math.floor(Math.random() * its.length)] : its[0];
-  const u = {'meta/started': true, 'meta/cur': first.id, 'meta/phase': null}; u['meta/shown/' + first.id] = true;
+  const u = {'meta/started': true, 'meta/cur': first.id, 'meta/phase': null, 'meta/live': null}; u['meta/shown/' + first.id] = true;
   viewId = first.id;
   db.ref(rp()).update(u).then(() => toast('🎬 ¡Empezó!')).catch(fbErr);
 }
@@ -903,17 +913,27 @@ function renderVote(){
     return;
   }
   const idx = its.findIndex(x => x.id === it.id), key = it.id + '|' + (it.url || '') + '|' + itImg(it).length;
-  if (!$('stage') || lastStage !== key){
+  const mdNow = media(it.url, itImg(it));
+  const reuseYT = $('stage') && lastStage !== key && mdNow.k === 'yt' && lastKind === 'yt' && lastShort === !!mdNow.short && yt && ytReady && !NO_WEB;
+  if (reuseYT){
+    // mismo reproductor, otro video: mucho más rápido que crear uno nuevo
+    ytFor = it.id; ytStart = mdNow.start || 0;
+    try { yt.cueVideoById({videoId: mdNow.id, startSeconds: mdNow.start || 0}); } catch(e){}
+    lastStage = key; prepareStage(it);
+  } else if (!$('stage') || lastStage !== key){
     destroyYT();
     box.innerHTML = `<div class="stage" id="stage"></div>
       <div class="tmr hide" id="tmr"><div class="row"><span id="tmrL">⏱️</span><span class="t" id="tmrT"></span></div><div class="prog"><i id="tmrB" style="width:0;transition:none"></i></div></div>
       <div id="vRest"></div>`;
-    mountStage($('stage'), it); lastStage = key;
+    mountStage($('stage'), it); lastStage = key; lastKind = mdNow.k; lastShort = !!mdNow.short;
+    setTimeout(() => prepareStage(it), 0);
   }
+  if (isAdmin()) preloadNext();
   const st = stats(it.id), mine = R.votes && R.votes[it.id] ? R.votes[it.id][me.id] : undefined;
   const pl = playersList(), on = pl.filter(p => p.on || (R.votes[it.id] && R.votes[it.id][p.id] != null));
   const isCur = R.meta.cur === it.id, admin = isAdmin(), see = canSee(it);
-  let h = `<div class="itHead"><div style="flex:1;min-width:0"><h2>${esc(it.t || 'Sin título')}</h2>${it.sub ? `<div class="isub">${esc(it.sub)}</div>` : ''}</div>
+  const hid = covered(it);
+  let h = `<div class="itHead"><div style="flex:1;min-width:0"><h2>${hid ? '🎬 ¿Qué será?' : esc(it.t || 'Sin título')}</h2>${it.sub && !hid ? `<div class="isub">${esc(it.sub)}</div>` : ''}</div>
     <span class="pill">${idx + 1}/${its.length}</span></div>
 `;
   const yt1 = media(it.url).k === 'yt', voting = status() === 'voting';
@@ -931,8 +951,8 @@ function renderVote(){
   if (admin && (R.meta.tWatch || R.meta.tVote) && voting) tl.push(`<button class="tool ${R.meta.auto ? 'on' : ''}" id="aAuto">${R.meta.auto ? '⏸️ Pausar tiempos' : '▶️ Reanudar tiempos'}</button>`);
   if (admin) tl.push(`<button class="tool" id="aShuf" ${its.length < 2 ? 'disabled' : ''}>🔀 Mezclar</button>`);
   if (!admin && it.closed) tl.push('<span class="tool">🔒 Cerrado</span>');
-  if (it.url) tl.push(`<a class="tool" href="${esc(it.url)}" target="_blank" rel="noopener">↗ Abrir original</a>`);
-  if (it.ext) tl.push(`<a class="tool" href="${esc(it.ext)}" target="_blank" rel="noopener">↗ Ficha del anime</a>`);
+  if (it.url && !hid) tl.push(`<a class="tool" href="${esc(it.url)}" target="_blank" rel="noopener">↗ Abrir original</a>`);
+  if (it.ext && !hid) tl.push(`<a class="tool" href="${esc(it.ext)}" target="_blank" rel="noopener">↗ Ficha del anime</a>`);
   if (tl.length) h += '<div class="tools">' + tl.join('') + '</div>';
   h += '<div class="vote">' + voteHTML(it, mine) + '</div>';
   // resultado o candado
@@ -997,7 +1017,7 @@ function shuffleItems(){
   u['meta/cur'] = first;
   db.ref(rp()).update(u).then(() => toast('🔀 Lista mezclada')).catch(fbErr);
 }
-function setCur(id){ viewId = id; adminPlayAt = 0; const u = {cur: id, phase: null}; u['shown/' + id] = true; db.ref(rp('meta')).update(u).catch(fbErr); }
+function setCur(id){ viewId = id; const u = {cur: id, phase: null, live: null}; u['shown/' + id] = true; db.ref(rp('meta')).update(u).catch(fbErr); }
 
 function voteHTML(it, mine){
   const dis = !canVote(it), d = dis ? 'disabled' : '';
@@ -1052,9 +1072,8 @@ function bindVote(it){
 function mountStage(el, it){
   const md = media(it.url, itImg(it));
   setTimeout(() => el.querySelectorAll('video,audio').forEach(v => {
-    v.addEventListener('play', () => { if (isAdmin()){ adminPlayed(); pushSync(); } reportPlay(true); });
-    v.addEventListener('pause', () => reportPlay(true));
-    ['pause', 'seeked'].forEach(ev => v.addEventListener(ev, () => { if (isAdmin()) pushSync(); }));
+    v.addEventListener('play', () => { if (isAdmin() && !covered(itemById(viewId))) pushSync(); });
+    ['pause', 'seeked'].forEach(ev => v.addEventListener(ev, () => { if (isAdmin() && !covered(itemById(viewId))) pushSync(); }));
     v.addEventListener('loadedmetadata', () => applySync());
   }), 0);
   if (md.k === 'yt'){
@@ -1112,12 +1131,13 @@ function mountYT(md, itemId){
       videoId: md.id, width: '100%', height: '100%',
       playerVars: {playsinline: 1, rel: 0, start: md.start || 0, enablejsapi: 1, origin: location.origin, widget_referrer: location.href},
       events: {
-        onReady: () => { ytReady = true; try { yt.getIframe().setAttribute('referrerpolicy', 'strict-origin-when-cross-origin'); } catch(e){} applySync(); },
+        onReady: () => { ytReady = true; try { yt.getIframe().setAttribute('referrerpolicy', 'strict-origin-when-cross-origin'); } catch(e){}
+          if (prep.id === ytFor && !prep.ld) ytPrime(); else applySync(); },
         onError: e => ytFail(md, e && e.data),
         onStateChange: e => {
-          if (e.data === 1) adminPlayed();
-          reportPlay(true);
-          if (isAdmin() && (e.data === 1 || e.data === 2)) pushSync();
+          if (ytPriming && ytPriming === ytFor){ if (e.data === 1) finishPrime(); return; }   // cargando en silencio
+          if (e.data === 5 && prep.id === ytFor && !prep.ld) ytPrime();                       // video nuevo listo para cargar
+          if (isAdmin() && (e.data === 1 || e.data === 2) && !covered(itemById(ytFor))) pushSync();
         }
       }
     });
@@ -1152,7 +1172,7 @@ function player(){
 }
 let syncMuteUntil = 0;
 function pushSync(){
-  if (!isAdmin() || !code || viewId !== (R.meta && R.meta.cur)) return;
+  if (!isAdmin() || !code || viewId !== (R.meta && R.meta.cur) || covered(itemById(viewId))) return;
   const p = player(); if (!p) return;
   let t = 0, st = 'pause';
   try { t = p.t(); st = p.on() ? 'play' : 'pause'; } catch(e){ return; }
@@ -1165,7 +1185,7 @@ setInterval(() => applySync(), 2000);
 let syncWarned = '';
 function applySync(){
   const s = R.sync;
-  if (isAdmin() || !follow || !R.meta || !s || s.id !== viewId || viewId !== R.meta.cur) return;
+  if (isAdmin() || !follow || !R.meta || !s || s.id !== viewId || viewId !== R.meta.cur || covered(itemById(viewId))) return;
   const p = player(); if (!p) return;
   try {
     const target = s.st === 'play' ? s.t + Math.max(0, now() - (s.at || now())) / 1000 : s.t;
@@ -1204,34 +1224,105 @@ function startTimers(){
   const ph = m.phase; if (!ph || ph.id !== m.cur || ph.k !== 'ready') return;
   const k = firstPhase(); if (k) setPhase(m.cur, k);
 }
-// ---- Espera a que todos estén reproduciendo y sincronizados antes de contar ----
-// Cada celular avisa en play/<uid> si está reproduciendo el ítem actual y en qué segundo va.
-let adminPlayAt = 0, lastRep = {k: '', at: 0};
-const WAIT_MAX = 15000;   // si alguien no arranca (p. ej. su navegador no deja), se empieza igual a los 15 s
-function adminPlayed(){ if (isAdmin() && !adminPlayAt) adminPlayAt = Date.now(); }
-function reportPlay(force){
-  if (!code || !R.meta || isAdmin()) return;
-  const p = player(); let on = false, t = 0;
-  try { if (p){ on = p.on(); t = p.t(); } } catch(e){}
-  const k = viewId + '|' + on;
-  if (!force && k === lastRep.k && (!on || Date.now() - lastRep.at < 3000)) return;
-  lastRep = {k, at: Date.now()};
-  db.ref(rp('play/' + me.id)).set({id: viewId, on, t, at: firebase.database.ServerValue.TIMESTAMP}).catch(() => {});
-}
-setInterval(() => reportPlay(false), 1000);
-// ¿Cuántos (sin contar al admin) están reproduciendo el ítem actual en el mismo segundo que el admin?
-function readyInfo(cur){
-  const s = R.sync, tNow = now();
-  const adminT = s && s.id === cur && s.st === 'play' ? s.t + Math.max(0, tNow - (s.at || tNow)) / 1000 : null;
+// ============ TELÓN: pantalla negra mientras todos cargan (sin spoilers) ============
+// 1) El admin pasa a un ítem → todos lo cargan por detrás, sin verlo ni oír nada (el título también se oculta).
+// 2) Cada celular avisa «listo» en play/<uid>; se ve «2/3 listos».
+// 3) El admin toca «▶ Reproducir para todos» → a todos se les quita el negro y arranca en el mismo instante.
+const itemById = id => (R.items && R.items[id]) ? {id, ...R.items[id]} : null;
+const curtainNeeded = it => !!it && !!R.meta && playable(it) && status() === 'voting' && started() && R.meta.cur === it.id;
+const isLive = it => { const L = R.meta && R.meta.live; return !!(it && L && L.id === it.id && now() >= (+L.at || 0)); };
+const covered = it => curtainNeeded(it) && !isLive(it);
+// Lo que todavía no se mostró no se puede espiar en la Lista ni en la cuadrícula (el admin sí lo ve)
+const masked = it => !isAdmin() && status() === 'voting' && started() &&
+  ((R.meta.cur === it.id && covered(it)) || (R.meta.cur !== it.id && !(R.meta.shown && R.meta.shown[it.id])));
+let prep = {id: '', ld: false}, ytPriming = '', ytStart = 0, wentLive = '';
+function reportLoad(){ if (code && prep.id) db.ref(rp('play/' + me.id)).set({id: prep.id, ld: prep.ld}).catch(() => {}); }
+function markLoaded(id){ if (prep.id !== id || prep.ld) return; prep.ld = true; reportLoad(); paintCurtain(); }
+function loadInfo(cur){
   const others = playersList().filter(p => p.on && p.id !== R.meta.admin);
-  const ok = others.filter(p => {
-    const x = R.play && R.play[p.id];
-    if (!x || x.id !== cur || !x.on || tNow - (+x.at || 0) > 7000) return false;
-    if (adminT == null) return true;
-    return Math.abs(x.t + Math.max(0, tNow - (+x.at || tNow)) / 1000 - adminT) < 2.5;
-  }).length;
-  return {ok, total: others.length, adminOn: adminT != null};
+  const ok = others.filter(p => { const x = R.play && R.play[p.id]; return x && x.id === cur && x.ld; }).length;
+  return {ok, total: others.length};
 }
+// Prepara (carga en silencio) el ítem que se acaba de montar
+function prepareStage(it){
+  prep = {id: it.id, ld: false}; ytPriming = '';
+  const md = media(it.url, itImg(it)), st = $('stage');
+  if (!covered(it)){ prep.ld = true; reportLoad(); return; }
+  reportLoad();
+  if (md.k === 'yt'){ ytStart = md.start || 0; if (yt && ytReady && ytFor === it.id) ytPrime(); return; }
+  const v = st && st.querySelector('video,audio');
+  if (v){
+    v.preload = 'auto';
+    if (v.readyState >= 3) markLoaded(it.id); else { v.addEventListener('canplay', () => markLoaded(it.id), {once: true}); try { v.load(); } catch(e){} }
+    setTimeout(() => markLoaded(it.id), 12000);
+    return;
+  }
+  const f = st && st.querySelector('iframe');
+  if (f) f.addEventListener('load', () => setTimeout(() => markLoaded(it.id), 600), {once: true});
+  setTimeout(() => markLoaded(it.id), 8000);   // Spotify, TikTok… no avisan: se dan por listos
+}
+// YouTube: se reproduce en silencio un instante para que cargue, y se deja en pausa al inicio
+function ytPrime(){
+  if (!yt || !ytReady || ytPriming === ytFor || prep.id !== ytFor || prep.ld) return;
+  ytPriming = ytFor;
+  try { yt.mute(); yt.seekTo(ytStart, true); yt.playVideo(); } catch(e){}
+  const id = ytFor; setTimeout(() => { if (ytPriming === id && prep.id === id && !prep.ld) finishPrime(); }, 9000);
+}
+function finishPrime(){
+  try { yt.pauseVideo(); yt.seekTo(ytStart, true); } catch(e){}
+  const id = ytFor; ytPriming = '';
+  setTimeout(() => { try { yt.unMute(); } catch(e){} markLoaded(id); }, 250);
+}
+// El admin suelta el ítem para todos (arranca en 1.2 s, así todos empiezan juntos)
+function goLive(){
+  const it = itemById(R.meta.cur); if (!isAdmin() || !it) return;
+  db.ref(rp('meta/live')).set({id: it.id, at: Math.round(now() + 1200)}).catch(fbErr);
+}
+function paintCurtain(){
+  const st = $('stage'), it = itemById(viewId);
+  let c = $('curtain');
+  if (!st || !it || !covered(it)){ if (c) c.remove(); return; }
+  if (!c){ c = document.createElement('div'); c.id = 'curtain'; c.className = 'curtain'; st.appendChild(c); }
+  const li = loadInfo(it.id), admin = isAdmin(), L = R.meta.live, starting = !!(L && L.id === it.id);
+  const all = li.ok >= li.total;
+  const head = starting ? '¡Ahí va!' : admin ? (all && prep.ld ? '¡Todos listos!' : 'Preparando para todos…') : (prep.ld ? 'Listo · esperando al admin' : 'Cargando…');
+  const html = `<div class="e">${starting ? '🎬' : prep.ld ? '✅' : '⏳'}</div><b>${head}</b>
+    <div class="mut">${li.total ? li.ok + '/' + li.total + ' listos' : (prep.ld ? 'Listo' : 'Cargando…')}</div>
+    ${admin && !starting ? `<button class="btn ${all && prep.ld ? '' : 'g'}" id="goLive">▶ Reproducir para todos</button>` : ''}`;
+  if (c.dataset.h !== html){ c.dataset.h = html; c.innerHTML = html; if ($('goLive')) $('goLive').onclick = goLive; }
+}
+// Llega el instante: se quita el negro y suena para todos a la vez
+function liveTick(){
+  if (!code || !R.meta) return;
+  const it = itemById(viewId), L = R.meta.live;
+  if (it && L && L.id === it.id && now() >= (+L.at || 0) && wentLive !== L.id + L.at && R.meta.cur === it.id){
+    wentLive = L.id + L.at;
+    const md = media(it.url, itImg(it)), p = player();
+    if (p){
+      try {
+        if (yt && ytReady && ytFor === it.id) yt.unMute();
+        p.seek((md.start || 0) + Math.max(0, now() - L.at) / 1000);
+        const r = p.play(); if (r && r.catch) r.catch(() => toast('Toca ▶ en el video para reproducir'));
+      } catch(e){}
+    }
+    if (isAdmin()) setTimeout(pushSync, 700);
+    render();
+  }
+  paintCurtain();
+}
+setInterval(liveTick, 150);
+// Precarga en segundo plano el siguiente video/audio directo (YouTube ya queda conectado y reutiliza su reproductor)
+let preEl = null;
+function preloadNext(){
+  const its = itemsSorted(), i = its.findIndex(x => x.id === R.meta.cur), nx = its[i + 1];
+  const md = nx && media(nx.url, itImg(nx));
+  if (!md || (md.k !== 'video' && md.k !== 'audio')){ return; }
+  if (preEl && preEl.dataset.src === md.src) return;
+  if (preEl) preEl.remove();
+  preEl = document.createElement(md.k); preEl.preload = 'auto'; preEl.muted = true; preEl.dataset.src = md.src; preEl.src = md.src;
+  preEl.style.display = 'none'; document.body.appendChild(preEl);
+}
+
 function driveAuto(){
   const m = R.meta;
   if (driveBusy || !code || !m || !isAdmin() || !m.auto || status() !== 'voting' || !started()) return;
@@ -1244,10 +1335,8 @@ function driveAuto(){
     return;
   }
   if (ph.k === 'ready'){
-    // empieza cuando el admin ya reproduce y todos están reproduciendo y sincronizados (o tras 15 s de espera)
-    if (!adminPlayAt) return;
-    const r = readyInfo(cur);
-    if (r.ok >= r.total || Date.now() - adminPlayAt > WAIT_MAX){ const k = firstPhase(); if (k) setPhase(cur, k); }
+    // el tiempo arranca cuando el admin suelta el ítem para todos (todos empiezan juntos)
+    if (isLive(itemById(cur))){ const k = firstPhase(); if (k) setPhase(cur, k); }
     return;
   }
   const end = (+ph.st || t) + (+ph.dur || 0) * 1000;
@@ -1281,15 +1370,10 @@ function tickTimer(){
   if (!el) return;
   const hid = el.classList.contains('hide') ? ' hide' : '';
   if (ph.k === 'ready'){
-    const r = readyInfo(m.cur);
-    setTxt($('tmrL'), r.adminOn && r.total ? '⏳ Esperando que todos reproduzcan · ' + r.ok + '/' + r.total + ' listos'
-      : isAdmin() ? '⏳ El tiempo empieza al darle ▶ play' : '⏳ Esperando que empiece…');
-    if (isAdmin() && !$('tmrGo')){ $('tmrT').innerHTML = '<button class="btn sm" id="tmrGo" style="padding:6px 10px;font-size:14px">▶️ Empezar ya</button>'; $('tmrGo').onclick = startTimers; }
-    if (!isAdmin()) setTxt($('tmrT'), '');
+    setTxt($('tmrL'), '⏳ El tiempo empieza cuando arranque para todos'); setTxt($('tmrT'), '');
     $('tmrB').style.width = '0'; setCls(el, 'tmr' + hid);
     return;
   }
-  if ($('tmrGo')) $('tmrT').textContent = '';
   setTxt($('tmrL'), {watch: '👀 Tiempo para ver / escuchar', vote: '🗳️ ¡Vota! Pasa al siguiente en', result: '✅ Resultado · sigue en', manual: '🗳️ Vota · el admin pasa al siguiente'}[ph.k] || '⏱️');
   // la cuenta nunca sube dentro de una misma fase (evita saltos si el reloj del servidor se corrige)
   const pk = ph.id + '|' + ph.k + '|' + ph.dur;
@@ -1327,8 +1411,8 @@ function renderList(){
     const st = stats(it.id), mine = R.votes[it.id] && R.votes[it.id][me.id];
     const mineOk = (it.by === me.id);
     return `<div class="it ${R.meta.cur === it.id ? 'cur' : ''} ${viewId === it.id ? 'view' : ''}" data-id="${it.id}">
-      ${thumbHTML(it)}
-      <div class="info"><b>${i + 1}. ${esc(it.t || 'Sin título')}</b>
+      ${masked(it) ? '<div class="th">❔</div>' : thumbHTML(it)}
+      <div class="info"><b>${i + 1}. ${masked(it) ? '🔒 Por ver' : esc(it.t || 'Sin título')}</b>
         <span>${mine != null ? '✅ votaste ' + esc(fmtVal(mine)) : '⬜ sin tu voto'} · ${st.n} voto${st.n === 1 ? '' : 's'}${it.closed ? ' · 🔒' : ''}${R.meta.cur === it.id ? ' · 📍' : ''}${it.byN ? ' · de ' + esc(it.byN) : ''}</span></div>
       ${admin || mineOk ? `<div class="acts">
         ${admin ? `<button data-a="up" title="Subir">↑</button><button data-a="dn" title="Bajar">↓</button>` : ''}
@@ -1735,8 +1819,8 @@ function renderRank(){
       const foot = see ? `<div class="gfoot" ${T ? `style="background:${esc(T.c)};color:#111"` : ''}><b ${T ? `style="${tStyle(T.n, 19)}"` : ''}>${esc(T ? T.n : fmtAvg(x.st))}</b><small>${esc(info)}</small></div>`
         : `<div class="gfoot lk"><b>${x.st.n ? '🔒' : '—'}</b><small>${esc(info)}</small></div>`;
       return `<button class="gt ${pos && pos <= 3 ? 'p' + pos : ''}" data-go="${x.id}">
-        <div class="gtt"><span>${esc(x.t || 'Sin título')}</span></div>
-        <div class="gimg" ${thumbStyle(md)}>${thumbIcon(md)}${pos ? `<span class="gpos">${pos <= 3 ? ['🥇','🥈','🥉'][pos - 1] : '#' + pos}</span>` : ''}</div>
+        <div class="gtt"><span>${masked(x) ? '🔒 Por ver' : esc(x.t || 'Sin título')}</span></div>
+        <div class="gimg" ${masked(x) ? '' : thumbStyle(md)}>${masked(x) ? '❔' : thumbIcon(md)}${pos ? `<span class="gpos">${pos <= 3 ? ['🥇','🥈','🥉'][pos - 1] : '#' + pos}</span>` : ''}</div>
         ${foot}</button>`;
     }).join('') + '</div>';
     if (hidden.length) h += `<div class="mut" style="font-size:12px;text-align:center;margin:-4px 0 10px">🔒 = nota oculta hasta ${st === 'done' ? 'que el admin cierre los 🆕 nuevos' : m.reveal === 'item' ? 'que el admin cierre ese ítem' : 'el final'}</div>`;
