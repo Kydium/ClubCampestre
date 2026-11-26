@@ -582,6 +582,7 @@ function renderHome(){
   $('recent').innerHTML = rec.length ? '<div class="lbl">Salas recientes</div>' + rec.map(r =>
     `<button data-c="${esc(r.c)}"><b>${esc(r.c)}</b><span class="grow">${esc(r.t)}</span><span class="mut">›</span></button>`).join('') : '';
   $('recent').querySelectorAll('button').forEach(b => b.onclick = () => joinRoom(b.dataset.c));
+  pruneRecent(rec);
   const sv = savedList();
   $('saved').innerHTML = sv.length ? '<div class="lbl">Guardadas en este celular</div>' + sv.map((x, i) =>
     `<button data-i="${i}"><b>💾</b><span class="grow">${esc(x.t)}<br><span class="mut" style="font-size:12px">${new Date(x.at).toLocaleString()} · ${x.n} ítems</span></span><span class="mut" data-del="${i}" style="padding:6px">✕</span></button>`).join('') : '';
@@ -591,6 +592,20 @@ function renderHome(){
     if (confirm('¿Continuar «' + sv[i].t + '»? Se crea una sala nueva con la lista y los votos guardados.')) restoreRoom(sv[i].data);
   });
   hydrateAv($('meBox'));
+}
+// Quita de «Salas recientes» las que ya se borraron (se revisa en segundo plano al abrir el inicio)
+let pruning = false;
+async function pruneRecent(rec){
+  if (pruning || !db || !rec.length) return; pruning = true;
+  try {
+    const alive = await Promise.all(rec.map(r => db.ref(ROOT + '/' + r.c + '/meta/title').once('value').then(s => s.exists(), () => true)));
+    const keep = rec.filter((r, i) => alive[i]);
+    if (keep.length !== rec.length){
+      LS.set('recent', LS.get('recent', []).filter(r => keep.some(k => k.c === r.c)));
+      if ($('sHome').classList.contains('on')) { pruning = false; renderHome(); return; }
+    }
+  } catch(e){}
+  pruning = false;
 }
 function needName(){
   if (me.name) return true;
@@ -698,7 +713,7 @@ async function joinRoom(c){
   if (!needName()) return;
   try {
     const s = await db.ref(ROOT + '/' + c + '/meta').once('value');
-    if (!s.exists()){ toast('No existe una sala con ese código'); return; }
+    if (!s.exists()){ LS.set('recent', LS.get('recent', []).filter(r => r.c !== c)); renderHome(); toast('Esa sala ya no existe'); return; }
     await enter(c);
   } catch(e){ fbErr(e); }
 }
