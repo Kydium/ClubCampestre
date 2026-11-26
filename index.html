@@ -213,6 +213,15 @@
     background: var(--pink); color: #0b0618; box-shadow: 0 0 16px var(--pink);
   }
   .submit:disabled { opacity: .6; cursor: wait; }
+  .submit.alt { background: transparent; color: #fff; border: 2px solid var(--cyan); box-shadow: 0 0 12px rgba(25,230,255,.5); }
+  .linkbtn { display: block; margin: 16px auto 0; background: none; border: 0; color: var(--cyan); font: inherit; font-weight: 700; font-size: 1.05rem; cursor: pointer; text-decoration: underline; }
+  .linkbtn[hidden], .tabs[hidden] { display: none; }
+  .gate#codeBox, .gate#acctBox { z-index: 60; }
+  .bigcode { margin: 20px 0 8px; text-align: center; font-family: var(--display); font-weight: 900; font-size: clamp(1.5rem, 7vw, 2.1rem); letter-spacing: .12em;
+    color: var(--green); text-shadow: 0 0 12px rgba(57,255,136,.6); padding: 14px; border: 2px dashed var(--green); border-radius: 6px; user-select: all; }
+  .warn { text-align: center; color: #ff7aa8; font-weight: 700; }
+  .row2 { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin: 16px 0 6px; }
+  .mini { margin-top: 6px; color: var(--soft); font-weight: 600; font-size: .95rem; }
   @media (prefers-reduced-motion: reduce) {
     .game { transition: none; }
     .game:hover { transform: none; }
@@ -223,6 +232,7 @@
   <div class="userbar" id="userbar" hidden>
     <button class="avbtn" id="avBtn" type="button" title="Cambiar mi foto" aria-label="Cambiar mi foto"><span id="avImg"></span><i class="avplus">+</i></button>
     <span>Hola, <span class="who" id="who"></span></span>
+    <button class="btn-small" id="acctBtn" type="button">CUENTA</button>
     <button class="btn-small" id="logout" type="button">SALIR</button>
   </div>
 
@@ -237,7 +247,10 @@
       <label class="field"><span>Usuario</span>
         <input id="fUser" name="username" type="text" autocomplete="username" autocapitalize="none" autocorrect="off" spellcheck="false" maxlength="16" required>
       </label>
-      <label class="field"><span>Contraseña</span>
+      <label class="field" id="rowCode" hidden><span>Código de recuperación</span>
+        <input id="fCode" type="text" autocomplete="off" autocapitalize="characters" spellcheck="false" maxlength="11" placeholder="XXXXX-XXXXX">
+      </label>
+      <label class="field"><span id="lblPass">Contraseña</span>
         <input id="fPass" name="password" type="password" autocomplete="current-password" minlength="6" required>
       </label>
       <label class="field" id="rowPass2" hidden><span>Repite la contraseña</span>
@@ -245,7 +258,41 @@
       </label>
       <p class="error" id="authError" role="alert"></p>
       <button class="submit" id="authSubmit" type="submit">ENTRAR</button>
+      <button class="linkbtn" id="forgot" type="button">¿Olvidaste tu contraseña?</button>
+      <button class="linkbtn" id="backLogin" type="button" hidden>← Volver a entrar</button>
     </form>
+  </div>
+
+  <!-- Código de recuperación (se muestra una sola vez) -->
+  <div class="gate" id="codeBox" hidden>
+    <div class="card">
+      <h2>🔑 TU CÓDIGO</h2>
+      <p class="hint">Si olvidas tu contraseña, con tu usuario y este código pones una nueva.</p>
+      <div class="bigcode" id="codeTxt"></div>
+      <p class="warn">Guárdalo bien: no se vuelve a mostrar.</p>
+      <div class="row2"><button class="btn-small" id="codeCopy" type="button">COPIAR</button><button class="btn-small" id="codeSave" type="button">DESCARGAR</button></div>
+      <button class="submit" id="codeOk" type="button">YA LO GUARDÉ</button>
+    </div>
+  </div>
+
+  <!-- Mi cuenta -->
+  <div class="gate" id="acctBox" hidden>
+    <div class="card">
+      <h2>MI CUENTA</h2>
+      <p class="hint">Usuario: <b class="who" id="acctWho"></b></p>
+      <label class="field"><span>Nuevo nombre de usuario</span>
+        <input id="fNewName" type="text" autocomplete="off" autocapitalize="none" autocorrect="off" spellcheck="false" maxlength="16">
+      </label>
+      <p class="mini">Se cambia en todos los juegos. Tu XP y tu foto se mantienen.</p>
+      <button class="submit" id="renameBtn" type="button">CAMBIAR NOMBRE</button>
+      <label class="field" style="margin-top:26px"><span>Código de recuperación nuevo</span>
+        <input id="fCodePass" type="password" autocomplete="current-password" placeholder="Tu contraseña actual">
+      </label>
+      <p class="mini">El código anterior deja de servir.</p>
+      <button class="submit alt" id="newCodeBtn" type="button">GENERAR CÓDIGO</button>
+      <p class="error" id="acctError" role="alert"></p>
+      <button class="linkbtn" id="acctClose" type="button">Cerrar</button>
+    </div>
   </div>
   <header>
     <h1>CLUB CAMPESTRE</h1>
@@ -383,18 +430,41 @@
     let modo = 'login';
     const gate = $('gate'), userbar = $('userbar'), err = $('authError');
 
+    // modos: login (usuario + contraseña) · register (+ repetir) · recover (usuario + código + nueva ×2)
     function setModo(m) {
       modo = m;
-      const reg = m === 'register';
-      $('tabLogin').setAttribute('aria-selected', String(!reg));
+      const reg = m === 'register', rec = m === 'recover';
+      $('tabLogin').setAttribute('aria-selected', String(m === 'login'));
       $('tabRegister').setAttribute('aria-selected', String(reg));
-      $('rowPass2').hidden = !reg;
-      $('fPass').autocomplete = reg ? 'new-password' : 'current-password';
-      $('authSubmit').textContent = reg ? 'CREAR CUENTA' : 'ENTRAR';
+      document.querySelector('#authForm .tabs').hidden = rec;
+      $('rowCode').hidden = !rec;
+      $('rowPass2').hidden = !(reg || rec);
+      $('lblPass').textContent = rec ? 'Contraseña nueva' : 'Contraseña';
+      $('fPass').autocomplete = (reg || rec) ? 'new-password' : 'current-password';
+      $('authSubmit').textContent = reg ? 'CREAR CUENTA' : rec ? 'CAMBIAR CONTRASEÑA' : 'ENTRAR';
+      $('forgot').hidden = m !== 'login';
+      $('backLogin').hidden = !rec;
+      document.querySelector('#authForm .hint').textContent = rec ? 'Pon tu usuario y tu código de recuperación' : 'Una sola cuenta para todos los juegos';
       err.textContent = '';
     }
     $('tabLogin').addEventListener('click', () => setModo('login'));
     $('tabRegister').addEventListener('click', () => setModo('register'));
+    $('forgot').addEventListener('click', () => setModo('recover'));
+    $('backLogin').addEventListener('click', () => setModo('login'));
+
+    // Muestra el código de recuperación (una sola vez)
+    function showCode(code, usuario) {
+      if (!code) return;
+      $('codeTxt').textContent = code;
+      $('codeBox').hidden = false;
+      $('codeCopy').onclick = () => { navigator.clipboard && navigator.clipboard.writeText(code).then(() => { $('codeCopy').textContent = '¡COPIADO!'; }, () => {}); };
+      $('codeSave').onclick = () => {
+        const t = 'Club Campestre\nUsuario: ' + usuario + '\nCódigo de recuperación: ' + code + '\n\nCon tu usuario y este código puedes poner una contraseña nueva en «¿Olvidaste tu contraseña?».\n';
+        const a = document.createElement('a'); a.href = URL.createObjectURL(new Blob([t], { type: 'text/plain' }));
+        a.download = 'club-campestre-codigo-' + usuario + '.txt'; document.body.appendChild(a); a.click(); setTimeout(() => a.remove(), 500);
+      };
+      $('codeOk').onclick = () => { $('codeBox').hidden = true; $('codeCopy').textContent = 'COPIAR'; };
+    }
 
     $('authForm').addEventListener('submit', async ev => {
       ev.preventDefault();
@@ -403,17 +473,52 @@
       const bad = A.validarUsuario(u);
       if (bad) { err.textContent = bad; return; }
       if (p.length < 6) { err.textContent = 'La contraseña debe tener al menos 6 caracteres.'; return; }
-      if (modo === 'register' && p !== $('fPass2').value) { err.textContent = 'Las contraseñas no coinciden.'; return; }
+      if (modo !== 'login' && p !== $('fPass2').value) { err.textContent = 'Las contraseñas no coinciden.'; return; }
+      if (modo === 'recover' && A.limpiarCodigo($('fCode').value).length !== 10) { err.textContent = 'El código tiene 10 letras y números (XXXXX-XXXXX).'; return; }
       const btn = $('authSubmit'); btn.disabled = true;
       try {
-        if (modo === 'register') await A.registerUser(u, p); else await A.loginUser(u, p);
-        $('authForm').reset();
+        const nombre = A.normalizarUsuario(u);
+        if (modo === 'recover') {
+          await A.recoverPassword(u, $('fCode').value, p);
+          setModo('login'); $('authForm').reset();
+          alert('Listo: tu contraseña nueva ya funciona. Tu código de recuperación sigue siendo el mismo.');
+        } else {
+          const r = modo === 'register' ? await A.registerUser(u, p) : await A.loginUser(u, p);
+          $('authForm').reset(); setModo('login');
+          showCode(r && r.code, nombre);
+        }
       } catch (e) {
         err.textContent = A.friendlyError(e);
       } finally { btn.disabled = false; }
     });
 
     $('logout').addEventListener('click', () => A.logoutUser());
+
+    // ---- Mi cuenta: cambiar nombre de usuario y generar código nuevo
+    const aErr = $('acctError');
+    $('acctBtn').addEventListener('click', () => { $('acctWho').textContent = $('who').textContent; $('fNewName').value = ''; $('fCodePass').value = ''; aErr.textContent = ''; $('acctBox').hidden = false; });
+    $('acctClose').addEventListener('click', () => { $('acctBox').hidden = true; });
+    $('renameBtn').addEventListener('click', async () => {
+      aErr.textContent = '';
+      const bad = A.validarUsuario($('fNewName').value); if (bad) { aErr.textContent = bad; return; }
+      const b = $('renameBtn'); b.disabled = true; b.textContent = 'REVISANDO…';
+      try {
+        const n = await A.renameUser($('fNewName').value);
+        $('who').textContent = n; $('acctWho').textContent = n; $('fNewName').value = '';
+        try { localStorage.setItem('cc_name', n); } catch (e) {}
+        aErr.style.color = 'var(--green)'; aErr.textContent = 'Listo: ahora eres «' + n + '» en todos los juegos.';
+        setTimeout(() => { aErr.style.color = ''; }, 4000);
+      } catch (e) { aErr.textContent = A.friendlyError(e); }
+      finally { b.disabled = false; b.textContent = 'CAMBIAR NOMBRE'; }
+    });
+    $('newCodeBtn').addEventListener('click', async () => {
+      aErr.textContent = '';
+      const p = $('fCodePass').value; if (!p) { aErr.textContent = 'Escribe tu contraseña actual.'; return; }
+      const b = $('newCodeBtn'); b.disabled = true;
+      try { const code = await A.newRecoveryCode(p); $('acctBox').hidden = true; showCode(code, $('who').textContent); }
+      catch (e) { aErr.textContent = A.friendlyError(e); }
+      finally { b.disabled = false; }
+    });
 
     // Foto de perfil: se toca el círculo para cambiarla (se guarda reducida, igual en todos los juegos)
     if (window.ClubAvatar && A.avatarIO) ClubAvatar.init({ io: A.avatarIO });
