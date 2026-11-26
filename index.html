@@ -161,7 +161,8 @@
   .xpsub { margin-top: 8px; text-align: center; font-size: 1.05rem; font-weight: 600; color: var(--soft); }
   .avbtn { position: relative; background: none; border: 0; padding: 0; cursor: pointer; border-radius: 50%; line-height: 0; }
   /* anillo de experiencia: se llena con el % del nivel */
-  .avbtn { --p: 0; padding: 4px; background: conic-gradient(from 270deg, var(--green) calc(var(--p) * 1%), rgba(255,255,255,.16) 0);   /* empieza a la izquierda y avanza hacia la derecha por arriba */
+  /* empieza arriba al centro y avanza hacia la izquierda: baja, sube por la derecha y vuelve arriba */
+  .avbtn { --p: 0; padding: 6px; background: conic-gradient(rgba(255,255,255,.16) 0 calc((100 - var(--p)) * 1%), var(--green) 0);
     box-shadow: 0 0 14px rgba(57,255,136,.45); transition: background .6s; }
   .avbtn .avin { display: block; padding: 3px; border-radius: 50%; background: #0b0618; line-height: 0; }
   .avbtn .avlv { position: absolute; right: -6px; bottom: -6px; min-width: 24px; height: 24px; padding: 0 5px; border-radius: 12px;

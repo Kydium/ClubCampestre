@@ -704,7 +704,7 @@ async function createRoom(){
 }
 
 // ============ ENTRAR A UNA SALA ============
-let code = '', R = {meta:null, items:{}, votes:{}, players:{}, sync:null, covers:{}}, offs = [], presRef = null;
+let code = '', R = {meta:null, items:{}, votes:{}, players:{}, sync:null, covers:{}, play:{}}, offs = [], presRef = null;
 let viewId = '', follow = true, tab = 'pVote', rankView = 'grid', openDet = {};
 const rp = s => ROOT + '/' + code + (s ? '/' + s : '');
 async function joinRoom(c){
@@ -719,7 +719,7 @@ async function joinRoom(c){
 }
 async function enter(c){
   leave(true);
-  code = c; R = {meta:null, items:{}, votes:{}, players:{}, sync:null, covers:{}}; viewId = ''; follow = true; openDet = {}; lastStage = ''; revShown = -1; seenMe = false; prevStatus = '';
+  code = c; R = {meta:null, items:{}, votes:{}, players:{}, sync:null, covers:{}, play:{}}; viewId = ''; follow = true; openDet = {}; lastStage = ''; revShown = -1; seenMe = false; prevStatus = '';
   LS.set('room', c);
   try { history.replaceState(null, '', location.pathname + '?sala=' + c); } catch(e){}
   presRef = db.ref(rp('players/' + me.id));
@@ -734,7 +734,7 @@ async function enter(c){
   const conRef = db.ref('.info/connected'), conCb = conRef.on('value', s => { if (s.val() && code) pres(); });
   offs.push(() => conRef.off('value', conCb));
   const hb = setInterval(touch, 5 * 60e3); offs.push(() => clearInterval(hb));
-  ['meta', 'items', 'votes', 'players', 'sync', 'covers'].forEach(k => {
+  ['meta', 'items', 'votes', 'players', 'sync', 'covers', 'play'].forEach(k => {
     const r = db.ref(rp(k)), cb = r.on('value', s => { R[k] = s.val() || (k === 'meta' || k === 'sync' ? null : {}); onRoom(k); }, fbErr);
     offs.push(() => r.off('value', cb));
   });
@@ -835,6 +835,7 @@ const canAdd = () => isAdmin() || !!(R.meta && R.meta.anyoneAdd);
 let prevStatus = '', seenMe = false;
 function onRoom(k){
   if (!code) return;
+  if (k === 'play') return;   // solo datos para la espera del temporizador (no hace falta redibujar)
   if (k === 'meta' && !R.meta){ toast('La sala ya no existe'); leave(); return; }
   if (!R.meta) return;
   // pasar a la vista del ítem que muestra el admin
@@ -996,7 +997,7 @@ function shuffleItems(){
   u['meta/cur'] = first;
   db.ref(rp()).update(u).then(() => toast('🔀 Lista mezclada')).catch(fbErr);
 }
-function setCur(id){ viewId = id; const u = {cur: id, phase: null}; u['shown/' + id] = true; db.ref(rp('meta')).update(u).catch(fbErr); }
+function setCur(id){ viewId = id; adminPlayAt = 0; const u = {cur: id, phase: null}; u['shown/' + id] = true; db.ref(rp('meta')).update(u).catch(fbErr); }
 
 function voteHTML(it, mine){
   const dis = !canVote(it), d = dis ? 'disabled' : '';
@@ -1051,7 +1052,8 @@ function bindVote(it){
 function mountStage(el, it){
   const md = media(it.url, itImg(it));
   setTimeout(() => el.querySelectorAll('video,audio').forEach(v => {
-    v.addEventListener('play', () => { if (isAdmin()){ startTimers(); pushSync(); } });
+    v.addEventListener('play', () => { if (isAdmin()){ adminPlayed(); pushSync(); } reportPlay(true); });
+    v.addEventListener('pause', () => reportPlay(true));
     ['pause', 'seeked'].forEach(ev => v.addEventListener(ev, () => { if (isAdmin()) pushSync(); }));
     v.addEventListener('loadedmetadata', () => applySync());
   }), 0);
@@ -1113,7 +1115,8 @@ function mountYT(md, itemId){
         onReady: () => { ytReady = true; try { yt.getIframe().setAttribute('referrerpolicy', 'strict-origin-when-cross-origin'); } catch(e){} applySync(); },
         onError: e => ytFail(md, e && e.data),
         onStateChange: e => {
-          if (e.data === 1 && isAdmin()) startTimers();
+          if (e.data === 1) adminPlayed();
+          reportPlay(true);
           if (isAdmin() && (e.data === 1 || e.data === 2)) pushSync();
         }
       }
@@ -1195,10 +1198,39 @@ function nextItem(){
 function playable(it){ const k = media(it.url, itImg(it)).k; return ['yt', 'frame', 'vert', 'video', 'audio'].includes(k); }
 function firstPhase(){ const m = R.meta; return (+m.tWatch > 0) ? 'watch' : (+m.tVote > 0) ? 'vote' : ''; }
 // El admin le dio play (o tocó «Empezar»): arranca la cuenta
+// «▶️ Empezar ya»: el admin arranca el tiempo sin esperar a nadie
 function startTimers(){
   const m = R.meta; if (!isAdmin() || !m || !m.auto) return;
   const ph = m.phase; if (!ph || ph.id !== m.cur || ph.k !== 'ready') return;
   const k = firstPhase(); if (k) setPhase(m.cur, k);
+}
+// ---- Espera a que todos estén reproduciendo y sincronizados antes de contar ----
+// Cada celular avisa en play/<uid> si está reproduciendo el ítem actual y en qué segundo va.
+let adminPlayAt = 0, lastRep = {k: '', at: 0};
+const WAIT_MAX = 15000;   // si alguien no arranca (p. ej. su navegador no deja), se empieza igual a los 15 s
+function adminPlayed(){ if (isAdmin() && !adminPlayAt) adminPlayAt = Date.now(); }
+function reportPlay(force){
+  if (!code || !R.meta || isAdmin()) return;
+  const p = player(); let on = false, t = 0;
+  try { if (p){ on = p.on(); t = p.t(); } } catch(e){}
+  const k = viewId + '|' + on;
+  if (!force && k === lastRep.k && (!on || Date.now() - lastRep.at < 3000)) return;
+  lastRep = {k, at: Date.now()};
+  db.ref(rp('play/' + me.id)).set({id: viewId, on, t, at: firebase.database.ServerValue.TIMESTAMP}).catch(() => {});
+}
+setInterval(() => reportPlay(false), 1000);
+// ¿Cuántos (sin contar al admin) están reproduciendo el ítem actual en el mismo segundo que el admin?
+function readyInfo(cur){
+  const s = R.sync, tNow = now();
+  const adminT = s && s.id === cur && s.st === 'play' ? s.t + Math.max(0, tNow - (s.at || tNow)) / 1000 : null;
+  const others = playersList().filter(p => p.on && p.id !== R.meta.admin);
+  const ok = others.filter(p => {
+    const x = R.play && R.play[p.id];
+    if (!x || x.id !== cur || !x.on || tNow - (+x.at || 0) > 7000) return false;
+    if (adminT == null) return true;
+    return Math.abs(x.t + Math.max(0, tNow - (+x.at || tNow)) / 1000 - adminT) < 2.5;
+  }).length;
+  return {ok, total: others.length, adminOn: adminT != null};
 }
 function driveAuto(){
   const m = R.meta;
@@ -1211,7 +1243,13 @@ function driveAuto(){
     else setPhase(cur, k);
     return;
   }
-  if (ph.k === 'ready') return;
+  if (ph.k === 'ready'){
+    // empieza cuando el admin ya reproduce y todos están reproduciendo y sincronizados (o tras 15 s de espera)
+    if (!adminPlayAt) return;
+    const r = readyInfo(cur);
+    if (r.ok >= r.total || Date.now() - adminPlayAt > WAIT_MAX){ const k = firstPhase(); if (k) setPhase(cur, k); }
+    return;
+  }
   const end = (+ph.st || t) + (+ph.dur || 0) * 1000;
   // ⚡ si todos votaron mientras se veía/escuchaba, se corta y empieza el tiempo de votar elegido
   if (m.tAll && ph.k === 'watch' && allVoted(cur)){ if (+m.tVote > 0) setPhase(cur, 'vote'); else setPhase(cur, 'manual', 0); return; }
@@ -1243,7 +1281,9 @@ function tickTimer(){
   if (!el) return;
   const hid = el.classList.contains('hide') ? ' hide' : '';
   if (ph.k === 'ready'){
-    setTxt($('tmrL'), isAdmin() ? '⏳ El tiempo empieza al darle ▶ play' : '⏳ Esperando que empiece…');
+    const r = readyInfo(m.cur);
+    setTxt($('tmrL'), r.adminOn && r.total ? '⏳ Esperando que todos reproduzcan · ' + r.ok + '/' + r.total + ' listos'
+      : isAdmin() ? '⏳ El tiempo empieza al darle ▶ play' : '⏳ Esperando que empiece…');
     if (isAdmin() && !$('tmrGo')){ $('tmrT').innerHTML = '<button class="btn sm" id="tmrGo" style="padding:6px 10px;font-size:14px">▶️ Empezar ya</button>'; $('tmrGo').onclick = startTimers; }
     if (!isAdmin()) setTxt($('tmrT'), '');
     $('tmrB').style.width = '0'; setCls(el, 'tmr' + hid);
